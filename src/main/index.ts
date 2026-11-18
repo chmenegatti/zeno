@@ -8,8 +8,9 @@ import * as Git from './git'
 import { cancel } from './http'
 import { randomUUID } from 'node:crypto'
 import { Engine } from './engine'
-import { extract } from './tags'
-import { parseTag } from '../shared/tagdef'
+import { evalFn, extract, type PromptAsk } from './tags'
+import { findRequestRef, parseTag } from '../shared/tagdef'
+import { buildVars, render } from '../shared/template'
 import { parseData, runCollection, toJUnit, type RunHandle } from './runner'
 import { runCli } from './cli'
 import { electronProtector, Vault } from './vault'
@@ -164,9 +165,33 @@ handle('saveEnvironment', (wsId: string, env) => store.saveEnvironment(wsId, env
 handle('deleteEnvironment', (id: string) => store.deleteEnvironment(id))
 
 const cookies = new Cookies(store.dir)
+
+// {% prompt %}: pergunta na janela; "lembrar" guarda o valor só enquanto o app estiver aberto
+const promptMemory = new Map<string, string>()
+const promptWaiting = new Map<number, (v: { value: string; remember: boolean } | null) => void>()
+let promptSeq = 0
+async function askPrompt(p: PromptAsk): Promise<string | null> {
+  const key = p.key || `${p.title}|${p.label}`
+  if (promptMemory.has(key)) return promptMemory.get(key)!
+  if (!win) return null
+  const id = ++promptSeq
+  const answer = await new Promise<{ value: string; remember: boolean } | null>((resolve) => {
+    promptWaiting.set(id, resolve)
+    win!.webContents.send('prompt:ask', id, p)
+  })
+  if (answer?.remember) promptMemory.set(key, answer.value)
+  return answer ? answer.value : null
+}
+handle('promptReply', (id: number, answer: { value: string; remember: boolean } | null) => {
+  promptWaiting.get(id)?.(answer)
+  promptWaiting.delete(id)
+})
+handle('promptForget', () => promptMemory.clear())
+
 const engine = new Engine(store, vault, {
   onChanged: (list) => win?.webContents.send('store:changed', list),
-  onResponse: (id, history) => win?.webContents.send('response:added', id, history)
+  onResponse: (id, history) => win?.webContents.send('response:added', id, history),
+  prompt: askPrompt
 }, { cookies })
 
 handle('cookiesList', (wsId: string) => cookies.list(wsId))
@@ -219,11 +244,26 @@ handle('tagPreview', async (raw: string, send: boolean) => {
   const t = parseTag(raw)
   if (t.name === 'uuid') return { value: randomUUID() }
   if (t.name === 'now') return { value: new Date().toISOString() }
+  if (t.name === 'fn') {
+    // prévia com as variáveis do workspace e ambiente ativos; prompt não pergunta aqui
+    const st = store.getState()
+    const ws = store.list().find((w) => w.id === st.activeWorkspaceId) ?? store.list()[0]
+    // segredos decifrados como no envio (senão a prévia usaria o texto cifrado)
+    try {
+      const vars = ws ? await engine.previewVars(ws, st.activeEnv[ws.id] ?? null) : {}
+      return { value: await evalFn(t.tag, t.args, { render: (x) => render(x, vars).value }) }
+    } catch (e) {
+      return { error: (e as Error).message }
+    }
+  }
   if (t.name !== 'response') return { error: 'tag não suportada' }
-  const ws = store.list().find((w) => findNode(w, t.requestId)?.node.kind === 'request')
-  const node = ws && findNode(ws, t.requestId)?.node
+  // workspace ativo primeiro, como no envio
+  const activeId = store.getState().activeWorkspaceId
+  const ordered = [...store.list()].sort((a, b) => Number(b.id === activeId) - Number(a.id === activeId))
+  const ws = ordered.find((w) => findRequestRef(w.children, t.requestId))
+  const node = ws && findRequestRef(ws.children, t.requestId)
   if (!ws || node?.kind !== 'request') return { error: 'request não encontrado' }
-  let res = store.getResponses(t.requestId)[0]
+  let res = store.getResponses(node.id)[0]
   if (send) {
     const r = await engine.execute(ws, node, store.getState().activeEnv[ws.id] ?? null)
     win?.webContents.send('response:added', r.response.requestId, r.history)

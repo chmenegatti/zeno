@@ -132,8 +132,18 @@ As variáveis viram badge em todo lugar: URL, params, headers, auth, campos de f
 |---|---|
 | `{% response 'body', 'req_id', '$.token', 'when-expired', 3600 %}` | Valor da resposta de outro request (JSONPath ou caminho XML). Gatilhos: `never`, `no-history`, `when-expired`, `always` |
 | `{% response 'header', 'req_id', 'X-Session' %}` | Header da resposta de outro request |
+| `{% response 'body', 'Auth / Login', '$.token' %}` | O request também pode ser indicado pelo nome ou pelo caminho `Pasta / Nome` |
 | `{% uuid 'v4' %}` | UUID aleatório |
 | `{% now %}` | Data e hora atual (ISO 8601) |
+| `{% timestamp 'millis'\|'unix'\|'iso' %}` | Timestamp em milissegundos, segundos ou ISO |
+| `{% faker 'randomEmail' %}` | Dado falso com os nomes do Insomnia/Postman: `randomFullName`, `randomEmail`, `randomPhoneNumber`, `randomCPF`, `randomUUID`, `randomInt`, `randomCity`… |
+| `{% hash 'sha256', 'hex', '{{ senha }}' %}` | Hash md5/sha1/sha256/sha512 em hex ou base64 |
+| `{% base64 'encode', 'normal', '{{ user }}:{{ pass }}' %}` | Codifica/decodifica base64 (normal ou URL-safe) |
+| `{% file '~/chave.pem' %}` | Conteúdo de um arquivo |
+| `{% prompt 'Código 2FA', 'Digite o código', '', 'otp', true %}` | Pergunta na hora de enviar (uma vez por envio; pode lembrar até fechar o app). Cancelar não envia |
+| `{% jsonpath '{{ perfil_json }}', '$.id' %}` | JSONPath sobre um texto JSON (ex.: variável) |
+
+Os argumentos aceitam `{{ variáveis }}`. Clicar no badge abre um formulário próprio de cada função, com prévia do valor.
 
 A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem ajuste. Nos campos (URL, params, headers, auth, body) e no JSON dos ambientes e das variáveis da pasta, a tag aparece como badge, por exemplo `ƒ Resposta ⇒ Login · $.access_token`; clique nele pra editar request, atributo, filtro e gatilho, com prévia do valor. `Ctrl+Espaço` lista variáveis e tags (escolha *Outra tag…* pra abrir o editor); nos editores (body, ambientes) também dá pra digitar `respon…`, `uuid` ou `now` e escolher a sugestão. Badge vermelho = request referenciado não existe.
 

@@ -188,6 +188,8 @@ export const useStore = create<Store>((set, get) => ({
     try {
       const env = cur.ws.id === activeWorkspace(s)?.id ? activeEnvId(s) : (s.app.activeEnv[cur.ws.id] ?? null)
       const r = await api.send(cur.ws.id, cur.req, env)
+      // não enviado (prompt cancelado): não entra no histórico, só avisa
+      if (r.response.error && !r.history.some((h) => h.id === r.response.id)) return get().showError(r.response.error)
       set((st) => ({
         responses: { ...st.responses, [id]: r.history },
         selectedResponse: { ...st.selectedResponse, [id]: r.response.id },

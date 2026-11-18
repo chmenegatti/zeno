@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { buildTag, FIELDS, parseTag, TAG_CHOICES, TRIGGERS, type ResponseTag, type TagDef } from '@shared/tagdef'
+import { buildTag, FIELDS, findRequestRef, FN_NAMES, FN_SPECS, parseTag, TAG_CHOICES, TRIGGERS, type FnName, type ResponseTag, type TagDef } from '@shared/tagdef'
 import { findNode, sortNodes } from '@shared/tree'
 import { matchVars, openVarAt, tokenize } from '@shared/vars'
 import type { TreeNode, Workspace } from '@shared/types'
+import type { PromptAsk } from '@shared/api'
 import { activeWorkspace, api, useStore } from '../state'
 import { MethodBadge, Modal } from './ui'
+import { FAKER } from '@shared/faker'
 import { editorVars, useVarSources, VarBadge, varOptions } from './Vars'
 import type { TagSupport } from './CodeEditor'
 
@@ -16,8 +18,10 @@ export function tagLabel(raw: string, workspaces: Workspace[]): { text: string; 
   if (t.name === 'uuid') return { text: 'UUID' }
   if (t.name === 'now') return { text: 'Agora' }
   if (t.name === 'other') return { text: t.tag, broken: `tag "${t.tag}" não suportada` }
-  const ws = workspaces.find((w) => findNode(w, t.requestId)?.node.kind === 'request')
-  const req = ws ? findNode(ws, t.requestId)?.node : undefined
+  if (t.name === 'fn') return { text: FN_SPECS[t.tag].badge(t.args) }
+  // id ou nome ("Pasta / Nome"): workspace ativo primeiro
+  const cur = activeWorkspace(useStore.getState())
+  const req = [cur, ...workspaces.filter((w) => w !== cur)].map((w) => (w ? findRequestRef(w.children, t.requestId) : null)).find(Boolean) ?? undefined
   const name = req?.name ?? '?'
   const what = t.field === 'header' ? `header ${t.filter}` : t.field === 'url' ? 'URL' : t.field === 'raw' ? 'body' : t.filter || 'body'
   return { text: `Resposta ⇒ ${name} · ${what}`, broken: req ? undefined : `request ${t.requestId || '(vazio)'} não encontrado` }
@@ -291,11 +295,44 @@ function requestOptions(workspaces: Workspace[], current?: Workspace): ReqOption
   return out
 }
 
-const KINDS: { id: TagDef['name']; label: string }[] = [
+const KINDS: { id: string; label: string }[] = [
   { id: 'response', label: 'Resposta (valor de outro request)' },
   { id: 'uuid', label: 'UUID v4' },
-  { id: 'now', label: 'Data e hora atual (ISO)' }
+  { id: 'now', label: 'Data e hora atual (ISO)' },
+  ...FN_NAMES.map((n) => ({ id: `fn:${n}`, label: FN_SPECS[n].label }))
 ]
+
+const kindOf = (t: TagDef): string => (t.name === 'fn' ? `fn:${t.tag}` : t.name)
+
+/** argumentos de uma função ({% hash %}, {% faker %}…) */
+function FnForm({ tag, onChange }: { tag: Extract<TagDef, { name: 'fn' }>; onChange: (args: string[]) => void }) {
+  const spec = FN_SPECS[tag.tag]
+  const set = (i: number, v: string): void => onChange(tag.args.map((a, j) => (j === i ? v : a)))
+  return (
+    <>
+      {spec.args.map((a, i) => (
+        <label key={a.label} className="flex flex-col gap-1">
+          <span className="text-[11px] text-faint">{a.label}</span>
+          {a.kind === 'select' ? (
+            <select className="field py-1" value={tag.args[i]} onChange={(e) => set(i, e.target.value)}>
+              {(tag.tag === 'faker' ? Object.entries(FAKER).map(([id, f]) => ({ id, label: `${f.label} (${id})` })) : a.options ?? []).map((o) => (
+                <option key={o.id} value={o.id}>{o.label}</option>
+              ))}
+              {/* valor importado que não está na lista */}
+              {tag.tag === 'faker' && !FAKER[tag.args[i]] && <option value={tag.args[i]}>{tag.args[i]} (desconhecido)</option>}
+            </select>
+          ) : a.kind === 'textarea' ? (
+            <textarea className="field h-20 resize-y font-mono text-[12px]" placeholder={a.placeholder} value={tag.args[i]} onChange={(e) => set(i, e.target.value)} spellCheck={false} />
+          ) : (
+            <input className="field py-1 font-mono text-[12px]" placeholder={a.placeholder} value={tag.args[i]} onChange={(e) => set(i, e.target.value)} spellCheck={false} />
+          )}
+        </label>
+      ))}
+      {['hash', 'base64', 'jsonpath', 'file'].includes(tag.tag) && <span className="text-[11px] text-faint">Aceita <code>{'{{ variavel }}'}</code> nos campos de texto.</span>}
+      {tag.tag === 'prompt' && <span className="text-[11px] text-faint">Pergunta uma vez por envio; na janela dá pra marcar &quot;lembrar nesta sessão&quot;.</span>}
+    </>
+  )
+}
 
 export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (raw: string) => void; onClose: () => void }) {
   const workspaces = useStore((s) => s.workspaces)
@@ -332,7 +369,8 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
     setPreview({ loading: true })
     setPreview((await useStore.getState().run(api.tagPreview(raw, true))) ?? {})
   }
-  const selected = r ? options.find((o) => o.id === r.requestId) : undefined
+  const selectedNode = r && ws ? workspaces.map((w) => findRequestRef(w.children, r.requestId)).find(Boolean) : undefined
+  const selected = r ? options.find((o) => o.id === (selectedNode?.id ?? r.requestId)) : undefined
   const multiWs = new Set(options.map((o) => o.wsName)).size > 1
 
   return (
@@ -349,10 +387,14 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
           <span className="text-[11px] text-faint">Função</span>
           <select
             className="field py-1"
-            value={tag.name}
+            value={kindOf(tag)}
             disabled={tag.name === 'other'}
             onChange={(e) => {
-              const n = e.target.value as TagDef['name']
+              const n = e.target.value
+              if (n.startsWith('fn:')) {
+                const f = n.slice(3) as FnName
+                return setTag({ name: 'fn', tag: f, args: FN_SPECS[f].args.map((a) => a.def) })
+              }
               setTag(n === 'response' ? { name: 'response', field: 'body', requestId: '', filter: '', trigger: 'never' } : ({ name: n } as TagDef))
             }}
           >
@@ -360,6 +402,8 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
             {tag.name === 'other' && <option value="other">{tag.tag} (não suportada)</option>}
           </select>
         </label>
+
+        {tag.name === 'fn' && <FnForm tag={tag} onChange={(args) => setTag({ ...tag, args })} />}
 
         {r && (
           <>
@@ -378,7 +422,7 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
                   <button
                     type="button"
                     key={o.id}
-                    className={`flex w-full items-center gap-2 px-2 py-1 text-left hover:bg-line ${o.id === r.requestId ? 'bg-raised text-accent' : ''}`}
+                    className={`flex w-full items-center gap-2 px-2 py-1 text-left hover:bg-line ${o.id === selected?.id ? 'bg-raised text-accent' : ''}`}
                     onClick={() => set({ requestId: o.id })}
                   >
                     <MethodBadge method={o.method} className="w-9 shrink-0" />
@@ -448,5 +492,49 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
         </div>
       </form>
     </Modal>
+  )
+}
+
+// ---------- {% prompt %}: pergunta na hora do envio ----------
+
+/** fila de perguntas vindas do main; fica por cima de tudo */
+export function PromptHost() {
+  const [queue, setQueue] = useState<{ id: number; p: PromptAsk }[]>([])
+  useEffect(() => api.onPrompt((id, p) => setQueue((q) => [...q, { id, p }])), [])
+  const cur = queue[0]
+  if (!cur) return null
+  const reply = (answer: { value: string; remember: boolean } | null): void => {
+    api.promptReply(cur.id, answer)
+    setQueue((q) => q.slice(1))
+  }
+  return <PromptModal key={cur.id} ask={cur.p} onReply={reply} />
+}
+
+function PromptModal({ ask, onReply }: { ask: PromptAsk; onReply: (a: { value: string; remember: boolean } | null) => void }) {
+  const [value, setValue] = useState(ask.defaultValue)
+  const [remember, setRemember] = useState(false)
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55">
+      <form
+        className="flex w-[min(420px,92vw)] flex-col gap-3 rounded-xl border border-line bg-panel p-4 shadow-2xl"
+        onSubmit={(e) => {
+          e.preventDefault()
+          onReply({ value, remember })
+        }}
+        onKeyDown={(e) => e.key === 'Escape' && (e.stopPropagation(), onReply(null))}
+      >
+        <span className="font-semibold">{ask.title}</span>
+        {ask.label && <span className="text-[12px] text-dim">{ask.label}</span>}
+        <input autoFocus className="field font-mono" type={ask.mask ? 'password' : 'text'} value={value} onChange={(e) => setValue(e.target.value)} spellCheck={false} />
+        <label className="flex items-center gap-2 text-[11.5px] text-dim">
+          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+          Lembrar nesta sessão (até fechar o app)
+        </label>
+        <div className="flex justify-end gap-2">
+          <button type="button" className="btn" onClick={() => onReply(null)}>Cancelar envio</button>
+          <button className="btn btn-accent">Enviar</button>
+        </div>
+      </form>
+    </div>
   )
 }
