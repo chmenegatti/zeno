@@ -2,6 +2,21 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [0.5.0](https://github.com/chmenegatti/zeno/compare/v0.4.1...v0.5.0) (2026-11-18)
+
+### Novidades
+
+* **hotkeys:** atalhos padrão do Insomnia (zoom `Ctrl+=`/`-`/`0`, fonte dos editores, lateral `Ctrl+\`, foco na URL/resposta, ambientes `Ctrl+E`/`Ctrl+Shift+E`…), tela de atalhos editável e Preferências de zoom e fontes ([#33](https://github.com/chmenegatti/zeno/pull/33)) ([31c3640](https://github.com/chmenegatti/zeno/commit/31c3640)), refs [#32](https://github.com/chmenegatti/zeno/issues/32)
+* **palette:** paleta de comandos (`Ctrl+P`) com busca difusa em requests de todos os workspaces e ações (trocar ambiente/workspace, importar, preferências) ([#34](https://github.com/chmenegatti/zeno/pull/34)) ([b850077](https://github.com/chmenegatti/zeno/commit/b850077)), closes [#3](https://github.com/chmenegatti/zeno/issues/3)
+* **hotkeys:** formatar JSON no editor (`Ctrl+Shift+F`), fixar request (`Ctrl+Shift+P`), opções de envio com atraso e repetição (`Ctrl+Shift+Enter`), valor das variáveis nos badges (`Alt+Shift+U`) e importar atalhos do Insomnia ([#35](https://github.com/chmenegatti/zeno/pull/35)) ([146aeac](https://github.com/chmenegatti/zeno/commit/146aeac)), closes [#32](https://github.com/chmenegatti/zeno/issues/32)
+* **cookies:** cookie jar por workspace: `Set-Cookie` guardado (inclusive em redirects) e enviado nos requests seguintes, tela de cookies (`Ctrl+K`) e opção por request de não enviar/guardar ([#36](https://github.com/chmenegatti/zeno/pull/36)) ([0d2cf2d](https://github.com/chmenegatti/zeno/commit/0d2cf2d)), closes [#10](https://github.com/chmenegatti/zeno/issues/10)
+* **vars:** `{{ var }}` como badge também nos editores de body e ambientes; digitar `{{` ou `Ctrl+Espaço` sugere variáveis (com valor e origem) e tags ([#37](https://github.com/chmenegatti/zeno/pull/37)) ([d08152b](https://github.com/chmenegatti/zeno/commit/d08152b)), closes [#13](https://github.com/chmenegatti/zeno/issues/13)
+* **tags:** funções `timestamp`, `faker`, `hash`, `base64`, `file`, `prompt` (pergunta ao enviar) e `jsonpath`, com editor visual por função; `{% response %}` aceita o request por nome ([#38](https://github.com/chmenegatti/zeno/pull/38)) ([681ea50](https://github.com/chmenegatti/zeno/commit/681ea50)), closes [#14](https://github.com/chmenegatti/zeno/issues/14)
+
+### Mudanças
+
+* `Ctrl+K` passa a abrir os cookies (padrão do Insomnia); a paleta fica em `Ctrl+P`.
+
 ## [0.4.1](https://github.com/chmenegatti/zeno/compare/v0.4.0...v0.4.1) (2026-11-18)
 
 ### Novidades
