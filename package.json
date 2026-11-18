@@ -1,6 +1,6 @@
 {
   "name": "zeno",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Cliente de API desktop sem abas: coleções em YAML, segredos criptografados e import do Insomnia",
   "keywords": [
