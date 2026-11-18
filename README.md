@@ -97,7 +97,8 @@ Mesmo padrão do Insomnia. Todos podem ser trocados em **⌨ Atalhos** (`Ctrl+Sh
 | `Ctrl+=` / `Ctrl+-` / `Ctrl+0` | Zoom da janela (fica salvo) |
 | `Ctrl+Shift+=` / `Ctrl+Shift+-` | Fonte dos editores |
 | `Ctrl+\` | Mostrar/esconder a lateral |
-| `Ctrl+P` (ou `Ctrl+K`), `Ctrl+Shift+F` | Buscar requests na lateral |
+| `Ctrl+P` (ou `Ctrl+K`) | Paleta de comandos: busca difusa em requests de todos os workspaces e ações (trocar ambiente/workspace, importar, preferências…). `>` no começo = só comandos |
+| `Ctrl+Shift+F` | Filtrar a lateral |
 | `Ctrl+L` / `Ctrl+'` | Focar a URL / a resposta |
 | `Ctrl+,` / `Ctrl+Shift+,` | Preferências (zoom, fontes) / configurações do workspace |
 | `Ctrl+Shift+/` | Lista de atalhos |

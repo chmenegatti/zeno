@@ -10,6 +10,7 @@ import { GitModal, MoveHint } from './Git'
 import { CodeModal } from './Code'
 import { RunModal } from './Runner'
 import { PrefsModal, ShortcutsModal } from './Prefs'
+import { CommandPalette } from './CommandPalette'
 import { editorTags } from './Tags'
 import { ScriptsEditor } from './Scripts'
 import { LockIcon, useVaultStatus } from './Secret'
@@ -51,6 +52,8 @@ export function Modals() {
       return ws ? <GitModal ws={ws} onClose={close} /> : null
     case 'prefs':
       return <PrefsModal onClose={close} />
+    case 'palette':
+      return <CommandPalette onClose={close} />
     case 'shortcuts':
       return <ShortcutsModal onClose={close} />
     case 'run':
