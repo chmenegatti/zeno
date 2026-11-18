@@ -78,3 +78,18 @@ export function formatValue(v: unknown): string {
 export function isSecret(name: string): boolean {
   return /pass|senha|secret|token|key|cred/i.test(name)
 }
+
+/** "{{ tok" logo antes do cursor: onde começa o {{ e o que já foi digitado */
+export function openVarAt(before: string): { start: number; query: string } | null {
+  const m = /\{\{\s*([\w$.-]*)$/.exec(before)
+  return m ? { start: m.index, query: m[1] } : null
+}
+
+/** variáveis que casam com o digitado: começo do nome primeiro, depois contém */
+export function matchVars<T extends { name: string }>(vars: Iterable<T>, query: string, limit = 50): T[] {
+  const q = query.toLowerCase().replace(/^_\./, '')
+  const all = [...vars]
+  const starts = all.filter((v) => v.name.toLowerCase().startsWith(q))
+  const has = q ? all.filter((v) => !v.name.toLowerCase().startsWith(q) && v.name.toLowerCase().includes(q)) : []
+  return [...starts.sort((a, b) => a.name.localeCompare(b.name)), ...has.sort((a, b) => a.name.localeCompare(b.name))].slice(0, limit)
+}

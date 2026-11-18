@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { buildTag, FIELDS, parseTag, TRIGGERS, type ResponseTag, type TagDef } from '@shared/tagdef'
+import { buildTag, FIELDS, parseTag, TAG_CHOICES, TRIGGERS, type ResponseTag, type TagDef } from '@shared/tagdef'
 import { findNode, sortNodes } from '@shared/tree'
-import { tokenize } from '@shared/vars'
+import { matchVars, openVarAt, tokenize } from '@shared/vars'
 import type { TreeNode, Workspace } from '@shared/types'
 import { activeWorkspace, api, useStore } from '../state'
 import { MethodBadge, Modal } from './ui'
-import { VarBadge } from './Vars'
+import { editorVars, useVarSources, VarBadge, varOptions } from './Vars'
 import type { TagSupport } from './CodeEditor'
 
 // ---------- rótulo ----------
@@ -50,7 +50,11 @@ export function openTagEditor(raw: string, onOk: (next: string) => void, onCance
 /** badges + autocomplete de tags nos editores de código (body, ambientes, variáveis da pasta) */
 export const editorTags: TagSupport = {
   label: (raw) => tagLabel(raw, useStore.getState().workspaces),
-  edit: (raw, apply, cancel) => openTagEditor(raw, apply, cancel)
+  edit: (raw, apply, cancel) => openTagEditor(raw, apply, cancel),
+  // getter: Vars importa este arquivo (ciclo); só lê na hora do uso
+  get vars() {
+    return editorVars
+  }
 }
 
 /** editor de tag por cima de qualquer modal */
@@ -59,6 +63,115 @@ export function TagEditHost() {
   if (!edit) return null
   const close = (): void => useStore.setState({ tagEdit: null })
   return <TagModal key={edit.value} initial={edit.value} onOk={(raw) => { close(); edit.onOk(raw) }} onClose={() => { close(); edit.onCancel?.() }} />
+}
+
+// ---------- autocomplete nos campos de uma linha ----------
+
+type AcItem = { kind: 'var'; name: string; detail: string; source: string } | { kind: 'tag'; label: string; detail: string; raw: string; edit?: boolean } | { kind: 'other' }
+
+/** {{ abre a lista de variáveis; Ctrl+Espaço lista variáveis e tags */
+function useVarAutocomplete(value: string, onChange: (v: string) => void, ref: React.RefObject<HTMLInputElement | null>) {
+  const sources = useVarSources()
+  const [st, setSt] = useState<{ start: number; end: number; query: string; explicit: boolean; x: number; y: number; w: number } | null>(null)
+  const [sel, setSel] = useState(0)
+  const selRef = useRef(0)
+  selRef.current = sel
+
+  const items: AcItem[] = useMemo(() => {
+    if (!st) return []
+    const vars: AcItem[] = matchVars(varOptions(sources), st.query).map((v) => ({ kind: 'var', ...v }))
+    if (!st.explicit) return vars
+    const q = st.query.toLowerCase()
+    const tags: AcItem[] = TAG_CHOICES.filter((c) => !q || c.keys.some((k) => k.startsWith(q))).map((c) => ({ kind: 'tag', ...c }))
+    return [...vars, ...tags, { kind: 'other' }]
+  }, [st, sources])
+
+  const close = (): void => setSt(null)
+  const check = (el: HTMLInputElement, explicit: boolean): void => {
+    const caret = el.selectionStart ?? el.value.length
+    const selEnd = el.selectionEnd ?? caret
+    const before = el.value.slice(0, caret)
+    const open = openVarAt(before)
+    const word = /[A-Za-z_][\w.]*$/.exec(before)
+    if (!open && !explicit) return close()
+    const r = el.getBoundingClientRect()
+    setSel(0)
+    // Ctrl+Espaço com texto selecionado: a escolha substitui a seleção
+    if (explicit && selEnd > caret) return setSt({ start: caret, end: selEnd, query: '', explicit, x: r.left, y: r.bottom + 2, w: r.width })
+    setSt(
+      open
+        ? { start: open.start, end: caret, query: open.query, explicit, x: r.left, y: r.bottom + 2, w: r.width }
+        : { start: word ? caret - word[0].length : caret, end: caret, query: word?.[0] ?? '', explicit, x: r.left, y: r.bottom + 2, w: r.width }
+    )
+  }
+
+  const apply = (it: AcItem): void => {
+    if (!st) return
+    const el = ref.current
+    // fecha-chaves já digitado depois do cursor entra na troca
+    const after = value.slice(st.end)
+    const end = st.end + (after.startsWith('}}') ? 2 : after.startsWith('}') ? 1 : 0)
+    const put = (text: string): void => {
+      onChange(value.slice(0, st.start) + text + value.slice(end))
+      const pos = st.start + text.length
+      requestAnimationFrame(() => el?.setSelectionRange(pos, pos))
+    }
+    close()
+    if (it.kind === 'var') return put(`{{ ${it.name} }}`)
+    const head = value.slice(0, st.start)
+    const tail = value.slice(end)
+    if (it.kind === 'other') return openTagEditor('', (tag) => onChange(head + tag + tail))
+    put(it.raw)
+    // tag de resposta abre o editor; cancelar tira a tag recém-posta
+    if (it.edit) openTagEditor(it.raw, (tag) => onChange(head + tag + tail), () => onChange(head + tail))
+  }
+
+  const onKey = (e: ReactKeyboardEvent<HTMLInputElement>): boolean => {
+    if (!st || !items.length) return false
+    const n = items.length
+    if (e.key === 'ArrowDown') setSel((selRef.current + 1) % n)
+    else if (e.key === 'ArrowUp') setSel((selRef.current - 1 + n) % n)
+    else if (e.key === 'Enter' || e.key === 'Tab') apply(items[selRef.current])
+    else if (e.key === 'Escape') close()
+    else return false
+    e.preventDefault()
+    e.stopPropagation()
+    return true
+  }
+
+  const menu =
+    st && items.length ? (
+      <div className="fixed z-[60] max-h-[260px] min-w-[260px] overflow-y-auto rounded-lg border border-line bg-raised py-1 shadow-xl" style={{ left: st.x, top: st.y, width: Math.max(260, Math.min(st.w, 460)) }}>
+        {items.map((it, i) => (
+          <div
+            key={it.kind === 'var' ? `v:${it.name}` : it.kind === 'tag' ? `t:${it.label}` : 'other'}
+            className={`flex cursor-pointer items-baseline gap-2 px-3 py-1 text-[12px] ${i === sel ? 'bg-tpurple/35 text-ink' : 'text-dim'}`}
+            onMouseDown={(e) => {
+              e.preventDefault()
+              apply(it)
+            }}
+            onMouseEnter={() => setSel(i)}
+          >
+            {it.kind === 'var' ? (
+              <>
+                <span className="font-mono text-tblue">{it.name}</span>
+                <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-faint">{it.detail}</span>
+                <span className="shrink-0 text-[10.5px] text-faint">{it.source}</span>
+              </>
+            ) : it.kind === 'tag' ? (
+              <>
+                <span className="text-[#c99bff]">ƒ {it.label}</span>
+                <span className="text-[11px] text-faint">{it.detail}</span>
+              </>
+            ) : (
+              <span className="text-[#c99bff]">ƒ Outra tag… <span className="text-[11px] text-faint">abre o editor</span></span>
+            )}
+          </div>
+        ))}
+      </div>
+    ) : null
+
+  return { check, close, onKey, menu }
 }
 
 // ---------- campo com badges ----------
@@ -84,37 +197,47 @@ export function TemplateInput({ value, onChange, placeholder, className = '', pa
   const ref = useRef<HTMLInputElement>(null)
   const tokens = useMemo(() => tokenize(value), [value])
   const hasTokens = tokens.some((t) => t.t !== 'text')
+  const ac = useVarAutocomplete(value, onChange, ref)
   useEffect(() => {
     if (editing) ref.current?.focus()
   }, [editing])
 
   if (editing || !hasTokens) {
     return (
-      <input
-        ref={ref}
-        className={`field min-w-0 flex-1 font-mono ${className}`}
-        type={password ? 'password' : 'text'}
-        placeholder={placeholder}
-        value={value}
-        title={title}
-        onChange={(e) => onChange(e.target.value)}
-        onPaste={onPaste}
-        onFocus={() => setEditing(true)}
-        onBlur={() => setEditing(false)}
-        onKeyDown={(e) => {
-          onKeyDown?.(e)
-          if (e.defaultPrevented) return
-          if (e.key === 'Enter') onEnter?.()
-          if (e.key === 'Escape') e.currentTarget.blur()
-          if (e.key === ' ' && e.ctrlKey) {
-            e.preventDefault()
-            const el = e.currentTarget
-            const [a, b] = [el.selectionStart ?? value.length, el.selectionEnd ?? value.length]
-            openTagEditor('', (tag) => onChange(value.slice(0, a) + tag + value.slice(b)))
-          }
-        }}
-        spellCheck={false}
-      />
+      <>
+        <input
+          ref={ref}
+          className={`field min-w-0 flex-1 font-mono ${className}`}
+          type={password ? 'password' : 'text'}
+          placeholder={placeholder}
+          value={value}
+          title={title}
+          onChange={(e) => {
+            onChange(e.target.value)
+            ac.check(e.target, false)
+          }}
+          onPaste={onPaste}
+          onFocus={() => setEditing(true)}
+          onBlur={() => {
+            ac.close()
+            setEditing(false)
+          }}
+          onKeyDown={(e) => {
+            if (ac.onKey(e)) return
+            onKeyDown?.(e)
+            if (e.defaultPrevented) return
+            if (e.key === 'Enter') onEnter?.()
+            if (e.key === 'Escape') e.currentTarget.blur()
+            if (e.key === ' ' && e.ctrlKey) {
+              // Ctrl+Espaço (padrão do Insomnia): variáveis e tags
+              e.preventDefault()
+              ac.check(e.currentTarget, true)
+            }
+          }}
+          spellCheck={false}
+        />
+        {ac.menu}
+      </>
     )
   }
   // troca o token na posição i pelo texto novo
@@ -130,7 +253,7 @@ export function TemplateInput({ value, onChange, placeholder, className = '', pa
       className={`field flex min-w-0 flex-1 cursor-text items-center gap-0.5 overflow-hidden whitespace-nowrap font-mono ${className}`}
       onClick={() => setEditing(true)}
       onFocus={(e) => e.target === e.currentTarget && setEditing(true)}
-      title={title ?? 'Clique pra editar · clique num badge pra mudar · Ctrl+Espaço insere tag'}
+      title={title ?? 'Clique pra editar · clique num badge pra mudar · {{ ou Ctrl+Espaço sugere variáveis e tags'}
     >
       {tokens.map((tk, i) =>
         tk.t === 'text' ? (

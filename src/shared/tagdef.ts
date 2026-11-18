@@ -103,3 +103,13 @@ export function buildTag(t: TagDef): string {
     }
   }
 }
+
+/** sugestões de tag no autocomplete (editores e campos); edit = abre o editor logo após inserir */
+export const TAG_CHOICES: { label: string; detail: string; keys: string[]; raw: string; edit?: boolean }[] = [
+  { label: 'Resposta ⇒ Atributo do body', detail: 'JSONPath', keys: ['response', 'resposta', 'body'], raw: "{% response 'body', '', '', 'never' %}", edit: true },
+  { label: 'Resposta ⇒ Body inteiro', detail: 'raw', keys: ['response', 'resposta', 'raw'], raw: "{% response 'raw', '', '', 'never' %}", edit: true },
+  { label: 'Resposta ⇒ Header', detail: 'header', keys: ['response', 'resposta', 'header'], raw: "{% response 'header', '', '', 'never' %}", edit: true },
+  { label: 'Resposta ⇒ URL', detail: 'url', keys: ['response', 'resposta', 'url'], raw: "{% response 'url', '', '', 'never' %}", edit: true },
+  { label: 'UUID', detail: 'v4', keys: ['uuid'], raw: "{% uuid 'v4' %}" },
+  { label: 'Agora', detail: 'timestamp', keys: ['now', 'agora', 'timestamp'], raw: '{% now %}' }
+]
