@@ -3,7 +3,8 @@ import { diffLines } from '@shared/diff'
 import type { ResponseRecord } from '@shared/types'
 import { formatBytes } from './ui'
 
-const SECRET_HEAD = /^(authorization|proxy-authorization|cookie|set-cookie|x-api-key|api-key|x-auth-token):\s*(.*)$/i
+// credenciais conhecidas e qualquer header com nome de segredo (token, key, secret, senha, sessão…)
+const SECRET_HEAD = /^((?:proxy-)?authorization|cookie|set-cookie|[\w-]*(?:token|key|secret|pass|senha|session|sessao|cred|auth)[\w-]*):\s*(.*)$/i
 
 /** cabeçalho bruto com valores sensíveis escondidos até pedir */
 function Head({ raw, reveal }: { raw: string; reveal: boolean }) {
@@ -125,6 +126,7 @@ export function TimelineView({ res }: { res: ResponseRecord }) {
 
 const pretty = (r: ResponseRecord): string => {
   if (r.bodyEncoding === 'base64') return `[binário ${formatBytes(r.size)}]`
+  if (r.bodyFile) return r.body
   try {
     return JSON.stringify(JSON.parse(r.body), null, 2)
   } catch {
@@ -146,7 +148,10 @@ export function CompareView({ res, history }: { res: ResponseRecord; history: Re
     return diffLines(text(other), text(res))
   }, [res, other, what])
   if (!other || !diff) return <p className="p-3 text-faint">Envie mais uma vez pra ter o que comparar.</p>
-  const changed = diff.lines.filter((l) => l.t !== 'same').length
+  // binário: sem diff de texto; diz se o conteúdo é igual (quando os dois estão no histórico)
+  const binary = what === 'body' && (res.bodyEncoding === 'base64' || other.bodyEncoding === 'base64')
+  const binSame = binary && !res.bodyFile && !other.bodyFile && res.bodyEncoding === other.bodyEncoding ? res.body === other.body : null
+  const changed = binary ? (binSame === false ? 1 : 0) : diff.lines.filter((l) => l.t !== 'same').length
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b border-line/60 px-3 py-1.5 text-[11.5px]">
@@ -160,11 +165,18 @@ export function CompareView({ res, history }: { res: ResponseRecord; history: Re
           <option value="headers">status e headers</option>
         </select>
         <div className="flex-1" />
-        <span className={changed ? 'text-torange' : 'text-tgreen'}>{changed ? `${changed} linha${changed > 1 ? 's' : ''} diferente${changed > 1 ? 's' : ''}` : 'iguais'}</span>
+        {binary ? (
+          <span className={binSame === true ? 'text-tgreen' : binSame === false ? 'text-torange' : 'text-faint'}>
+            {binSame === true ? 'conteúdo binário igual' : binSame === false ? 'conteúdo binário diferente' : 'binário grande: compare salvando em arquivo'}
+          </span>
+        ) : (
+          <span className={changed ? 'text-torange' : 'text-tgreen'}>{changed ? `${changed} linha${changed > 1 ? 's' : ''} diferente${changed > 1 ? 's' : ''}` : 'iguais'}</span>
+        )}
         {(diff.cut || res.bodyFile || other.bodyFile) && <span className="text-faint">(comparando só o começo)</span>}
       </div>
       <pre className="min-h-0 flex-1 overflow-auto py-1 font-mono text-[11.5px] leading-[1.5] select-text">
-        {diff.lines.map((l, i) => (
+        {binary && <div className="px-3 py-2 text-faint">{formatBytes(other.size)} → {formatBytes(res.size)}. Diff linha a linha só pra texto.</div>}
+        {!binary && diff.lines.map((l, i) => (
           <div key={i} className={l.t === 'add' ? 'bg-tgreen/10 text-tgreen' : l.t === 'del' ? 'bg-tpink/10 text-tpink' : 'text-dim'}>
             <span className="inline-block w-5 select-none text-center opacity-70">{l.t === 'add' ? '+' : l.t === 'del' ? '−' : ' '}</span>
             {l.text}
