@@ -1,0 +1,43 @@
+{
+  "info": { "_postman_id": "c0ffee00-1111-2222-3333-444455556666", "name": "Loja Postman", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+  "variable": [{ "key": "baseUrl", "value": "https://loja.test" }],
+  "event": [{ "listen": "prerequest", "script": { "exec": ["console.log(1)"] } }],
+  "item": [
+    {
+      "name": "Produtos",
+      "item": [
+        {
+          "name": "Obter produto",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Req", "value": "{{$guid}}" }, { "key": "X-Off", "value": "1", "disabled": true }],
+            "url": { "raw": "{{baseUrl}}/produtos/:id?campos=nome&x={{$randomInt}}", "host": ["{{baseUrl}}"], "path": ["produtos", ":id"], "query": [{ "key": "campos", "value": "nome" }, { "key": "x", "value": "{{$randomInt}}" }], "variable": [{ "key": "id", "value": "p-1" }] }
+          }
+        },
+        {
+          "name": "Criar produto",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "basic", "basic": [{ "key": "username", "value": "ana" }, { "key": "password", "value": "{{senha}}" }] },
+            "body": { "mode": "raw", "raw": "{\"nome\":\"Caneta\"}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/produtos"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Upload",
+      "request": {
+        "method": "POST",
+        "auth": { "type": "noauth" },
+        "body": { "mode": "formdata", "formdata": [{ "key": "nome", "value": "a", "type": "text" }, { "key": "arq", "type": "file", "src": "/tmp/a.png" }] },
+        "url": { "raw": "{{baseUrl}}/upload" }
+      }
+    },
+    {
+      "name": "Login OAuth",
+      "request": { "method": "POST", "auth": { "type": "oauth2" }, "url": "{{baseUrl}}/oauth" }
+    }
+  ]
+}

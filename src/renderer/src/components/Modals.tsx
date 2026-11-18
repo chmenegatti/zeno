@@ -366,17 +366,20 @@ function ImportModal({ onClose }: { onClose: () => void }) {
   const [protect, setProtect] = useState(true)
   const { run, setWorkspaces, setApp } = useStore.getState()
 
-  const load = async (source: 'insomnia' | 'file') => {
+  const [url, setUrl] = useState('')
+  /** quiet: na abertura, sem Insomnia instalado não é erro */
+  const load = async (source: 'insomnia' | 'file' | { url: string }, quiet = false) => {
     setBusy(true)
-    const p = await run(api.importPreview(source))
+    const p = quiet ? await api.importPreview(source).catch(() => null) : await run(api.importPreview(source))
     setBusy(false)
     if (!p) return
     setPreview(p)
     setPicked(new Set(p.workspaces.map((w) => w.id)))
+    setShowWarn(false)
   }
 
   useEffect(() => {
-    load('insomnia')
+    load('insomnia', true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -394,16 +397,24 @@ function ImportModal({ onClose }: { onClose: () => void }) {
   const total = preview?.workspaces.filter((w) => picked.has(w.id)).reduce((a, w) => a + w.requests, 0) ?? 0
 
   return (
-    <Modal title="Importar do Insomnia" onClose={onClose} wide>
+    <Modal title="Importar" onClose={onClose} wide>
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button className="btn" onClick={() => load('insomnia')} disabled={busy}>Ler ~/.config/Insomnia</button>
-          <button className="btn" onClick={() => load('file')} disabled={busy}>Escolher export JSON…</button>
+          <button className="btn" onClick={() => load('file')} disabled={busy}>Escolher arquivos…</button>
+          <form className="flex min-w-[260px] flex-1 gap-2" onSubmit={(e) => { e.preventDefault(); if (url.trim()) load({ url: url.trim() }) }}>
+            <input className="field min-w-0 flex-1" placeholder="URL de um OpenAPI/Swagger ou coleção" value={url} onChange={(e) => setUrl(e.target.value)} />
+            <button className="btn" disabled={busy || !url.trim()}>Ler URL</button>
+          </form>
           {busy && <span className="animate-pulse text-dim">lendo…</span>}
         </div>
+        <p className="text-[11.5px] text-faint">
+          Aceita Insomnia (pasta, export v4 JSON ou v5 YAML), OpenAPI 3 e Swagger 2 (JSON ou YAML) e Postman v2.1. Para o Postman, escolha a coleção junto com os arquivos de ambiente.
+        </p>
+        {!preview && !busy && <p className="py-4 text-center text-dim">Nenhum Insomnia encontrado em ~/.config/Insomnia. Escolha um arquivo ou informe uma URL.</p>}
         {preview && (
           <>
-            <p className="text-[11.5px] text-faint">Origem: <code>{preview.source}</code>. Nada é alterado no Insomnia.</p>
+            <p className="text-[11.5px] text-faint">Origem: <code className="select-text">{preview.source}</code>. Nada é alterado na origem.</p>
             <div className="max-h-[42vh] overflow-auto rounded-md border border-line">
               <table className="w-full text-[12.5px]">
                 <thead className="sticky top-0 bg-raised text-left text-dim">

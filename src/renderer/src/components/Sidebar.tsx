@@ -89,7 +89,7 @@ export function Sidebar() {
         <WorkspaceBar />
         <div className="flex flex-col gap-2 p-3">
           <p className="text-dim">Nenhum workspace ainda.</p>
-          <button className="btn btn-accent" onClick={() => useStore.getState().openModal({ kind: 'import' })}>Importar do Insomnia</button>
+          <button className="btn btn-accent" onClick={() => useStore.getState().openModal({ kind: 'import' })}>Importar (Insomnia, OpenAPI, Postman)</button>
           <button className="btn" onClick={() => api.createWorkspace('Meu workspace').then((list) => { useStore.getState().setWorkspaces(list); useStore.getState().setApp({ activeWorkspaceId: list[0]?.id }) })}>Criar workspace vazio</button>
         </div>
       </aside>
@@ -283,7 +283,7 @@ function WorkspaceBar() {
             useStore.getState().setWorkspaces(r.workspaces)
             setApp({ activeWorkspaceId: r.id, activeRequestId: undefined })
           }}>Abrir workspace de uma pasta…</button>
-          <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); openModal({ kind: 'import' }) }}>⇣ Importar do Insomnia…</button>
+          <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); openModal({ kind: 'import' }) }}>⇣ Importar (Insomnia, OpenAPI, Postman)…</button>
           <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); api.openDataDir() }}>Abrir pasta de dados</button>
         </div>
       )}

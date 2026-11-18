@@ -47,8 +47,11 @@ export interface ZenoApi {
   responses(requestId: string): Promise<ResponseRecord[]>
   clearResponses(requestId: string): Promise<void>
 
-  /** 'insomnia' = ~/.config/Insomnia; 'file' = abre diálogo pra escolher export JSON */
-  importPreview(source: 'insomnia' | 'file'): Promise<ImportPreview | null>
+  /**
+   * 'insomnia' = ~/.config/Insomnia; 'file' = diálogo (um ou mais arquivos: Insomnia v4/v5, OpenAPI/Swagger, Postman);
+   * { url } = baixa o spec/coleção
+   */
+  importPreview(source: 'insomnia' | 'file' | { url: string }): Promise<ImportPreview | null>
   /** protect = cifrar senhas/tokens no cofre logo após importar */
   importRun(workspaceIds: string[], protect: boolean): Promise<Workspace[]>
 
