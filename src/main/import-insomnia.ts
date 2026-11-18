@@ -35,7 +35,15 @@ interface InsKV {
   disabled?: boolean
 }
 
-export const INSOMNIA_DIR = path.join(process.env.HOME || '.', '.config', 'Insomnia')
+/** pasta de dados do Insomnia (mesma do appData do Electron em cada sistema) */
+export function insomniaDir(platform: string = process.platform, env: NodeJS.ProcessEnv = process.env): string {
+  const home = env.HOME || env.USERPROFILE || '.'
+  if (platform === 'darwin') return path.join(home, 'Library', 'Application Support', 'Insomnia')
+  if (platform === 'win32') return path.join(env.APPDATA || path.join(home, 'AppData', 'Roaming'), 'Insomnia')
+  return path.join(env.XDG_CONFIG_HOME || path.join(home, '.config'), 'Insomnia')
+}
+
+export const INSOMNIA_DIR = insomniaDir()
 const NEDB_FILES = ['Workspace', 'RequestGroup', 'Request', 'Environment']
 
 const TYPE_FROM_EXPORT: Record<string, string> = {

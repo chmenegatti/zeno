@@ -5,13 +5,16 @@ const TAG = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/y
 /** troca as tags por marcadores (com aspas se estiverem fora de string), formata e devolve as tags */
 export function beautifyJson(text: string, indent = 2): string {
   const saved: { raw: string; bare: boolean }[] = []
+  // prefixo que não aparece no texto: o marcador nunca colide com conteúdo do usuário
+  let pre = '__ZENO_TAG_'
+  while (text.includes(pre)) pre += 'X'
   let out = ''
   let inStr = false
   for (let i = 0; i < text.length; ) {
     TAG.lastIndex = i
     const m = text[i] === '{' ? TAG.exec(text) : null
     if (m) {
-      const mark = `__ZENO_TAG_${saved.length}__`
+      const mark = `${pre}${saved.length}__`
       saved.push({ raw: m[0], bare: !inStr })
       out += inStr ? mark : `"${mark}"`
       i += m[0].length
@@ -28,9 +31,9 @@ export function beautifyJson(text: string, indent = 2): string {
     i++
   }
   const pretty = JSON.stringify(JSON.parse(out), null, indent)
-  return pretty.replace(/"?__ZENO_TAG_(\d+)__"?/g, (all, n) => {
+  return pretty.replace(new RegExp(`"?${pre}(\\d+)__"?`, 'g'), (all, n) => {
     const t = saved[Number(n)]
     // só tira as aspas que nós mesmos pusemos
-    return t.bare ? t.raw : all.replace(/__ZENO_TAG_\d+__/, t.raw)
+    return t.bare ? t.raw : all.replace(`${pre}${n}__`, () => t.raw)
   })
 }
