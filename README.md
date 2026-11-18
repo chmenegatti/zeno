@@ -151,6 +151,8 @@ A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem aju
 
 - **Filtro**: abaixo do body, `$.items[*].id`, `$..id` ou `$.data['nome completo']` para JSON; XPath (`//item/id`, `count(//item)`) para XML e HTML. O resultado aparece na hora, um filtro inválido mostra o erro sem esconder o body, e o filtro fica salvo por request.
 - **Busca**: `Ctrl+F` com o foco na resposta (ou **buscar**), com regex, maiúsculas/minúsculas e palavra inteira.
+- **Visualizadores**: imagem, PDF (com o visualizador do Chromium), HTML renderizado num iframe isolado (sem scripts), áudio e vídeo; **Visual / Texto** alterna pro texto puro. **Salvar em arquivo** grava qualquer resposta (nome sugerido pelo `Content-Disposition`, URL ou tipo).
+- **Respostas grandes**: acima de 5 MB, o body vai pra um arquivo próprio em `.responses/bodies/` e a tela mostra os primeiros 256 KB; **carregar tudo** traz o resto quando você quiser. Scripts e `{% response %}` sempre usam o body completo.
 - **Caminho do JSON**: clique no nome de uma chave para copiar o caminho (`$.data.users[0].id`), copiar uma tag `{% response %}` pronta ou filtrar por ele.
 
 ## Cookies
@@ -274,7 +276,7 @@ Os próximos passos estão nas [issues abertas](https://github.com/chmenegatti/z
 
 - GraphQL, gRPC, WebSocket e SSE
 - OAuth 2.0, proxy e mTLS
-- visualizadores de HTML/imagem/PDF e linha do tempo do request
+- linha do tempo do request
 - mock server e plugins
 
 Quer ajudar em algum? Comente na issue antes de começar.

@@ -106,6 +106,10 @@ export interface ZenoApi {
   /** {% prompt %} pedindo valor; responda com promptReply(id, …) */
   onPrompt(cb: (id: number, p: PromptAsk) => void): () => void
   promptReply(id: number, answer: { value: string; remember: boolean } | null): Promise<void>
+  /** body completo de resposta grande (bodyFile) */
+  responseBody(requestId: string, resId: string): Promise<string>
+  /** salva o body num arquivo; devolve o caminho (null = cancelou) */
+  saveResponse(requestId: string, resId: string): Promise<string | null>
   /** esquece os valores lembrados dos prompts */
   promptForget(): Promise<void>
 }

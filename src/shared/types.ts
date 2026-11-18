@@ -170,10 +170,12 @@ export interface ResponseRecord {
   status: number
   statusText: string
   headers: [string, string][]
-  /** texto (utf-8) ou base64 quando binário */
+  /** texto (utf-8) ou base64 quando binário; com bodyFile, só uma prévia (texto) ou vazio (binário) */
   body: string
   bodyEncoding: 'utf8' | 'base64'
   size: number
+  /** body grande guardado à parte (.responses/bodies/<id>); pegar com responseBody */
+  bodyFile?: boolean
   timing: { headersMs: number; totalMs: number }
   error?: string
 }

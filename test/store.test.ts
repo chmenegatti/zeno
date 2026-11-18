@@ -36,6 +36,29 @@ describe('Store', () => {
     expect(fs.readFileSync(path.join(dir, '.gitignore'), 'utf8')).toContain('.cookies/')
   })
 
+  it('body grande vai pra arquivo e volta completo; sai junto do histórico', async () => {
+    const { LARGE_BODY } = await import('../src/main/store')
+    const big = 'x'.repeat(LARGE_BODY + 10)
+    const rec = { id: 'res_big', requestId: 'req_1', at: 1, method: 'GET', url: 'http://x', status: 200, statusText: 'OK', headers: [], body: big, bodyEncoding: 'utf8' as const, size: big.length, timing: { headersMs: 1, totalMs: 1 } }
+    const [saved] = store.addResponse(rec)
+    expect(saved.bodyFile).toBe(true)
+    expect(saved.body.length).toBe(256 * 1024)
+    expect(fs.statSync(path.join(dir, '.responses', 'req_1.json')).size).toBeLessThan(400 * 1024)
+    expect(store.responseBody(saved)).toBe(big)
+    expect(store.withBody(saved)?.body).toBe(big)
+    const bodyFile = path.join(dir, '.responses', 'bodies', 'res_big')
+    expect(fs.existsSync(bodyFile)).toBe(true)
+    // saiu do histórico (mais de 20) = arquivo apagado
+    for (let i = 0; i < 20; i++) store.addResponse({ ...rec, id: `res_${i}`, body: 'ok', size: 2 })
+    expect(fs.existsSync(bodyFile)).toBe(false)
+    store.addResponse(rec)
+    store.clearResponses('req_1')
+    expect(fs.existsSync(bodyFile)).toBe(false)
+    // acentos: 3 M caracteres = 6 MB em UTF-8; conta bytes
+    const acc = 'ã'.repeat(3 * 1024 * 1024)
+    expect(store.addResponse({ ...rec, id: 'res_acc', body: acc, size: Buffer.byteLength(acc) })[0].bodyFile).toBe(true)
+  })
+
   it('cria, renomeia, move, duplica e apaga', () => {
     const [ws] = store.createWorkspace('Meu WS')
     const { id: fid } = store.createFolder(ws.id, 'Pasta A')
