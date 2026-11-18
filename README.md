@@ -12,7 +12,7 @@
 ![Plataforma](https://img.shields.io/badge/plataforma-Linux-002233)
 [![Contribuições bem-vindas](https://img.shields.io/badge/PRs-bem--vindos-00ffd4)](CONTRIBUTING.md)
 
-[Instalação](#instalação) · [Recursos](#recursos) · [Primeiros passos](#primeiros-passos) · [Cofre de segredos](#cofre-de-segredos) · [Git](#git-e-trabalho-em-equipe) · [Roadmap](#roadmap) · [Contribuir](CONTRIBUTING.md)
+[Instalação](#instalação) · [Recursos](#recursos) · [Primeiros passos](#primeiros-passos) · [Cofre de segredos](#cofre-de-segredos) · [Scripts](#scripts-e-testes) · [Git](#git-e-trabalho-em-equipe) · [Roadmap](#roadmap) · [Contribuir](CONTRIBUTING.md)
 
 <img src="docs/screenshot.png" alt="Tela do Zeno: coleções à esquerda, request no meio e resposta à direita" width="100%" />
 
@@ -36,6 +36,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 | **Autenticação** | Basic, Bearer, API key (header ou query) e herança da pasta |
 | **Ambientes e variáveis** | `{{ var }}` e `{{ _.var }}` com herança Base → sub-ambiente → pasta, troca rápida com `Ctrl+E` |
 | **Badges de variáveis** | Variáveis aparecem como badges na URL e na lateral; clique pra ver, editar, criar ou mover |
+| **Scripts e testes** | JavaScript antes do envio e depois da resposta (por request ou pasta), com `zeno.test`/`zeno.expect`; scripts do Insomnia e do Postman rodam sem mudança |
 | **Encadeamento** | `{% response %}` usa o body, header ou URL de outro request, reenviando só quando o valor expira |
 | **Cofre de segredos** | AES-256-GCM com a chave protegida pelo chaveiro do sistema (gnome-keyring, KWallet) |
 | **cURL e código** | Cole um `curl` na URL e o request é montado; copie como cURL ou gere Go, JavaScript e Python |
@@ -118,6 +119,31 @@ Clique em qualquer badge para ver de onde vem o valor, mudar, mover para outro n
 
 A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem ajuste.
 
+## Scripts e testes
+
+Cada request (e cada pasta) tem uma aba *Scripts* com dois editores: **antes do envio** e **depois da resposta**. Os da pasta rodam antes dos do request.
+
+```js
+// depois do login: guarda o token pro próximo request usar em {{ token }}
+const body = zeno.response.json()
+zeno.environment.set('token', body.access_token)
+
+zeno.test('login ok', () => {
+  zeno.expect(zeno.response.code).to.equal(200)
+  zeno.expect(body).to.have.property('access_token').that.is.a('string')
+})
+```
+
+| API | O que faz |
+|---|---|
+| `zeno.environment` / `zeno.baseEnvironment` | `get`, `set`, `unset`, `has`, `toObject` no ambiente ativo / Base. O que muda é salvo no YAML; nomes como `token` e `senha` vão cifrados pro cofre |
+| `zeno.variables` | Variáveis só deste envio (`{{ nome }}` no request) |
+| `zeno.request` | `method`, `url`, `headers.add/upsert/remove`, `url.addQueryParams`, `body.raw` (antes do envio) |
+| `zeno.response` | `code`, `status`, `headers.get`, `json()`, `text()`, `responseTime` (depois da resposta) |
+| `zeno.test(nome, fn)` / `zeno.expect` | Testes com asserções no estilo chai; o resultado aparece na aba *Testes* da resposta |
+
+`insomnia.*` e `pm.*` são apelidos de `zeno.*`, então scripts importados do Insomnia e do Postman funcionam nos casos comuns. Os scripts rodam isolados: sem rede, arquivos, `require` ou timers, com limite de 5 s. Erro no script aparece no painel; se for no pré-request, o envio não acontece.
+
 ## Cofre de segredos
 
 - Valores marcados como secretos ficam no YAML como `$zeno$v1$…` (AES-256-GCM). **Esses arquivos podem ir para o git.**
@@ -182,7 +208,7 @@ sortKey: 1
 Os próximos passos estão nas [issues abertas](https://github.com/chmenegatti/zeno/issues), entre eles:
 
 - GraphQL, gRPC, WebSocket e SSE
-- scripts pré-request e pós-resposta, testes e executor de coleção
+- executor de coleção (rodar uma pasta inteira com os testes)
 - OAuth 2.0, cookies, proxy e mTLS
 - paleta de comandos e plugins
 

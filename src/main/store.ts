@@ -18,6 +18,7 @@ import type {
   FolderDoc,
   RequestDoc,
   ResponseRecord,
+  Scripts,
   TreeNode,
   Workspace,
   WorkspaceDoc
@@ -67,8 +68,16 @@ function normRequest(raw: Partial<RequestDoc>, fallbackName: string): RequestDoc
     headers: kvList(raw.headers),
     body: raw.body && typeof raw.body === 'object' ? { mime: raw.body.mime ?? null, text: raw.body.text, fields: raw.body.fields } : { mime: null },
     auth: raw.auth && typeof raw.auth === 'object' && 'type' in raw.auth ? raw.auth : { type: 'inherit' },
+    scripts: normScripts(raw.scripts),
     sortKey: Number(raw.sortKey ?? 0)
   }
+}
+
+function normScripts(raw: unknown): Scripts | undefined {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Scripts
+  const pre = typeof r.pre === 'string' && r.pre.trim() ? r.pre : undefined
+  const post = typeof r.post === 'string' && r.post.trim() ? r.post : undefined
+  return pre || post ? stripEmpty({ pre, post }) : undefined
 }
 
 function normFolder(raw: Partial<FolderDoc>, fallbackName: string): Folder {
@@ -81,18 +90,19 @@ function normFolder(raw: Partial<FolderDoc>, fallbackName: string): Folder {
     headers: kvList(raw.headers),
     auth: raw.auth && typeof raw.auth === 'object' && 'type' in raw.auth ? raw.auth : { type: 'inherit' },
     vars: raw.vars && typeof raw.vars === 'object' ? raw.vars : {},
+    scripts: normScripts(raw.scripts),
     children: []
   }
 }
 
 function requestToYaml(r: RequestDoc): object {
   const { kind: _k, ...rest } = r
-  return stripEmpty(rest)
+  return stripEmpty({ ...rest, scripts: normScripts(rest.scripts) })
 }
 
 function folderToYaml(f: FolderDoc | Folder): object {
   const { kind: _k, children: _c, ...rest } = f as Folder
-  return stripEmpty(rest)
+  return stripEmpty({ ...rest, scripts: normScripts(rest.scripts) })
 }
 
 function stripEmpty<T extends object>(o: T): T {

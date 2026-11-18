@@ -1,6 +1,7 @@
 import CodeMirror, { EditorView } from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
 import { xml } from '@codemirror/lang-xml'
+import { javascript } from '@codemirror/lang-javascript'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { tags as t } from '@lezer/highlight'
 import { useMemo } from 'react'
@@ -45,7 +46,7 @@ export function langFor(mime: string | null | undefined): 'json' | 'xml' | 'text
 interface Props {
   value: string
   onChange?: (v: string) => void
-  lang?: 'json' | 'xml' | 'text'
+  lang?: 'json' | 'xml' | 'text' | 'javascript'
   readOnly?: boolean
   wrap?: boolean
   placeholder?: string
@@ -56,6 +57,7 @@ export function CodeEditor({ value, onChange, lang = 'text', readOnly, wrap = tr
     const ext = [...theme]
     if (lang === 'json') ext.push(json())
     if (lang === 'xml') ext.push(xml())
+    if (lang === 'javascript') ext.push(javascript())
     if (wrap) ext.push(EditorView.lineWrapping)
     return ext
   }, [lang, wrap])

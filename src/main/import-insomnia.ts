@@ -125,7 +125,17 @@ export function fromExportV5(raw: V5): InsDoc[] {
     for (const x of list ?? []) {
       if (Array.isArray(x.children)) {
         const m = meta(x, 'fld')
-        docs.push({ ...m, type: 'RequestGroup', parentId, name: x.name, headers: x.headers, authentication: x.authentication, environment: x.environment })
+        docs.push({
+          ...m,
+          type: 'RequestGroup',
+          parentId,
+          name: x.name,
+          headers: x.headers,
+          authentication: x.authentication,
+          environment: x.environment,
+          preRequestScript: x.scripts?.preRequest,
+          afterResponseScript: x.scripts?.afterResponse
+        })
         walk(x.children, m._id)
       } else {
         const m = meta(x, 'req')
@@ -199,6 +209,12 @@ function body(b: InsDoc['body'], where: string, warn: (m: string) => void): Body
   return { mime, text: b.text ?? '' }
 }
 
+function scriptsOf(d: InsDoc): RequestDoc['scripts'] {
+  const pre = d.preRequestScript?.trim() ? d.preRequestScript : undefined
+  const post = d.afterResponseScript?.trim() ? d.afterResponseScript : undefined
+  return pre || post ? { ...(pre ? { pre } : {}), ...(post ? { post } : {}) } : undefined
+}
+
 export interface ParseResult {
   workspaces: Workspace[]
   warnings: string[]
@@ -238,11 +254,11 @@ export function convert(docs: InsDoc[], opts: { insecureTLS?: boolean } = {}): P
           headers: kv(d.headers),
           auth: auth(d.authentication, where, warn),
           vars: d.environment && typeof d.environment === 'object' ? d.environment : {},
+          scripts: scriptsOf(d),
           children: buildNodes(d._id, where)
         }
         nodes.push(folder)
       } else if (d.type === 'Request') {
-        if (d.preRequestScript?.trim() || d.afterResponseScript?.trim()) warn(`${where}: scripts ignorados`)
         const req: RequestDoc = {
           kind: 'request',
           id: d._id,
@@ -254,6 +270,7 @@ export function convert(docs: InsDoc[], opts: { insecureTLS?: boolean } = {}): P
           headers: kv(d.headers),
           body: body(d.body, where, warn),
           auth: auth(d.authentication, where, warn),
+          scripts: scriptsOf(d),
           sortKey: sortKey(d)
         }
         checkTags(where, req.url, req.body.text, ...req.headers.map((h) => h.value))
