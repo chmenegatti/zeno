@@ -5,6 +5,7 @@ import type { Folder, RequestDoc, Workspace } from '@shared/types'
 import { isEncrypted, looksSecret, MASK } from '@shared/secret'
 import { LockIcon } from './Secret'
 import { TemplateInput } from './Tags'
+import type { VarSupport } from './CodeEditor'
 import { api, activeEnvId, activeRequest, activeWorkspace, saveEnvironment, saveFolder, useStore } from '../state'
 
 /** abre o popover de edição ancorado no elemento */
@@ -24,30 +25,69 @@ function useVarContext() {
   return { ws, envId, ancestors, sources, req: cur?.req }
 }
 
-export function VarBadge({ name, label }: { name: string; label?: string }) {
-  const { sources } = useVarContext()
-  const showValues = useStore((s) => s.showValues)
-  const info = sources.get(name)
+/** aparência do badge de variável (usado no campo e no editor de código) */
+export function pillInfo(name: string, info: VarInfo | undefined, showValues: boolean): { cls: string; text: string; title: string; lock: boolean } {
   const value = info ? formatValue(info.value) : undefined
   const enc = info ? isEncrypted(info.value) : false
-  // Alt+Shift+U: mostra o valor no lugar do nome (secreto continua mascarado)
-  if (showValues && !label && info) label = enc || isSecret(name) ? `${name}: ${MASK}` : value === undefined || value === '' ? `${name}: ∅` : value.length > 48 ? `${value.slice(0, 48)}…` : value
+  const masked = enc || isSecret(name)
   const title = info
     ? `${name} = ${enc ? '🔒 criptografado' : isSecret(name) ? MASK : value}\n(${info.source.label}) — clique pra editar`
     : `${name} não definida — clique pra criar`
+  // Alt+Shift+U: mostra o valor no lugar do nome (secreto continua mascarado)
+  let text = name
+  if (showValues && info) text = masked ? `${name}: ${MASK}` : value === undefined || value === '' ? `${name}: ∅` : value.length > 48 ? `${value.slice(0, 48)}…` : value
+  return { cls: `var-pill ${info ? (enc ? 'secret' : 'ok') : 'missing'}`, text, title, lock: enc }
+}
+
+/** fontes de variável do contexto atual, fora de componente (editor de código) */
+export function currentVarSources(): Map<string, VarInfo> {
+  const s = useStore.getState()
+  const ws = activeWorkspace(s)
+  if (!ws) return new Map()
+  return varSources(ws, activeEnvId(s), activeRequest(s)?.ancestors ?? [])
+}
+
+/** opções do autocomplete: nome, valor (mascarado se secreto) e origem */
+export function varOptions(sources: Map<string, VarInfo>): { name: string; detail: string; source: string }[] {
+  return [...sources.values()].map((v) => {
+    const masked = isEncrypted(v.value) || isSecret(v.name)
+    const val = formatValue(v.value)
+    return { name: v.name, detail: masked ? MASK : val.length > 40 ? `${val.slice(0, 40)}…` : val, source: v.source.label }
+  })
+}
+
+/** variáveis nos editores de código: badge, popover e autocomplete */
+export const editorVars: VarSupport = {
+  list: () => varOptions(currentVarSources()),
+  pill: (name) => pillInfo(name, currentVarSources().get(name), useStore.getState().showValues),
+  open: (name, el) => openVar(name, el),
+  subscribe: (cb) =>
+    useStore.subscribe((s, p) => {
+      if (s.workspaces !== p.workspaces || s.app !== p.app || s.showValues !== p.showValues) cb()
+    })
+}
+
+export function useVarSources(): Map<string, VarInfo> {
+  return useVarContext().sources
+}
+
+export function VarBadge({ name, label }: { name: string; label?: string }) {
+  const { sources } = useVarContext()
+  const showValues = useStore((s) => s.showValues)
+  const p = pillInfo(name, sources.get(name), showValues)
   return (
     <span
       role="button"
-      className={`var-pill ${info ? (enc ? 'secret' : 'ok') : 'missing'}`}
-      title={title}
+      className={p.cls}
+      title={p.title}
       onMouseDown={(e) => e.preventDefault()}
       onClick={(e) => {
         e.stopPropagation()
         openVar(name, e.currentTarget)
       }}
     >
-      {enc && <LockIcon size={10} />}
-      {label ?? name}
+      {p.lock && <LockIcon size={10} />}
+      {label ?? p.text}
     </span>
   )
 }

@@ -123,6 +123,8 @@ Cada workspace tem um ambiente **Base** e quantos sub-ambientes quiser (Desenvol
 
 Clique em qualquer badge para ver de onde vem o valor, mudar, mover para outro nível ou marcar como secreto. Badge laranja indica variável que não existe no ambiente ativo; clicar nela já cria.
 
+As variáveis viram badge em todo lugar: URL, params, headers, auth, campos de formulário e também nos editores de body e de ambientes. Digitar `{{` abre a lista de variáveis do ambiente ativo, com valor (secretos mascarados) e origem; `Ctrl+Espaço` mostra variáveis e tags. `Alt+Shift+U` troca o nome pelo valor nos badges.
+
 ### Tags de template
 
 | Tag | O que faz |
@@ -132,7 +134,7 @@ Clique em qualquer badge para ver de onde vem o valor, mudar, mover para outro n
 | `{% uuid 'v4' %}` | UUID aleatório |
 | `{% now %}` | Data e hora atual (ISO 8601) |
 
-A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem ajuste. Nos campos (URL, params, headers, auth, body) e no JSON dos ambientes e das variáveis da pasta, a tag aparece como badge, por exemplo `ƒ Resposta ⇒ Login · $.access_token`; clique nele pra editar request, atributo, filtro e gatilho, com prévia do valor. `Ctrl+Espaço` num campo insere uma tag nova; nos editores (body, ambientes) também dá pra digitar `respon…`, `uuid` ou `now` e escolher a sugestão. Badge vermelho = request referenciado não existe.
+A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem ajuste. Nos campos (URL, params, headers, auth, body) e no JSON dos ambientes e das variáveis da pasta, a tag aparece como badge, por exemplo `ƒ Resposta ⇒ Login · $.access_token`; clique nele pra editar request, atributo, filtro e gatilho, com prévia do valor. `Ctrl+Espaço` lista variáveis e tags (escolha *Outra tag…* pra abrir o editor); nos editores (body, ambientes) também dá pra digitar `respon…`, `uuid` ou `now` e escolher a sugestão. Badge vermelho = request referenciado não existe.
 
 ## Scripts e testes
 
