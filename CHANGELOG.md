@@ -2,6 +2,12 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [0.5.1](https://github.com/chmenegatti/zeno/compare/v0.5.0...v0.5.1) (2026-11-18)
+
+### Correções
+
+* **linux:** ícone aparecia como engrenagem genérica no GNOME: o pacote só instalava o tamanho 1024 px, que o tema hicolor não usa. Agora instala de 16 a 512 px e liga a janela ao `zeno.desktop` no Wayland ([#39](https://github.com/chmenegatti/zeno/pull/39)) ([bb72747](https://github.com/chmenegatti/zeno/commit/bb72747))
+
 ## [0.5.0](https://github.com/chmenegatti/zeno/compare/v0.4.1...v0.5.0) (2026-11-18)
 
 ### Novidades
