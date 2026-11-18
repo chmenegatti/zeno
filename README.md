@@ -19,6 +19,11 @@ npm test           # vitest
 npm run dist       # gera .deb e AppImage em dist/
 ```
 
+### Commits e releases
+- Commits seguem [Conventional Commits](https://www.conventionalcommits.org/pt-br/): `feat:`, `fix:`, `perf:`, `security:` entram no changelog; `docs:`, `chore:`, `test:`, `ci:`, `refactor:` não.
+- `npm run release` calcula a próxima versão pelos commits, atualiza `CHANGELOG.md` e `package.json`, faz o commit `chore(release): vX.Y.Z` e cria a tag. `npm run release:dry` mostra o que faria.
+- `git push --follow-tags` envia a tag; o workflow `.github/workflows/release.yml` testa, gera `.deb` e AppImage e publica a release no GitHub com as notas do changelog.
+
 ### Onde ficam os dados
 `~/.local/share/zeno/` (ou `$ZENO_DATA_DIR`). Fora deste repo de propósito: os ambientes importados do Insomnia têm senhas e tokens em texto puro.
 

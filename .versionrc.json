@@ -1,0 +1,18 @@
+{
+  "header": "# Changelog\n\nMudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.\n",
+  "tagPrefix": "v",
+  "releaseCommitMessageFormat": "chore(release): {{currentTag}}",
+  "types": [
+    { "type": "feat", "section": "Novidades" },
+    { "type": "fix", "section": "Correções" },
+    { "type": "perf", "section": "Desempenho" },
+    { "type": "security", "section": "Segurança" },
+    { "type": "refactor", "hidden": true },
+    { "type": "docs", "hidden": true },
+    { "type": "style", "hidden": true },
+    { "type": "test", "hidden": true },
+    { "type": "build", "hidden": true },
+    { "type": "ci", "hidden": true },
+    { "type": "chore", "hidden": true }
+  ]
+}

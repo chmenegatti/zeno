@@ -1,0 +1,41 @@
+name: Release
+
+# Roda quando uma tag v* é enviada (criada por `npm run release`).
+# Testa, gera .deb e AppImage e publica a release com as notas do CHANGELOG.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+      - name: Build dos pacotes
+        run: npx electron-vite build && npx electron-builder --linux deb AppImage --publish never
+
+      - name: Notas da versão (seção do CHANGELOG)
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          awk -v v="$v" '/^##+ \[?[0-9]/ { if (p) exit; if (index($0, "[" v "]")) { p = 1; next } } p' CHANGELOG.md > notes.md
+          test -s notes.md || echo "Sem notas no CHANGELOG para $v." > notes.md
+          cat notes.md
+
+      - name: Publicar release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/*.deb dist/*.AppImage --title "Zeno $GITHUB_REF_NAME" --notes-file notes.md --verify-tag

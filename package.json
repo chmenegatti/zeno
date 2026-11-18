@@ -5,13 +5,23 @@
   "main": "./out/main/index.js",
   "license": "MIT",
   "author": "Cesar Menegatti",
+  "homepage": "https://github.com/chmenegatti/zeno",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chmenegatti/zeno.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chmenegatti/zeno/issues"
+  },
   "scripts": {
     "dev": "electron-vite dev --noSandbox",
     "build": "electron-vite build",
     "start": "electron-vite preview --noSandbox",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "dist": "electron-vite build && electron-builder --linux deb AppImage"
+    "dist": "electron-vite build && electron-builder --linux deb AppImage",
+    "release": "commit-and-tag-version",
+    "release:dry": "commit-and-tag-version --dry-run"
   },
   "build": {
     "appId": "dev.zeno.app",
@@ -45,6 +55,7 @@
     "@types/react-dom": "^19.3.0",
     "@uiw/react-codemirror": "^4.25.12",
     "@vitejs/plugin-react": "^6.3.0",
+    "commit-and-tag-version": "^13.3.0",
     "electron": "^45.3.4",
     "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
@@ -55,6 +66,5 @@
     "vite": "^8.3.8",
     "vitest": "^4.1.12",
     "zustand": "^5.1.0"
-  },
-  "homepage": "http://localhost/zeno"
+  }
 }
