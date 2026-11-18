@@ -68,6 +68,7 @@
     }
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.4",
     "chokidar": "^6.0.0",
     "undici": "^8.12.4",
     "yaml": "^2.9.1"

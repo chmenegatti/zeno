@@ -10,8 +10,7 @@ import { RequestVars, UrlField } from './Vars'
 import { SecretInput } from './Secret'
 import { hasScripts, ScriptsEditor } from './Scripts'
 import { AssertionsEditor } from './Runner'
-import { openTagEditor, tagLabel, TemplateInput } from './Tags'
-import type { TagSupport } from './CodeEditor'
+import { editorTags, TemplateInput } from './Tags'
 import { maskSecrets } from '@shared/secret'
 import { parseCurl } from '@shared/curl'
 
@@ -202,16 +201,11 @@ function BodyEditor({ body, onChange }: { body: Body; onChange: (b: Body) => voi
       )}
       {body.mime !== null && !isForm && (
         <div className="min-h-0 flex-1 border-t border-line">
-          <CodeEditor value={body.text ?? ''} lang={langFor(body.mime)} onChange={(text) => onChange({ ...body, text })} tags={bodyTags} />
+          <CodeEditor value={body.text ?? ''} lang={langFor(body.mime)} onChange={(text) => onChange({ ...body, text })} tags={editorTags} />
         </div>
       )}
     </div>
   )
-}
-
-const bodyTags: TagSupport = {
-  label: (raw) => tagLabel(raw, useStore.getState().workspaces),
-  edit: (raw, apply) => openTagEditor(raw, apply)
 }
 
 export function AuthEditor({ auth, inherited, onChange, allowInherit = true }: { auth: Auth; inherited?: Auth; onChange: (a: Auth) => void; allowInherit?: boolean }) {

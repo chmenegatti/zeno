@@ -6,7 +6,7 @@ import type { AppState, Environment, Folder, FolderDoc, RequestDoc, ResponseReco
 const api = window.zeno
 
 interface Modal {
-  kind: 'env' | 'folder' | 'workspace' | 'import' | 'prompt' | 'confirm' | 'code' | 'git' | 'run' | 'tag'
+  kind: 'env' | 'folder' | 'workspace' | 'import' | 'prompt' | 'confirm' | 'code' | 'git' | 'run'
   /** id do alvo (pasta/workspace) */
   id?: string
   /** run: pasta a rodar (sem = workspace inteiro) */
@@ -36,6 +36,8 @@ interface Store {
   sending: Record<string, boolean>
   lastSend: Record<string, Pick<SendResult, 'missing' | 'warnings' | 'scripts'>>
   modal: Modal | null
+  /** editor de tag {% %}: fica por cima do modal aberto (ambientes, pasta) */
+  tagEdit: { value: string; onOk: (raw: string) => void; onCancel?: () => void } | null
   /** popover de edição de variável */
   varEdit: VarEdit | null
   error: string | null
@@ -111,6 +113,7 @@ export const useStore = create<Store>((set, get) => ({
   sending: {},
   lastSend: {},
   modal: null,
+  tagEdit: null,
   varEdit: null,
   error: null,
   notice: null,

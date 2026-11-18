@@ -4,13 +4,14 @@ import { xml } from '@codemirror/lang-xml'
 import { javascript } from '@codemirror/lang-javascript'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { tags as t } from '@lezer/highlight'
+import { autocompletion, type Completion, type CompletionContext } from '@codemirror/autocomplete'
 import { useMemo, useRef } from 'react'
 
 /** tags {% %} dentro do editor viram badge clicável (igual ao Insomnia) */
 export interface TagSupport {
   label: (raw: string) => { text: string; broken?: string }
-  /** abre o editor; raw vazio = tag nova. apply troca o trecho */
-  edit: (raw: string, apply: (next: string) => void) => void
+  /** abre o editor; raw vazio = tag nova. apply troca o trecho; cancel = fechou sem salvar */
+  edit: (raw: string, apply: (next: string) => void, cancel?: () => void) => void
 }
 
 class TagWidget extends WidgetType {
@@ -75,7 +76,38 @@ function tagExtension(tags: { current: TagSupport | undefined }) {
       }
     }
   ])
-  return [plugin, insert]
+  // digitar "respon…", "uuid", "now" sugere a tag; escolher já vira badge (e a de resposta abre o editor)
+  const choices: { label: string; detail: string; keys: string[]; raw: string; edit?: boolean }[] = [
+    { label: 'Resposta ⇒ Atributo do body', detail: 'JSONPath', keys: ['response', 'resposta', 'body'], raw: "{% response 'body', '', '', 'never' %}", edit: true },
+    { label: 'Resposta ⇒ Body inteiro', detail: 'raw', keys: ['response', 'resposta', 'raw'], raw: "{% response 'raw', '', '', 'never' %}", edit: true },
+    { label: 'Resposta ⇒ Header', detail: 'header', keys: ['response', 'resposta', 'header'], raw: "{% response 'header', '', '', 'never' %}", edit: true },
+    { label: 'Resposta ⇒ URL', detail: 'url', keys: ['response', 'resposta', 'url'], raw: "{% response 'url', '', '', 'never' %}", edit: true },
+    { label: 'UUID', detail: 'v4', keys: ['uuid'], raw: "{% uuid 'v4' %}" },
+    { label: 'Agora', detail: 'timestamp', keys: ['now', 'agora', 'timestamp'], raw: '{% now %}' }
+  ]
+  const source = (ctx: CompletionContext) => {
+    const word = ctx.matchBefore(/[A-Za-z]+/)
+    if (!word || (word.to - word.from < 3 && !ctx.explicit)) return null
+    const q = word.text.toLowerCase()
+    const options: Completion[] = choices
+      .filter((c) => c.keys.some((k) => k.startsWith(q)))
+      .map((c) => ({
+        label: c.label,
+        detail: c.detail,
+        type: 'function',
+        apply: (view, _c, from, to) => {
+          view.dispatch({ changes: { from, to, insert: c.raw }, selection: { anchor: from + c.raw.length } })
+          if (!c.edit) return
+          // tag recém-inserida: salvar troca, cancelar remove (não deixa tag sem request no texto)
+          const replace = (insert: string): void => {
+            if (view.state.sliceDoc(from, from + c.raw.length) === c.raw) view.dispatch({ changes: { from, to: from + c.raw.length, insert } })
+          }
+          tags.current?.edit(c.raw, replace, () => replace(''))
+        }
+      }))
+    return options.length ? { from: word.from, options, filter: false } : null
+  }
+  return [plugin, insert, autocompletion({ override: [source], icons: false })]
 }
 
 // tema escuro com a paleta TOTVS
@@ -90,7 +122,10 @@ const theme = [
       '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': { backgroundColor: 'rgba(0,219,255,0.18) !important' },
       '.cm-matchingBracket': { backgroundColor: 'rgba(164,77,255,0.25)', outline: 'none' },
       '.cm-foldPlaceholder': { backgroundColor: 'var(--color-raised)', border: 'none', color: 'var(--color-dim)' },
-      '.cm-tooltip': { backgroundColor: 'var(--color-raised)', border: '1px solid var(--color-line)' }
+      '.cm-tooltip': { backgroundColor: 'var(--color-raised)', border: '1px solid var(--color-line)' },
+      '.cm-tooltip-autocomplete > ul > li': { padding: '3px 10px' },
+      '.cm-tooltip-autocomplete > ul > li[aria-selected]': { backgroundColor: 'rgba(164,77,255,0.35)', color: 'var(--color-ink)' },
+      '.cm-completionDetail': { color: 'var(--color-faint)', fontStyle: 'normal', marginLeft: '10px' }
     },
     { dark: true }
   ),
