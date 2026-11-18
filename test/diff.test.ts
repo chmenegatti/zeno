@@ -15,7 +15,7 @@ describe('diffLines', () => {
   it('iguais e cortados', () => {
     expect(diffLines('a\nb', 'a\nb').lines.every((l) => l.t === 'same')).toBe(true)
     const big = Array.from({ length: 5000 }, (_, i) => String(i)).join('\n')
-    const r = diffLines(big, big.replace('2500', 'x'))
+    const r = diffLines(big, big.replace('\n1500\n', '\nx\n'))
     expect(r.cut).toBe(true)
     expect(r.lines.filter((l) => l.t !== 'same')).toHaveLength(2)
   })
