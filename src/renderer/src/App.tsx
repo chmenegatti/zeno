@@ -4,7 +4,7 @@ import { Sidebar } from './components/Sidebar'
 import { RequestPane } from './components/RequestPane'
 import { ResponsePane } from './components/ResponsePane'
 import { Modals } from './components/Modals'
-import { TagEditHost } from './components/Tags'
+import { PromptHost, TagEditHost } from './components/Tags'
 import { VarPopover } from './components/Vars'
 import { applyUi, installHotkeys } from './hotkeys'
 
@@ -82,6 +82,7 @@ export function App() {
       <ResponsePane width={width} />
       <Modals />
       <TagEditHost />
+      <PromptHost />
       <VarPopover />
       {notice && !error && (
         <div className="fixed bottom-4 left-1/2 z-50 max-w-[70vw] -translate-x-1/2 rounded-lg border border-accent/40 bg-raised px-4 py-2 text-accent shadow-xl" onClick={() => useStore.setState({ notice: null })}>

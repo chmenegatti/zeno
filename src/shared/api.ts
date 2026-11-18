@@ -103,4 +103,18 @@ export interface ZenoApi {
   onChanged(cb: (workspaces: Workspace[]) => void): () => void
   /** resposta gravada por envio indireto (dependência de {% response %}) */
   onResponse(cb: (requestId: string, history: ResponseRecord[]) => void): () => void
+  /** {% prompt %} pedindo valor; responda com promptReply(id, …) */
+  onPrompt(cb: (id: number, p: PromptAsk) => void): () => void
+  promptReply(id: number, answer: { value: string; remember: boolean } | null): Promise<void>
+  /** esquece os valores lembrados dos prompts */
+  promptForget(): Promise<void>
+}
+
+/** pergunta de {% prompt %} (mesmo formato do main/tags) */
+export interface PromptAsk {
+  title: string
+  label: string
+  defaultValue: string
+  key: string
+  mask: boolean
 }

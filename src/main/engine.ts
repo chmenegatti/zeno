@@ -3,7 +3,8 @@
 
 import { send } from './http'
 import type { Cookies } from './cookies'
-import { resolveTags } from './tags'
+import { PromptCancelled, resolveTags, type PromptAsk } from './tags'
+import { findRequestRef } from '../shared/tagdef'
 import { runPhase, type PhaseState } from './scripts'
 import type { Store } from './store'
 import type { Vault } from './vault'
@@ -20,6 +21,8 @@ export interface EngineHooks {
   onChanged?: (workspaces: Workspace[]) => void
   /** resposta de envio indireto (dependência de {% response %}) */
   onResponse?: (requestId: string, history: ResponseRecord[]) => void
+  /** {% prompt %}: pergunta ao usuário; null = cancelou (o envio para) */
+  prompt?: (p: PromptAsk) => Promise<string | null>
 }
 
 export interface EngineOptions {
@@ -132,18 +135,40 @@ export class Engine {
     if (prepared.unsupported.length) {
       if (depth > 3) warnings.push('cadeia de {% response %} longa demais (máx. 3)')
       else {
-        const { values, errors } = await resolveTags(prepared.unsupported, {
-          latest: (id) => store.getResponses(id)[0],
-          sendById: async (id) => {
-            const dep = store.list().find((w) => findNode(w, id)?.node.kind === 'request')
-            const node = dep && findNode(dep, id)?.node
-            if (!dep || node?.kind !== 'request') throw new Error(`request ${id} não existe`)
-            const depEnv = dep.id === ws.id ? envId : (store.getState().activeEnv[dep.id] ?? null)
-            const r = await this.execute(dep, node, depEnv, { depth: depth + 1 })
-            this.hooks.onResponse?.(r.response.requestId, r.history)
-            return r.response
-          }
-        })
+        const vars = buildVars(ws, envId, ancestors)
+        // mesma pergunta (chave) só uma vez por envio
+        const asked = new Map<string, string | null>()
+        const prompt = this.hooks.prompt
+        let tagResult: Awaited<ReturnType<typeof resolveTags>>
+        try {
+          tagResult = await resolveTags(prepared.unsupported, {
+            resolveRequest: (ref) => findRequestRef(ws.children, ref)?.id ?? store.list().map((w) => findRequestRef(w.children, ref)).find(Boolean)?.id,
+            render: (text) => render(text, vars).value,
+            prompt: prompt
+              ? async (p) => {
+                  const key = p.key || `${p.title}|${p.label}`
+                  if (!asked.has(key)) asked.set(key, await prompt(p))
+                  return asked.get(key)!
+                }
+              : undefined,
+            latest: (id) => store.getResponses(id)[0],
+            sendById: async (id) => {
+              const dep = store.list().find((w) => findNode(w, id)?.node.kind === 'request')
+              const node = dep && findNode(dep, id)?.node
+              if (!dep || node?.kind !== 'request') throw new Error(`request ${id} não existe`)
+              const depEnv = dep.id === ws.id ? envId : (store.getState().activeEnv[dep.id] ?? null)
+              const r = await this.execute(dep, node, depEnv, { depth: depth + 1 })
+              this.hooks.onResponse?.(r.response.requestId, r.history)
+              return r.response
+            }
+          })
+        } catch (e) {
+          if (!(e instanceof PromptCancelled)) throw e
+          // cancelou a pergunta: não envia nem grava no histórico
+          const response: ResponseRecord = { id: `res_${Date.now().toString(36)}`, requestId: reqRaw.id, at: Date.now(), method: req.method, url: req.url, status: 0, statusText: '', headers: [], body: '', bodyEncoding: 'utf8', size: 0, timing: { headersMs: 0, totalMs: 0 }, error: e.message }
+          return { response, history: store.getResponses(reqRaw.id), missing: [], warnings: [], scripts: report }
+        }
+        const { values, errors } = tagResult
         warnings.push(...errors)
         prepared = prepare(ws, req, ancestors, envId, values)
       }
