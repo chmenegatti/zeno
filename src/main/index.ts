@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron'
 import { watch, type FSWatcher } from 'chokidar'
 import { Store } from './store'
 import * as Git from './git'
@@ -11,6 +11,7 @@ import { getAt, literalSecrets, scanSecrets, setAt, type SecretSpot } from '../s
 import { SECRET_RE } from '../shared/secret'
 import { convert, insomniaSkipsTLS, INSOMNIA_DIR, readExportJson, readNedbDir } from './import-insomnia'
 import { prepare } from '../shared/prepare'
+import { generate, type CodeLang } from '../shared/curl'
 import { countTree, findNode } from '../shared/tree'
 import type { Environment, Folder, ImportPreview, RequestDoc, Workspace } from '../shared/types'
 import type { SendResult } from '../shared/api'
@@ -192,6 +193,21 @@ handle('send', (wsId: string, req: RequestDoc, envId: string | null) => {
   return execute(ws, req, envId)
 })
 handle('cancel', (id: string) => cancel(id))
+
+/** código do request (cURL, Go…). resolveVars=false mantém {{ var }}; segredos literais são decifrados (pedido explícito) */
+handle('codeSnippet', async (wsId: string, reqRaw: RequestDoc, envId: string | null, lang: CodeLang, resolveVars: boolean) => {
+  const wsRaw = store.list().find((w) => w.id === wsId)
+  if (!wsRaw) throw new Error('workspace não encontrado')
+  const req: RequestDoc = await vault.decryptDeep(reqRaw)
+  let ancestors: Folder[] = await vault.decryptDeep(findNode(wsRaw, reqRaw.id)?.ancestors ?? [])
+  let environments = await vault.decryptDeep(wsRaw.environments)
+  if (!resolveVars) {
+    environments = []
+    ancestors = ancestors.map((a) => ({ ...a, vars: {} }))
+  }
+  return generate(lang, prepare({ ...wsRaw, environments }, req, ancestors, envId).input)
+})
+handle('copyText', (text: string) => clipboard.writeText(text))
 handle('responses', (id: string) => store.getResponses(id))
 handle('clearResponses', (id: string) => store.clearResponses(id))
 

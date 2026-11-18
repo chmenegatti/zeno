@@ -20,6 +20,7 @@ function initialWidth(): number {
 export function App() {
   const ready = useStore((s) => s.ready)
   const error = useStore((s) => s.error)
+  const notice = useStore((s) => s.notice)
   const [width, setWidth] = useState(initialWidth)
   const dragging = useRef(false)
 
@@ -95,6 +96,11 @@ export function App() {
       <ResponsePane width={width} />
       <Modals />
       <VarPopover />
+      {notice && !error && (
+        <div className="fixed bottom-4 left-1/2 z-50 max-w-[70vw] -translate-x-1/2 rounded-lg border border-accent/40 bg-raised px-4 py-2 text-accent shadow-xl" onClick={() => useStore.setState({ notice: null })}>
+          {notice}
+        </div>
+      )}
       {error && (
         <div className="fixed bottom-4 left-1/2 z-50 max-w-[70vw] -translate-x-1/2 rounded-lg border border-tpink/40 bg-[#2a0a20] px-4 py-2 text-tpink shadow-xl" onClick={() => useStore.setState({ error: null })}>
           {error}

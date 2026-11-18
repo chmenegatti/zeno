@@ -14,6 +14,7 @@ import {
   useStore
 } from '../state'
 import { GitButton } from './Git'
+import { copyAsCurl } from './Code'
 import { Chevron, FolderIcon, MethodBadge } from './ui'
 import { EnvVarList } from './Vars'
 
@@ -222,6 +223,10 @@ function ContextMenu({ menu, ws, onRename }: { menu: Menu; ws: Workspace; onRena
     items.push(['Nova pasta', () => createFolderIn(parentId)])
   }
   if (n?.kind === 'folder') items.push(['Configurar pasta…', () => useStore.getState().openModal({ kind: 'folder', id: n.id })])
+  if (n?.kind === 'request') {
+    items.push(['Copiar como cURL', () => copyAsCurl(n.id)])
+    items.push(['Gerar código…', () => useStore.getState().openModal({ kind: 'code', id: n.id })])
+  }
   if (n) {
     items.push(['Renomear', () => onRename(n.id)])
     items.push(['Duplicar', () => duplicateNode(n.id)])

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { isCurl } from '@shared/curl'
 import { envSource, formatValue, isSecret, requestVarRefs, tokenize, varSources, type VarInfo, type VarSource } from '@shared/vars'
 import type { Folder, RequestDoc, Workspace } from '@shared/types'
 import { isEncrypted, looksSecret, MASK } from '@shared/secret'
@@ -48,7 +49,8 @@ export function VarBadge({ name, label }: { name: string; label?: string }) {
 }
 
 /** URL com variáveis como badges; vira input ao clicar fora delas */
-export function UrlField({ value, onChange, onEnter }: { value: string; onChange: (v: string) => void; onEnter: () => void }) {
+/** onCurl: colar (ou digitar e dar Enter) um comando `curl …` converte o request inteiro */
+export function UrlField({ value, onChange, onEnter, onCurl }: { value: string; onChange: (v: string) => void; onEnter: () => void; onCurl?: (cmd: string) => void }) {
   const [editing, setEditing] = useState(false)
   const ref = useRef<HTMLInputElement>(null)
   const tokens = useMemo(() => tokenize(value), [value])
@@ -60,13 +62,23 @@ export function UrlField({ value, onChange, onEnter }: { value: string; onChange
       <input
         ref={ref}
         className="field min-w-0 flex-1 font-mono text-[12.5px]"
-        placeholder="https://api.exemplo.com/recurso  ou  {{ base_url }}/recurso"
+        placeholder="https://api.exemplo.com/recurso, {{ base_url }}/recurso ou cole um curl"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onPaste={(e) => {
+          const text = e.clipboardData.getData('text')
+          if (onCurl && isCurl(text)) {
+            e.preventDefault()
+            onCurl(text)
+          }
+        }}
         onFocus={() => setEditing(true)}
         onBlur={() => setEditing(false)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') onEnter()
+          if (e.key === 'Enter') {
+            if (onCurl && isCurl(value)) onCurl(value)
+            else onEnter()
+          }
           if (e.key === 'Escape') e.currentTarget.blur()
         }}
         spellCheck={false}

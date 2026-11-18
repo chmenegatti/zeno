@@ -6,7 +6,7 @@ import type { AppState, Environment, Folder, FolderDoc, RequestDoc, ResponseReco
 const api = window.zeno
 
 interface Modal {
-  kind: 'env' | 'folder' | 'workspace' | 'import' | 'prompt' | 'confirm' | 'git'
+  kind: 'env' | 'folder' | 'workspace' | 'import' | 'prompt' | 'confirm' | 'code' | 'git'
   /** id do alvo (pasta/workspace) */
   id?: string
   title?: string
@@ -37,6 +37,8 @@ interface Store {
   /** popover de edição de variável */
   varEdit: VarEdit | null
   error: string | null
+  /** aviso curto que some sozinho */
+  notice: string | null
 
   init(): Promise<void>
   setApp(patch: Partial<AppState>): void
@@ -48,6 +50,7 @@ interface Store {
   openModal(m: Modal): void
   closeModal(): void
   showError(e: unknown): void
+  notify(msg: string): void
   run<T>(p: Promise<T>): Promise<T | undefined>
 }
 
@@ -108,6 +111,7 @@ export const useStore = create<Store>((set, get) => ({
   modal: null,
   varEdit: null,
   error: null,
+  notice: null,
 
   async init() {
     const { workspaces, state, dataDir } = await api.load()
@@ -181,6 +185,10 @@ export const useStore = create<Store>((set, get) => ({
     const msg = e instanceof Error ? e.message.replace(/^Error invoking remote method '[^']+': (Error: )?/, '') : String(e)
     set({ error: msg })
     setTimeout(() => get().error === msg && set({ error: null }), 6000)
+  },
+  notify(msg) {
+    set({ notice: msg })
+    setTimeout(() => get().notice === msg && set({ notice: null }), 3500)
   },
   async run(p) {
     try {

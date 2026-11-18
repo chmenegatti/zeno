@@ -34,7 +34,8 @@ export function prepare(
   }
 
   let url = r(req.url).trim()
-  if (url && !/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) url = `http://${url}`
+  // sem esquema vira http://, menos quando começa com variável não resolvida (gerar código mantendo {{ var }})
+  if (url && !/^[a-z][a-z0-9+.-]*:\/\//i.test(url) && !/^\{[{%]/.test(url)) url = `http://${url}`
 
   const query: [string, string][] = req.params.filter((p) => p.enabled && p.name).map((p) => [r(p.name), r(p.value)])
   const headers: [string, string][] = effectiveHeaders(req, ancestors).map((h) => [r(h.name), r(h.value)])
