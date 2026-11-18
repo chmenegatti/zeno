@@ -4,6 +4,7 @@ import { envSource, formatValue, isSecret, requestVarRefs, tokenize, varSources,
 import type { Folder, RequestDoc, Workspace } from '@shared/types'
 import { isEncrypted, looksSecret, MASK } from '@shared/secret'
 import { LockIcon } from './Secret'
+import { TemplateInput } from './Tags'
 import { api, activeEnvId, activeRequest, activeWorkspace, saveEnvironment, saveFolder, useStore } from '../state'
 
 /** abre o popover de edição ancorado no elemento */
@@ -48,81 +49,43 @@ export function VarBadge({ name, label }: { name: string; label?: string }) {
   )
 }
 
-/** URL com variáveis como badges; vira input ao clicar fora delas */
+/** URL com variáveis e tags como badges; vira input ao clicar fora delas */
 /** onCurl: colar (ou digitar e dar Enter) um comando `curl …` converte o request inteiro */
 export function UrlField({ value, onChange, onEnter, onCurl }: { value: string; onChange: (v: string) => void; onEnter: () => void; onCurl?: (cmd: string) => void }) {
-  const [editing, setEditing] = useState(false)
-  const ref = useRef<HTMLInputElement>(null)
-  const tokens = useMemo(() => tokenize(value), [value])
-  useEffect(() => {
-    if (editing) ref.current?.focus()
-  }, [editing])
-  if (editing || !value) {
-    return (
-      <input
-        ref={ref}
-        className="field min-w-0 flex-1 font-mono text-[12.5px]"
-        placeholder="https://api.exemplo.com/recurso, {{ base_url }}/recurso ou cole um curl"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onPaste={(e) => {
-          const text = e.clipboardData.getData('text')
-          if (onCurl && isCurl(text)) {
-            e.preventDefault()
-            onCurl(text)
-          }
-        }}
-        onFocus={() => setEditing(true)}
-        onBlur={() => setEditing(false)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            if (onCurl && isCurl(value)) onCurl(value)
-            else onEnter()
-          }
-          if (e.key === 'Escape') e.currentTarget.blur()
-        }}
-        spellCheck={false}
-      />
-    )
-  }
   return (
-    <div
-      tabIndex={0}
-      className="field flex min-w-0 flex-1 cursor-text items-center overflow-hidden whitespace-nowrap font-mono text-[12.5px]"
-      onClick={() => setEditing(true)}
-      onFocus={() => setEditing(true)}
-      title="Clique pra editar · clique numa variável pra mudar o valor"
-    >
-      {tokens.map((tk, i) =>
-        tk.t === 'text' ? (
-          <span key={i}>{tk.v}</span>
-        ) : tk.t === 'var' ? (
-          <VarBadge key={i} name={tk.name} />
-        ) : (
-          <span key={i} className="var-pill tag" title={tk.raw}>
-            {tk.name}
-          </span>
-        )
-      )}
-    </div>
+    <TemplateInput
+      className="text-[12.5px]"
+      placeholder="https://api.exemplo.com/recurso, {{ base_url }}/recurso ou cole um curl"
+      value={value}
+      onChange={onChange}
+      onPaste={(e) => {
+        const text = e.clipboardData.getData('text')
+        if (onCurl && isCurl(text)) {
+          e.preventDefault()
+          onCurl(text)
+        }
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          if (onCurl && isCurl(value)) onCurl(value)
+          else onEnter()
+        }
+      }}
+    />
   )
 }
 
 /** barra de variáveis usadas no request */
-export function RequestVars({ req, tags }: { req: RequestDoc; tags: string[] }) {
+export function RequestVars({ req }: { req: RequestDoc }) {
   const refs = useMemo(() => requestVarRefs(req), [req])
-  if (!refs.length && !tags.length) return null
+  if (!refs.length) return null
   return (
     <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2">
       <span className="text-[11px] text-faint">variáveis</span>
       {refs.map((n) => (
         <VarBadge key={n} name={n} />
       ))}
-      {tags.length > 0 && (
-        <span className="var-pill tag" title={tags.join('\n')}>
-          {tags.length} tag{tags.length > 1 ? 's' : ''} {'{% %}'} no envio
-        </span>
-      )}
     </div>
   )
 }

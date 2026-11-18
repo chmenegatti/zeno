@@ -1,9 +1,11 @@
 // Tags {% %} compatíveis com Insomnia:
-//   {% response 'body'|'header'|'url', 'req_id', 'b64::<filtro>'|'<filtro>', 'never'|'no-history'|'when-expired'|'always', maxAgeSeg %}
+//   {% response 'body'|'raw'|'header'|'url', 'req_id', 'b64::<filtro>'|'<filtro>', 'never'|'no-history'|'when-expired'|'always', maxAgeSeg %}
 //   {% uuid 'v4' %}   {% now %}
 // Filtro de body: JSONPath simples ($.a.b[0]) ou caminho XML (a/b/c).
 
 import { randomUUID } from 'node:crypto'
+import { queryJson } from '../shared/assert'
+import { decodeFilter, parseArgs } from '../shared/tagdef'
 import type { TagValues } from '../shared/template'
 import type { ResponseRecord } from '../shared/types'
 
@@ -14,34 +16,13 @@ export interface TagContext {
   sendById(requestId: string): Promise<ResponseRecord>
 }
 
-export function parseArgs(tag: string): { name: string; args: string[] } {
-  const inner = tag.replace(/^\{%\s*/, '').replace(/\s*%\}$/, '')
-  const name = inner.split(/\s+/, 1)[0]
-  const rest = inner.slice(name.length)
-  const args: string[] = []
-  const re = /'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"|([^,\s]+)/g
-  for (const m of rest.matchAll(re)) args.push(m[1] ?? m[2] ?? m[3])
-  return { name, args }
-}
+export { parseArgs }
 
-function decodeFilter(f: string | undefined): string {
-  if (!f) return ''
-  return f.startsWith('b64::') ? Buffer.from(f.slice(5), 'base64').toString('utf8') : f
-}
-
-/** JSONPath mínimo: $.a.b[0].c, $['a'] */
+/** filtro de body: JSONPath (mesmo das asserções) */
 function jsonPath(data: unknown, path: string): unknown {
-  const parts = path
-    .replace(/^\$\.?/, '')
-    .replace(/\[['"]?([^\]'"]+)['"]?\]/g, '.$1')
-    .split(/[./]/)
-    .filter(Boolean)
-  let cur = data
-  for (const p of parts) {
-    if (cur == null || typeof cur !== 'object') return undefined
-    cur = (cur as Record<string, unknown>)[p]
-  }
-  return cur
+  const { values, many } = queryJson(data, path.startsWith('$') ? path : `$.${path}`)
+  if (!values.length) return undefined
+  return many && values.length > 1 ? values : values[0]
 }
 
 /** caminho XML mínimo: a/b/c ou /a/b/c (primeira ocorrência de cada nível) */
@@ -58,6 +39,7 @@ function xmlPath(xml: string, path: string): string | undefined {
 export function extract(res: ResponseRecord, field: string, filterRaw: string | undefined): string {
   if (res.error) throw new Error(`request de origem falhou: ${res.error}`)
   if (field === 'url') return res.url
+  if (field === 'raw') return res.body
   const filter = decodeFilter(filterRaw)
   if (field === 'header') {
     const h = res.headers.find(([k]) => k.toLowerCase() === filter.toLowerCase())

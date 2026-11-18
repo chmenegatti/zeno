@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { isEncrypted } from '@shared/secret'
 import type { VaultStatus } from '@shared/types'
 import { api, useStore } from '../state'
+import { TemplateInput } from './Tags'
 
 export function LockIcon({ size = 11 }: { size?: number }) {
   return (
@@ -45,13 +46,13 @@ export function SecretInput({ value, onChange, placeholder }: { value: string; o
   }
   return (
     <div className="flex min-w-0 flex-1 items-center gap-1.5">
-      <input className="field min-w-0 flex-1 font-mono text-[12px]" type={show ? 'text' : 'password'} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} spellCheck={false} />
+      <TemplateInput className="text-[12px]" password={!show} value={value} placeholder={placeholder} onChange={onChange} />
       <button type="button" className="btn btn-ghost px-2 py-1 text-[12px]" onClick={() => setShow(!show)}>{show ? '◉' : '◎'}</button>
       <button
         type="button"
         className="btn btn-ghost px-2 py-1 text-tpurple"
         title="Criptografar no cofre"
-        disabled={!value || value.includes('{{')}
+        disabled={!value || value.includes('{{') || value.includes('{%')}
         onClick={async () => {
           const tok = await run(api.vaultEncrypt(value))
           if (tok) onChange(tok)
