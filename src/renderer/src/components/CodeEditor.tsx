@@ -10,8 +10,8 @@ import { useMemo, useRef } from 'react'
 /** tags {% %} dentro do editor viram badge clicável (igual ao Insomnia) */
 export interface TagSupport {
   label: (raw: string) => { text: string; broken?: string }
-  /** abre o editor; raw vazio = tag nova. apply troca o trecho */
-  edit: (raw: string, apply: (next: string) => void) => void
+  /** abre o editor; raw vazio = tag nova. apply troca o trecho; cancel = fechou sem salvar */
+  edit: (raw: string, apply: (next: string) => void, cancel?: () => void) => void
 }
 
 class TagWidget extends WidgetType {
@@ -98,9 +98,11 @@ function tagExtension(tags: { current: TagSupport | undefined }) {
         apply: (view, _c, from, to) => {
           view.dispatch({ changes: { from, to, insert: c.raw }, selection: { anchor: from + c.raw.length } })
           if (!c.edit) return
-          tags.current?.edit(c.raw, (next) => {
-            if (view.state.sliceDoc(from, from + c.raw.length) === c.raw) view.dispatch({ changes: { from, to: from + c.raw.length, insert: next } })
-          })
+          // tag recém-inserida: salvar troca, cancelar remove (não deixa tag sem request no texto)
+          const replace = (insert: string): void => {
+            if (view.state.sliceDoc(from, from + c.raw.length) === c.raw) view.dispatch({ changes: { from, to: from + c.raw.length, insert } })
+          }
+          tags.current?.edit(c.raw, replace, () => replace(''))
         }
       }))
     return options.length ? { from: word.from, options, filter: false } : null

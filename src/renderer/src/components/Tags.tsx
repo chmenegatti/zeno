@@ -43,14 +43,14 @@ export function TagBadge({ raw, onChange }: { raw: string; onChange?: (next: str
 }
 
 /** abre o editor; raw vazio = tag nova */
-export function openTagEditor(raw: string, onOk: (next: string) => void): void {
-  useStore.setState({ tagEdit: { value: raw, onOk } })
+export function openTagEditor(raw: string, onOk: (next: string) => void, onCancel?: () => void): void {
+  useStore.setState({ tagEdit: { value: raw, onOk, onCancel } })
 }
 
 /** badges + autocomplete de tags nos editores de código (body, ambientes, variáveis da pasta) */
 export const editorTags: TagSupport = {
   label: (raw) => tagLabel(raw, useStore.getState().workspaces),
-  edit: (raw, apply) => openTagEditor(raw, apply)
+  edit: (raw, apply, cancel) => openTagEditor(raw, apply, cancel)
 }
 
 /** editor de tag por cima de qualquer modal */
@@ -58,7 +58,7 @@ export function TagEditHost() {
   const edit = useStore((s) => s.tagEdit)
   if (!edit) return null
   const close = (): void => useStore.setState({ tagEdit: null })
-  return <TagModal key={edit.value} initial={edit.value} onOk={(raw) => { close(); edit.onOk(raw) }} onClose={close} />
+  return <TagModal key={edit.value} initial={edit.value} onOk={(raw) => { close(); edit.onOk(raw) }} onClose={() => { close(); edit.onCancel?.() }} />
 }
 
 // ---------- campo com badges ----------

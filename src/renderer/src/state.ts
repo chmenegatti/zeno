@@ -37,7 +37,7 @@ interface Store {
   lastSend: Record<string, Pick<SendResult, 'missing' | 'warnings' | 'scripts'>>
   modal: Modal | null
   /** editor de tag {% %}: fica por cima do modal aberto (ambientes, pasta) */
-  tagEdit: { value: string; onOk: (raw: string) => void } | null
+  tagEdit: { value: string; onOk: (raw: string) => void; onCancel?: () => void } | null
   /** popover de edição de variável */
   varEdit: VarEdit | null
   error: string | null
