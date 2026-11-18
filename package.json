@@ -2,8 +2,18 @@
   "name": "zeno",
   "version": "0.1.0",
   "private": true,
-  "description": "Cliente de API desktop, sem abas",
-  "main": "./out/main/index.js",
+  "description": "Cliente de API desktop sem abas: coleções em YAML, segredos criptografados e import do Insomnia",
+  "keywords": [
+    "api-client",
+    "http-client",
+    "rest",
+    "insomnia",
+    "yaak",
+    "postman-alternative",
+    "electron",
+    "yaml",
+    "desktop"
+  ],
   "license": "MIT",
   "author": "Cesar Menegatti",
   "homepage": "https://github.com/chmenegatti/zeno",
@@ -14,6 +24,10 @@
   "bugs": {
     "url": "https://github.com/chmenegatti/zeno/issues"
   },
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev --noSandbox",
     "build": "electron-vite build",
@@ -36,7 +50,20 @@
         "deb",
         "AppImage"
       ],
-      "maintainer": "Cesar Menegatti <zeno@localhost>"
+      "maintainer": "Cesar Menegatti <zeno@localhost>",
+      "icon": "build/icon.png",
+      "synopsis": "Cliente de API desktop sem abas",
+      "description": "Cliente de API desktop: coleções em YAML, segredos criptografados e import do Insomnia.",
+      "desktop": {
+        "entry": {
+          "StartupWMClass": "zeno",
+          "Keywords": "api;http;rest;insomnia;"
+        }
+      }
+    },
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
     }
   },
   "dependencies": {

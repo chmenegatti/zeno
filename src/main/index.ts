@@ -29,6 +29,8 @@ function createWindow(): void {
     backgroundColor: '#00121c',
     title: 'Zeno',
     autoHideMenuBar: true,
+    // em dev usa o ícone do repositório; empacotado, o ícone vem do .desktop
+    ...(fs.existsSync(path.join(__dirname, '../../build/icon.png')) ? { icon: path.join(__dirname, '../../build/icon.png') } : {}),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       sandbox: false,
