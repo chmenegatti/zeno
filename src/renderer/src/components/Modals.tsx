@@ -6,6 +6,7 @@ import { activeWorkspace, api, deleteEnvironment, saveEnvironment, saveFolder, u
 import { CodeEditor } from './CodeEditor'
 import { KeyValueTable } from './KeyValueTable'
 import { AuthEditor } from './RequestPane'
+import { GitModal, MoveHint } from './Git'
 import { LockIcon, useVaultStatus } from './Secret'
 import { Modal } from './ui'
 
@@ -24,7 +25,7 @@ export function Modals() {
           <p className="mb-4">{modal.message}</p>
           <div className="flex justify-end gap-2">
             <button className="btn" onClick={close}>Cancelar</button>
-            <button autoFocus className="btn bg-tpink text-white" onClick={() => { close(); modal.onOk?.('') }}>Excluir</button>
+            <button autoFocus className="btn bg-tpink text-white" onClick={() => { close(); modal.onOk?.('') }}>{modal.value || 'Excluir'}</button>
           </div>
         </Modal>
       )
@@ -39,6 +40,8 @@ export function Modals() {
     }
     case 'import':
       return <ImportModal onClose={close} />
+    case 'git':
+      return ws ? <GitModal ws={ws} onClose={close} /> : null
   }
 }
 
@@ -199,6 +202,7 @@ function WorkspaceModal({ ws, onClose }: { ws: Workspace; onClose: () => void })
   const [description, setDescription] = useState(ws.description ?? '')
   const [settings, setSettings] = useState(ws.settings)
   const { run, setWorkspaces, openModal, setApp, dataDir } = useStore.getState()
+  const linked = !!ws.location?.linked
   const save = async () => {
     await run(api.saveWorkspace({ id: ws.id, name: name.trim() || ws.name, description: description || undefined, settings }))
     const { workspaces } = await api.load()
@@ -226,15 +230,18 @@ function WorkspaceModal({ ws, onClose }: { ws: Workspace; onClose: () => void })
           <span className="text-faint">ms (0 = sem limite)</span>
         </label>
         <VaultSection ws={ws} />
-        <p className="text-[11.5px] text-faint">Dados em <code className="select-text">{dataDir}</code></p>
+        <LocationSection ws={ws} dataDir={dataDir} />
         <div className="flex items-center gap-2 pt-2">
           <button
             className="btn text-tpink"
             onClick={() =>
               openModal({
                 kind: 'confirm',
-                title: 'Excluir workspace',
-                message: `Excluir "${ws.name}" e todos os requests dele? Os arquivos serão apagados.`,
+                title: linked ? 'Remover workspace' : 'Excluir workspace',
+                value: linked ? 'Remover' : 'Excluir',
+                message: linked
+                  ? `Tirar "${ws.name}" do Zeno? Os arquivos continuam em ${ws.location?.dir}.`
+                  : `Excluir "${ws.name}" e todos os requests dele? Os arquivos serão apagados.`,
                 onOk: async () => {
                   const list = await run(api.deleteWorkspace(ws.id))
                   if (list) {
@@ -245,7 +252,7 @@ function WorkspaceModal({ ws, onClose }: { ws: Workspace; onClose: () => void })
               })
             }
           >
-            Excluir workspace
+            {linked ? 'Remover do Zeno' : 'Excluir workspace'}
           </button>
           <div className="flex-1" />
           <button className="btn" onClick={onClose}>Cancelar</button>
@@ -253,6 +260,30 @@ function WorkspaceModal({ ws, onClose }: { ws: Workspace; onClose: () => void })
         </div>
       </div>
     </Modal>
+  )
+}
+
+function LocationSection({ ws, dataDir }: { ws: Workspace; dataDir: string }) {
+  const { run, setWorkspaces, openModal } = useStore.getState()
+  if (!ws.location?.linked) return (
+    <div className="rounded-md border border-line p-3">
+      <div className="mb-1 font-semibold">Local e git</div>
+      <MoveHint ws={ws} />
+      <p className="mt-2 text-[11.5px] text-faint">Hoje em <code className="select-text">{ws.location?.dir ?? dataDir}</code></p>
+    </div>
+  )
+  return (
+    <div className="rounded-md border border-line p-3">
+      <div className="mb-1 font-semibold">Local e git</div>
+      <p className="text-[12px] text-dim">Pasta: <code className="select-text">{ws.location.dir}</code></p>
+      <div className="mt-2 flex gap-2">
+        <button className="btn" onClick={() => openModal({ kind: 'git', id: ws.id })}>Abrir painel Git</button>
+        <button className="btn btn-ghost" onClick={async () => {
+          const list = await run(api.moveWorkspace(ws.id))
+          if (list) setWorkspaces(list)
+        }}>Mover para outra pasta…</button>
+      </div>
+    </div>
   )
 }
 

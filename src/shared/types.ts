@@ -77,6 +77,8 @@ export interface WorkspaceDoc {
 }
 
 export interface Workspace extends WorkspaceDoc {
+  /** onde mora (preenchido ao carregar; não vai pro YAML). linked = fora da pasta de dados, ex.: num repo git */
+  location?: { dir: string; linked: boolean }
   environments: Environment[]
   children: TreeNode[]
 }
@@ -131,4 +133,28 @@ export interface VaultStatus {
   /** id curto da chave atual */
   keyId?: string
   error?: string
+}
+
+export interface GitFile {
+  /** caminho relativo à pasta do workspace */
+  path: string
+  /** M modificado, A novo, D apagado, R renomeado, U conflito */
+  status: 'M' | 'A' | 'D' | 'R' | 'U'
+  /** nome do request/pasta/ambiente, quando dá pra saber */
+  label: string
+}
+
+export interface GitStatus {
+  /** a pasta do workspace está dentro de um repositório git */
+  repo: boolean
+  root?: string
+  branch?: string
+  upstream?: string
+  ahead: number
+  behind: number
+  branches: string[]
+  hasRemote: boolean
+  /** rebase parado no meio por conflito */
+  conflict: boolean
+  files: GitFile[]
 }

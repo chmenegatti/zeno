@@ -6,6 +6,7 @@
 // <dataDir>/<workspace>/<pasta>/<request>.yaml
 // <dataDir>/.responses/<requestId>.json   (histórico de respostas)
 // <dataDir>/state.json                     (estado da UI)
+// <dataDir>/links.json                     (workspaces que moram fora da pasta de dados, ex.: num repo git)
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -106,10 +107,30 @@ export class Store {
   lastWrite = 0
   private index = new Map<string, IndexEntry>()
   private workspaces: Workspace[] = []
+  private links: string[] = []
 
   constructor(dir = defaultDataDir()) {
     this.dir = dir
     fs.mkdirSync(dir, { recursive: true })
+    try {
+      const raw = JSON.parse(fs.readFileSync(this.linksFile, 'utf8'))
+      if (Array.isArray(raw)) this.links = raw.filter((x) => typeof x === 'string')
+    } catch {
+      this.links = []
+    }
+  }
+
+  private get linksFile(): string {
+    return path.join(this.dir, 'links.json')
+  }
+
+  private saveLinks(): void {
+    fs.writeFileSync(this.linksFile, JSON.stringify(this.links, null, 2))
+  }
+
+  /** pastas de workspaces vinculados (fora da pasta de dados) */
+  linkedDirs(): string[] {
+    return [...this.links]
   }
 
   // ---------- leitura ----------
@@ -117,16 +138,23 @@ export class Store {
   load(): Workspace[] {
     this.index.clear()
     const out: Workspace[] = []
-    for (const ent of fs.readdirSync(this.dir, { withFileTypes: true })) {
-      if (!ent.isDirectory() || ent.name.startsWith('.')) continue
-      const wsDir = path.join(this.dir, ent.name)
+    const dirs: [string, boolean][] = fs
+      .readdirSync(this.dir, { withFileTypes: true })
+      .filter((ent) => ent.isDirectory() && !ent.name.startsWith('.'))
+      .map((ent) => [path.join(this.dir, ent.name), false])
+    for (const l of this.links) dirs.push([l, true])
+    for (const [wsDir, linked] of dirs) {
       const doc = readYaml<Partial<WorkspaceDoc>>(path.join(wsDir, WS_FILE))
       if (!doc) continue
+      const id = doc.id || newId('wrk')
+      // mesmo workspace em dois lugares: vale o primeiro
+      if (this.index.has(id)) continue
       const ws: Workspace = {
-        id: doc.id || newId('wrk'),
-        name: doc.name || ent.name,
+        id,
+        name: doc.name || path.basename(wsDir),
         description: doc.description || undefined,
         settings: { insecureTLS: !!doc.settings?.insecureTLS, timeoutMs: Number(doc.settings?.timeoutMs ?? 30000) },
+        location: { dir: wsDir, linked },
         environments: [],
         children: []
       }
@@ -248,23 +276,66 @@ export class Store {
     if (ws) Object.assign(ws, { name, description, settings })
   }
 
+  /** apaga os arquivos; workspace vinculado só sai da lista (os arquivos são do repositório do usuário) */
   deleteWorkspace(id: string): Workspace[] {
     const e = this.index.get(id)
     if (e?.kind === 'workspace') {
-      this.touch()
-      fs.rmSync(e.path, { recursive: true, force: true })
+      if (this.links.includes(e.path)) {
+        this.links = this.links.filter((l) => l !== e.path)
+        this.saveLinks()
+      } else {
+        this.touch()
+        fs.rmSync(e.path, { recursive: true, force: true })
+      }
     }
     return this.load()
   }
 
-  /** grava workspace inteiro (import). Substitui o existente com mesmo id. */
+  /** passa a abrir um workspace que já existe numa pasta (ex.: clonada de um repo) */
+  linkWorkspace(dir: string): { workspaces: Workspace[]; id: string } {
+    const abs = path.resolve(dir)
+    const doc = readYaml<Partial<WorkspaceDoc>>(path.join(abs, WS_FILE))
+    if (!doc?.id) throw new Error(`não há ${WS_FILE} em ${abs}`)
+    const open = this.index.get(doc.id)
+    if (open) throw new Error(`esse workspace já está aberto (${open.path})`)
+    this.links.push(abs)
+    this.saveLinks()
+    return { workspaces: this.load(), id: doc.id }
+  }
+
+  /**
+   * leva o workspace pra outra pasta (ex.: dentro do repo do projeto).
+   * Pasta vazia ou inexistente: usa ela. Com outros arquivos: cria uma subpasta com o nome do workspace.
+   */
+  moveWorkspace(id: string, target: string): Workspace[] {
+    const e = this.index.get(id)
+    const ws = this.workspaces.find((w) => w.id === id)
+    if (e?.kind !== 'workspace' || !ws) throw new Error('workspace não encontrado')
+    let dest = path.resolve(target)
+    const inside = (a: string, b: string): boolean => a === b || a.startsWith(b + path.sep)
+    if (inside(dest, path.resolve(this.dir))) throw new Error('escolha uma pasta fora da pasta de dados do Zeno')
+    if (inside(dest, e.path)) throw new Error('escolha uma pasta fora do workspace')
+    if (fs.existsSync(path.join(dest, WS_FILE))) throw new Error('já existe um workspace nessa pasta')
+    if (fs.existsSync(dest) && fs.readdirSync(dest).length) dest = this.uniquePath(dest, ws.name, '')
+    this.touch()
+    fs.mkdirSync(dest, { recursive: true })
+    fs.cpSync(e.path, dest, { recursive: true })
+    writeGitignore(dest)
+    fs.rmSync(e.path, { recursive: true, force: true })
+    this.links = [...this.links.filter((l) => l !== e.path), dest]
+    this.saveLinks()
+    return this.load()
+  }
+
+  /** grava workspace inteiro (import). Substitui o existente com mesmo id, no mesmo lugar. */
   writeWorkspace(ws: Workspace): void {
     const existing = this.index.get(ws.id)
+    let dir: string
     if (existing?.kind === 'workspace') {
       this.touch()
       fs.rmSync(existing.path, { recursive: true, force: true })
-    }
-    const dir = this.uniquePath(this.dir, ws.name, '')
+      dir = existing.path
+    } else dir = this.uniquePath(this.dir, ws.name, '')
     const { id, name, description, settings } = ws
     this.write(path.join(dir, WS_FILE), stripEmpty({ id, name, description, settings }))
     for (const env of ws.environments) this.write(this.uniquePath(path.join(dir, ENV_DIR), env.name, '.yaml'), stripEmpty(env))
@@ -437,6 +508,13 @@ export class Store {
   setState(state: AppState): void {
     fs.writeFileSync(path.join(this.dir, 'state.json'), JSON.stringify(state, null, 2))
   }
+}
+
+/** o que fica na máquina nunca vai pro git (hoje já mora fora do workspace; isto protege se alguém juntar as pastas) */
+export function writeGitignore(dir: string): void {
+  const file = path.join(dir, '.gitignore')
+  if (fs.existsSync(file)) return
+  fs.writeFileSync(file, '# gerado pelo Zeno: respostas, estado da interface e chave do cofre ficam só na máquina\n.responses/\n.vault/\nstate.json\nlinks.json\n')
 }
 
 /** arquivo `foo` ou `foo-3` corresponde ao nome `Foo`? */

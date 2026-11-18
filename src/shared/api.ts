@@ -1,4 +1,4 @@
-import type { AppState, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
+import type { AppState, GitStatus, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
 
 export interface Created {
   workspaces: Workspace[]
@@ -20,7 +20,12 @@ export interface ZenoApi {
 
   createWorkspace(name: string): Promise<Workspace[]>
   saveWorkspace(doc: WorkspaceDoc): Promise<void>
+  /** apaga os arquivos; se o workspace for vinculado, só tira da lista */
   deleteWorkspace(id: string): Promise<Workspace[]>
+  /** abre um workspace que já existe numa pasta (diálogo); null = cancelado */
+  linkWorkspace(): Promise<Created | null>
+  /** move o workspace pra uma pasta escolhida (diálogo), ex.: dentro de um repo */
+  moveWorkspace(id: string): Promise<Workspace[] | null>
 
   createRequest(parentId: string, name: string): Promise<Created>
   createFolder(parentId: string, name: string): Promise<Created>
@@ -51,6 +56,18 @@ export interface ZenoApi {
   /** plain: segredos em texto puro que dá pra cifrar; warnings: segredos no meio de URL/body (mover à mão) */
   vaultScan(wsId: string): Promise<{ plain: string[]; warnings: string[] }>
   vaultProtect(wsId: string): Promise<{ count: number; workspaces: Workspace[] }>
+
+  gitStatus(wsId: string): Promise<GitStatus>
+  /** diff do arquivo (caminho relativo à pasta do workspace) */
+  gitDiff(wsId: string, file: string): Promise<string>
+  /** adiciona e commita tudo que mudou na pasta do workspace */
+  gitCommit(wsId: string, message: string): Promise<GitStatus>
+  gitPull(wsId: string): Promise<GitStatus>
+  gitPush(wsId: string): Promise<GitStatus>
+  gitSwitch(wsId: string, branch: string, create: boolean): Promise<GitStatus>
+  /** desfaz um pull que parou em conflito */
+  gitAbort(wsId: string): Promise<GitStatus>
+  gitInit(wsId: string): Promise<GitStatus>
 
   pickFile(): Promise<string | null>
   openDataDir(): Promise<void>
