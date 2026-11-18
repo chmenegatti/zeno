@@ -2,6 +2,15 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [0.4.0](https://github.com/chmenegatti/zeno/compare/v0.3.0...v0.4.0) (2026-11-18)
+
+### Novidades
+
+* **runner:** asserções sem código por request (status, header, JSONPath, body e tempo) ([#29](https://github.com/chmenegatti/zeno/issues/29)) ([becefc7](https://github.com/chmenegatti/zeno/commit/becefc7)), closes [#8](https://github.com/chmenegatti/zeno/issues/8)
+* **runner:** executor de coleção: rodar pasta ou workspace com iterações, atraso, dados CSV/JSON, parar na 1ª falha e relatório JUnit XML ([#29](https://github.com/chmenegatti/zeno/issues/29)) ([becefc7](https://github.com/chmenegatti/zeno/commit/becefc7))
+* **cli:** `zeno run <workspace> [pasta]` para CI, com `--env`, `--data`, `--var`, `--junit` e `--bail`; sai ≠ 0 quando algo falha ([#29](https://github.com/chmenegatti/zeno/issues/29)) ([becefc7](https://github.com/chmenegatti/zeno/commit/becefc7))
+* **tags:** tags `{% response %}`, `{% uuid %}` e `{% now %}` como badge nos campos e no body, com editor igual ao do Insomnia e prévia do valor ([#30](https://github.com/chmenegatti/zeno/pull/30)) ([becefc7](https://github.com/chmenegatti/zeno/commit/becefc7))
+
 ## [0.3.0](https://github.com/chmenegatti/zeno/compare/v0.2.0...v0.3.0) (2026-11-18)
 
 ### Novidades
