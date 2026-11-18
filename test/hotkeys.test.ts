@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bindings, comboFromEvent, conflicts, findHotkey, HOTKEYS, matches, parseCombo, type KeyLike } from '../src/shared/hotkeys'
+import { bindings, comboFromEvent, comboFromInsomnia, conflicts, findHotkey, findHotkeys, fromInsomnia, HOTKEYS, matches, parseCombo, type KeyLike } from '../src/shared/hotkeys'
 
 const ev = (code: string, key: string, mods: Partial<KeyLike> = {}): KeyLike => ({ code, key, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, ...mods })
 const ctrl = { ctrlKey: true }
@@ -55,5 +55,28 @@ describe('hotkeys', () => {
     expect(comboFromEvent(ev('KeyK', 'k'))).toBeNull()
     expect(comboFromEvent(ev('F7', 'F7'))).toBe('F7')
     expect(parseCombo('Ctrl++')).toEqual({ ctrl: true, shift: false, alt: false, key: '+' })
+  })
+
+  it('Ctrl+Shift+F: filtro fora do editor, formatar dentro', () => {
+    expect(findHotkeys(ev('KeyF', 'F', { ctrlKey: true, shiftKey: true })).map((h) => h.id)).toEqual(['sidebarFilter', 'beautify'])
+    // mesma tecla em duas ações sem contexto separado = conflito
+    expect(conflicts({ togglePin: ['Ctrl+Shift+F'] })['Ctrl+Shift+F']).toEqual(['sidebarFilter', 'beautify', 'togglePin'])
+    expect(findHotkey(ev('KeyU', 'U', { altKey: true, shiftKey: true }))?.id).toBe('showValues')
+  })
+
+  it('importa atalhos do Insomnia', () => {
+    expect(comboFromInsomnia({ ctrl: true, shift: true, keyCode: 191 })).toBe('Ctrl+Shift+/')
+    expect(comboFromInsomnia({ meta: true, keyCode: 220 })).toBe('Ctrl+\\')
+    expect(comboFromInsomnia({ keyCode: 116 })).toBe('F5')
+    const reg = {
+      request_quickSwitch: { winLinuxKeys: [{ ctrl: true, keyCode: 80 }] }, // igual ao nosso (Ctrl+K é extra): não mexe
+      request_send: { winLinuxKeys: [{ ctrl: true, keyCode: 13 }, { ctrl: true, keyCode: 82 }, { keyCode: 116 }] },
+      environment_showEditor: { winLinuxKeys: [{ alt: true, keyCode: 69 }], macKeys: [{ meta: true, keyCode: 69 }] }, // personalizado
+      request_togglePin: { winLinuxKeys: [], macKeys: [] }, // removido
+      environment_showVariableSourceAndValue: { winLinuxKeys: [{ alt: true, shift: true, keyCode: 85 }] }, // = Alt+Shift+U, só a ordem muda
+      plugin_reload: { winLinuxKeys: [{ ctrl: true, shift: true, keyCode: 82 }] } // sem equivalente
+    }
+    expect(fromInsomnia(reg)).toEqual({ envEditor: ['Alt+E'], togglePin: [] })
+    expect(fromInsomnia(reg, true)).toEqual({ togglePin: [] })
   })
 })

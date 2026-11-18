@@ -26,9 +26,12 @@ function useVarContext() {
 
 export function VarBadge({ name, label }: { name: string; label?: string }) {
   const { sources } = useVarContext()
+  const showValues = useStore((s) => s.showValues)
   const info = sources.get(name)
   const value = info ? formatValue(info.value) : undefined
   const enc = info ? isEncrypted(info.value) : false
+  // Alt+Shift+U: mostra o valor no lugar do nome (secreto continua mascarado)
+  if (showValues && !label && info) label = enc || isSecret(name) ? `${name}: ${MASK}` : value === undefined || value === '' ? `${name}: ∅` : value.length > 48 ? `${value.slice(0, 48)}…` : value
   const title = info
     ? `${name} = ${enc ? '🔒 criptografado' : isSecret(name) ? MASK : value}\n(${info.source.label}) — clique pra editar`
     : `${name} não definida — clique pra criar`

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { prepare } from '@shared/prepare'
 import { effectiveAuth } from '@shared/tree'
 import { METHODS, type Auth, type AuthType, type Body, type RequestDoc } from '@shared/types'
@@ -12,6 +12,7 @@ import { hasScripts, ScriptsEditor } from './Scripts'
 import { AssertionsEditor } from './Runner'
 import { editorTags, TemplateInput } from './Tags'
 import { maskSecrets } from '@shared/secret'
+import { askSchedule, stopSend } from '../sendSchedule'
 import { parseCurl } from '@shared/curl'
 
 type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'assertions' | 'notes'
@@ -109,6 +110,7 @@ export function RequestPane() {
         ) : (
           <button className="btn btn-accent w-[88px]" onClick={() => useStore.getState().sendActive()} title="Ctrl+Enter">Enviar</button>
         )}
+        <SendOptions reqId={req.id} />
       </div>
 
       <div className="-mt-1.5 truncate px-3 pb-1.5 font-mono text-[11px] text-faint select-text" title={maskSecrets(preview?.input.url ?? '')}>
@@ -262,6 +264,81 @@ export function AuthEditor({ auth, inherited, onChange, allowInherit = true }: {
             </select>
           </label>
         </>
+      )}
+    </div>
+  )
+}
+
+/** ▾ ao lado do Enviar: atrasar ou repetir (Ctrl+Shift+Enter) */
+function SendOptions({ reqId }: { reqId: string }) {
+  const open = useStore((s) => s.sendMenu)
+  const timer = useStore((s) => s.sendTimers[reqId])
+  const setOpen = (v: boolean): void => useStore.setState({ sendMenu: v })
+  const [sel, setSel] = useState(0)
+  const selRef = useRef(0)
+  selRef.current = sel
+  const items: [string, () => void][] = [
+    ['Enviar agora', () => useStore.getState().sendActive()],
+    ['Enviar depois de…', () => askSchedule(reqId, 'delay')],
+    ['Repetir a cada…', () => askSchedule(reqId, 'repeat')]
+  ]
+  if (timer) items.push([timer.mode === 'delay' ? 'Cancelar envio agendado' : 'Parar repetição', () => stopSend(reqId)])
+  useEffect(() => {
+    if (!open) return
+    selRef.current = 0
+    setSel(0)
+    const onKey = (e: KeyboardEvent): void => {
+      const move = (i: number): void => {
+        selRef.current = i
+        setSel(i)
+      }
+      if (e.key === 'ArrowDown') move(Math.min(items.length - 1, selRef.current + 1))
+      else if (e.key === 'ArrowUp') move(Math.max(0, selRef.current - 1))
+      else if (e.key === 'Escape') setOpen(false)
+      else if (e.key === 'Enter') {
+        setOpen(false)
+        items[selRef.current]?.[1]()
+      } else return
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    const close = (): void => setOpen(false)
+    window.addEventListener('keydown', onKey, true)
+    window.addEventListener('click', close)
+    return () => {
+      window.removeEventListener('keydown', onKey, true)
+      window.removeEventListener('click', close)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, items.length])
+  return (
+    <div className="relative">
+      <button
+        className={`btn px-1.5 ${timer ? 'text-accent' : ''}`}
+        title="Opções de envio (Ctrl+Shift+Enter)"
+        onClick={(e) => {
+          e.stopPropagation()
+          setOpen(!open)
+        }}
+      >
+        {timer ? (timer.mode === 'delay' ? `⏱ ${timer.seconds}s` : `↻ ${timer.seconds}s`) : '▾'}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-[34px] z-40 min-w-[200px] rounded-lg border border-line bg-raised py-1 shadow-xl">
+          {items.map(([label, fn], i) => (
+            <button
+              key={label}
+              className={`block w-full px-3 py-1.5 text-left ${i === sel ? 'bg-line' : ''}`}
+              onMouseEnter={() => setSel(i)}
+              onClick={() => {
+                setOpen(false)
+                fn()
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   )

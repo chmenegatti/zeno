@@ -17,7 +17,7 @@ interface Command {
 type Item = { kind: 'cmd'; cmd: Command } | { kind: 'req'; id: string; wsId: string; name: string; method: string; path: string; url: string }
 
 // ações da lista de atalhos que fazem sentido na paleta (as de foco precisam do painel por trás)
-const SKIP = new Set(['quickSwitch', 'sidebarFilter', 'focusUrl', 'focusResponse', 'methodMenu', 'history', 'envSwitch'])
+const SKIP = new Set(['quickSwitch', 'sidebarFilter', 'focusUrl', 'focusResponse', 'methodMenu', 'history', 'envSwitch', 'beautify'])
 
 function useCommands(): Command[] {
   const workspaces = useStore((s) => s.workspaces)

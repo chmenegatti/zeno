@@ -43,6 +43,12 @@ interface Store {
   error: string | null
   /** aviso curto que some sozinho */
   notice: string | null
+  /** badges mostram o valor da variável (Alt+Shift+U) */
+  showValues: boolean
+  /** menu de opções de envio aberto (Ctrl+Shift+Enter) */
+  sendMenu: boolean
+  /** envio agendado por request: atrasado (uma vez) ou repetindo */
+  sendTimers: Record<string, { mode: 'delay' | 'repeat'; seconds: number }>
 
   init(): Promise<void>
   setApp(patch: Partial<AppState>): void
@@ -50,7 +56,8 @@ interface Store {
   selectRequest(id: string | undefined): void
   updateRequest(req: RequestDoc): void
   flushSaves(): Promise<void>
-  sendActive(): Promise<void>
+  /** envia o request ativo (ou o id dado, mesmo que não esteja aberto) */
+  sendActive(id?: string): Promise<void>
   openModal(m: Modal): void
   closeModal(): void
   showError(e: unknown): void
@@ -90,6 +97,15 @@ export function activeRequest(s: Pick<Store, 'workspaces' | 'app'>): { req: Requ
   return f && f.node.kind === 'request' ? { req: f.node, ancestors: f.ancestors, ws } : null
 }
 
+/** request em qualquer workspace */
+export function findRequest(s: Pick<Store, 'workspaces'>, id: string): { req: RequestDoc; ws: Workspace } | null {
+  for (const ws of s.workspaces) {
+    const f = findNode(ws, id)
+    if (f?.node.kind === 'request') return { req: f.node, ws }
+  }
+  return null
+}
+
 // saves pendentes por request (debounce)
 const pending = new Map<string, { req: RequestDoc; timer: ReturnType<typeof setTimeout> }>()
 
@@ -117,6 +133,9 @@ export const useStore = create<Store>((set, get) => ({
   varEdit: null,
   error: null,
   notice: null,
+  showValues: false,
+  sendMenu: false,
+  sendTimers: {},
 
   async init() {
     const { workspaces, state, dataDir } = await api.load()
@@ -159,15 +178,16 @@ export const useStore = create<Store>((set, get) => ({
     await Promise.all([...pending.keys()].map(saveNow))
   },
 
-  async sendActive() {
+  async sendActive(target) {
     const s = get()
-    const cur = activeRequest(s)
+    const cur = target ? findRequest(s, target) : activeRequest(s)
     if (!cur || s.sending[cur.req.id]) return
     const id = cur.req.id
     await saveNow(id).catch(() => undefined)
     set((st) => ({ sending: { ...st.sending, [id]: true } }))
     try {
-      const r = await api.send(cur.ws.id, cur.req, activeEnvId(s))
+      const env = cur.ws.id === activeWorkspace(s)?.id ? activeEnvId(s) : (s.app.activeEnv[cur.ws.id] ?? null)
+      const r = await api.send(cur.ws.id, cur.req, env)
       set((st) => ({
         responses: { ...st.responses, [id]: r.history },
         selectedResponse: { ...st.selectedResponse, [id]: r.response.id },
