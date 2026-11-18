@@ -222,7 +222,11 @@ function ContextMenu({ menu, ws, onRename }: { menu: Menu; ws: Workspace; onRena
     items.push(['Novo request', () => createRequestIn(parentId)])
     items.push(['Nova pasta', () => createFolderIn(parentId)])
   }
-  if (n?.kind === 'folder') items.push(['Configurar pasta…', () => useStore.getState().openModal({ kind: 'folder', id: n.id })])
+  if (n?.kind === 'folder') {
+    items.push(['Rodar pasta…', () => useStore.getState().openModal({ kind: 'run', id: ws.id, folderId: n.id })])
+    items.push(['Configurar pasta…', () => useStore.getState().openModal({ kind: 'folder', id: n.id })])
+  }
+  if (!n) items.push(['Rodar workspace…', () => useStore.getState().openModal({ kind: 'run', id: ws.id })])
   if (n?.kind === 'request') {
     items.push(['Copiar como cURL', () => copyAsCurl(n.id)])
     items.push(['Gerar código…', () => useStore.getState().openModal({ kind: 'code', id: n.id })])

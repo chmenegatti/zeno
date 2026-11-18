@@ -1,0 +1,213 @@
+// Envio completo de um request: decifra segredos, roda scripts, resolve tags {% response %}, envia, avalia asserções
+// e grava o que os scripts mudaram nos ambientes. Sem Electron: usado pelo app, pelo executor de coleção e pela CLI.
+
+import { send } from './http'
+import { resolveTags } from './tags'
+import { runPhase, type PhaseState } from './scripts'
+import type { Store } from './store'
+import type { Vault } from './vault'
+import { evaluate } from '../shared/assert'
+import { isEncrypted, looksSecret } from '../shared/secret'
+import { prepare } from '../shared/prepare'
+import { buildVars, render } from '../shared/template'
+import { findNode } from '../shared/tree'
+import type { Folder, RequestDoc, ResponseRecord, ScriptReport, Workspace } from '../shared/types'
+import type { SendResult } from '../shared/api'
+
+export interface EngineHooks {
+  /** ambientes gravados pelos scripts */
+  onChanged?: (workspaces: Workspace[]) => void
+  /** resposta de envio indireto (dependência de {% response %}) */
+  onResponse?: (requestId: string, history: ResponseRecord[]) => void
+}
+
+export interface EngineOptions {
+  /**
+   * false = o que os scripts gravam em ambientes fica só na memória desta execução (CLI): não escreve YAML,
+   * nem cifra, nem deixa token em texto puro no disco quando não há chaveiro
+   */
+  persist?: boolean
+}
+
+export interface ExecOptions {
+  /** variáveis com prioridade máxima (linha de dados do executor de coleção) */
+  extraVars?: Record<string, unknown>
+  depth?: number
+}
+
+const pseudoFolder = (id: string, vars: Record<string, unknown>): Folder => ({ kind: 'folder', id, name: id, sortKey: 0, headers: [], auth: { type: 'inherit' }, vars, children: [] })
+
+export class Engine {
+  /** envId -> dados, quando persist=false */
+  private overlay = new Map<string, Record<string, unknown>>()
+
+  constructor(
+    private store: Store,
+    private vault: Vault,
+    private hooks: EngineHooks = {},
+    private opts: EngineOptions = {}
+  ) {}
+
+  private withOverlay(ws: Workspace): Workspace {
+    if (!this.overlay.size) return ws
+    return { ...ws, environments: ws.environments.map((e) => (this.overlay.has(e.id) ? { ...e, data: this.overlay.get(e.id)! } : e)) }
+  }
+
+  /** prepara (resolvendo tags {% response %} que podem disparar outros requests), roda scripts e envia */
+  async execute(wsIn: Workspace, reqRaw: RequestDoc, envId: string | null, opts: ExecOptions = {}): Promise<SendResult> {
+    const { store, vault } = this
+    const wsRaw = this.withOverlay(wsIn)
+    const depth = opts.depth ?? 0
+    // segredos só são decifrados aqui, e só para o envio
+    let ws: Workspace = { ...wsRaw, environments: await vault.decryptDeep(wsRaw.environments) }
+    let req: RequestDoc = await vault.decryptDeep(reqRaw)
+    let ancestors: Folder[] = await vault.decryptDeep(findNode(wsRaw, reqRaw.id)?.ancestors ?? [])
+    if (opts.extraVars && Object.keys(opts.extraVars).length) ancestors = [...ancestors, pseudoFolder('_data', opts.extraVars)]
+    const report: ScriptReport = { logs: [], tests: [], errors: [] }
+
+    // ---------- scripts: pastas de fora pra dentro, depois o request ----------
+    const chain = (phase: 'pre' | 'post') =>
+      [...ancestors.map((a) => ({ where: `pasta ${a.name}`, code: a.scripts?.[phase] ?? '' })), { where: req.name, code: req.scripts?.[phase] ?? '' }].filter((x) => x.code.trim())
+    const pre = chain('pre')
+    const post = chain('post')
+    const baseEnv = ws.environments.find((e) => e.parentId === null)
+    const subEnv = envId ? ws.environments.find((e) => e.id === envId && e.parentId !== null) : undefined
+    let state: PhaseState | null = null
+    if (pre.length || post.length) {
+      const base = structuredClone(baseEnv?.data ?? {})
+      state = {
+        base,
+        env: subEnv ? structuredClone(subEnv.data) : base,
+        envIsBase: !subEnv,
+        vars: {},
+        request: { method: req.method, url: req.url, headers: structuredClone(req.headers), params: structuredClone(req.params), body: { mime: req.body.mime, text: req.body.text } }
+      }
+    }
+    const before = state && { base: structuredClone(state.base), env: structuredClone(state.env) }
+    const withState = (w: Workspace, s: PhaseState): Workspace => ({
+      ...w,
+      environments: w.environments.map((e) => (e.id === baseEnv?.id ? { ...e, data: s.base } : e.id === subEnv?.id ? { ...e, data: s.env } : e))
+    })
+
+    if (state && pre.length) {
+      const r = await runPhase('pre', pre, state, report)
+      state = r.state
+      // o que o script mudou vale pro envio
+      ws = withState(ws, state)
+      const rq = state.request
+      req = { ...req, method: rq.method, url: rq.url, headers: rq.headers, params: rq.params, body: req.body.fields ? req.body : { ...req.body, mime: rq.body.mime, text: rq.body.text } }
+      if (Object.keys(state.vars).length) ancestors = [...ancestors, pseudoFolder('_script', state.vars)]
+      if (r.failed) {
+        await this.persistEnvChanges(wsRaw, baseEnv?.id, subEnv?.id, before!, state)
+        const response: ResponseRecord = {
+          id: `res_${Date.now().toString(36)}`,
+          requestId: reqRaw.id,
+          at: Date.now(),
+          method: req.method,
+          url: req.url,
+          status: 0,
+          statusText: '',
+          headers: [],
+          body: '',
+          bodyEncoding: 'utf8',
+          size: 0,
+          timing: { headersMs: 0, totalMs: 0 },
+          error: `Não enviado: o script ${report.errors[0]}`
+        }
+        return { response, history: store.addResponse(response), missing: [], warnings: [], scripts: report }
+      }
+    }
+
+    let prepared = prepare(ws, req, ancestors, envId)
+    const warnings: string[] = []
+    if (prepared.unsupported.length) {
+      if (depth > 3) warnings.push('cadeia de {% response %} longa demais (máx. 3)')
+      else {
+        const { values, errors } = await resolveTags(prepared.unsupported, {
+          latest: (id) => store.getResponses(id)[0],
+          sendById: async (id) => {
+            const dep = store.list().find((w) => findNode(w, id)?.node.kind === 'request')
+            const node = dep && findNode(dep, id)?.node
+            if (!dep || node?.kind !== 'request') throw new Error(`request ${id} não existe`)
+            const depEnv = dep.id === ws.id ? envId : (store.getState().activeEnv[dep.id] ?? null)
+            const r = await this.execute(dep, node, depEnv, { depth: depth + 1 })
+            this.hooks.onResponse?.(r.response.requestId, r.history)
+            return r.response
+          }
+        })
+        warnings.push(...errors)
+        prepared = prepare(ws, req, ancestors, envId, values)
+      }
+    }
+    warnings.push(...prepared.unsupported.map((t) => `tag não resolvida: ${t}`))
+    const response = await send(prepared.input)
+
+    if (state && post.length && !response.error) {
+      const r = await runPhase(
+        'post',
+        post,
+        {
+          ...state,
+          response: {
+            code: response.status,
+            status: response.statusText,
+            headers: response.headers,
+            body: response.bodyEncoding === 'utf8' ? response.body : '',
+            time: response.timing.totalMs
+          }
+        },
+        report
+      )
+      state = r.state
+    }
+
+    // asserções: depois dos scripts, com as variáveis que eles deixaram
+    const assertions = req.assertions?.filter((a) => a.enabled) ?? []
+    if (assertions.length && !response.error) {
+      const vars = buildVars(state ? withState(ws, state) : ws, envId, state && Object.keys(state.vars).length ? [...ancestors, pseudoFolder('_script', state.vars)] : ancestors)
+      report.tests.push(...evaluate(assertions, response, (s) => render(s, vars).value))
+    }
+    if (state) await this.persistEnvChanges(wsRaw, baseEnv?.id, subEnv?.id, before!, state)
+
+    const history = store.addResponse(response)
+    const hasReport = !!state || assertions.length > 0
+    return { response, history, missing: prepared.missing, warnings: [...new Set(warnings)], scripts: hasReport ? report : undefined }
+  }
+
+  /**
+   * grava no YAML o que os scripts mudaram nos ambientes. Valor que já era secreto (cifrado) ou cujo nome
+   * parece segredo (token, senha…) vai cifrado pro cofre quando dá.
+   */
+  private async persistEnvChanges(
+    wsRaw: Workspace,
+    baseId: string | undefined,
+    subId: string | undefined,
+    before: { base: Record<string, unknown>; env: Record<string, unknown> },
+    after: PhaseState
+  ): Promise<void> {
+    const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b)
+    const targets: [string | undefined, Record<string, unknown>, Record<string, unknown>][] = [[baseId, before.base, after.base]]
+    if (!after.envIsBase) targets.push([subId, before.env, after.env])
+    let changed = false
+    for (const [id, old, next] of targets) {
+      // relê do disco: num executor de coleção o ambiente pode ter mudado desde que este request começou
+      const raw = this.withOverlay(this.store.list().find((w) => w.id === wsRaw.id) ?? wsRaw).environments.find((e) => e.id === id)
+      if (!raw || same(old, next)) continue
+      const data: Record<string, unknown> = { ...raw.data }
+      for (const k of Object.keys(old)) if (!(k in next)) delete data[k]
+      for (const [k, v] of Object.entries(next)) {
+        if (k in old && same(old[k], v)) continue
+        let value = v
+        if (this.opts.persist !== false && typeof v === 'string' && v && (isEncrypted(raw.data[k]) || looksSecret(k))) value = await this.vault.encrypt(v).catch(() => v)
+        data[k] = value
+      }
+      if (this.opts.persist === false) {
+        this.overlay.set(raw.id, data)
+        continue
+      }
+      this.store.saveEnvironment(wsRaw.id, { ...raw, data })
+      changed = true
+    }
+    if (changed) this.hooks.onChanged?.(this.store.list())
+  }
+}

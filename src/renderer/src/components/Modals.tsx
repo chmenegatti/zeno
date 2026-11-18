@@ -8,6 +8,7 @@ import { KeyValueTable } from './KeyValueTable'
 import { AuthEditor } from './RequestPane'
 import { GitModal, MoveHint } from './Git'
 import { CodeModal } from './Code'
+import { RunModal } from './Runner'
 import { ScriptsEditor } from './Scripts'
 import { LockIcon, useVaultStatus } from './Secret'
 import { Modal } from './ui'
@@ -46,6 +47,8 @@ export function Modals() {
       return modal.id ? <CodeModal reqId={modal.id} onClose={close} /> : null
     case 'git':
       return ws ? <GitModal ws={ws} onClose={close} /> : null
+    case 'run':
+      return ws ? <RunModal ws={ws} folderId={modal.folderId ?? null} onClose={close} /> : null
   }
 }
 

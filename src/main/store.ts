@@ -11,8 +11,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import YAML from 'yaml'
+import { ASSERT_OPS, ASSERT_SOURCES } from '../shared/types'
 import type {
   AppState,
+  Assertion,
   Environment,
   Folder,
   FolderDoc,
@@ -69,8 +71,16 @@ function normRequest(raw: Partial<RequestDoc>, fallbackName: string): RequestDoc
     body: raw.body && typeof raw.body === 'object' ? { mime: raw.body.mime ?? null, text: raw.body.text, fields: raw.body.fields } : { mime: null },
     auth: raw.auth && typeof raw.auth === 'object' && 'type' in raw.auth ? raw.auth : { type: 'inherit' },
     scripts: normScripts(raw.scripts),
+    assertions: normAssertions(raw.assertions),
     sortKey: Number(raw.sortKey ?? 0)
   }
+}
+
+function normAssertions(raw: unknown): Assertion[] | undefined {
+  if (!Array.isArray(raw) || !raw.length) return undefined
+  return raw
+    .filter((a) => a && (ASSERT_SOURCES as readonly string[]).includes(a.source) && (ASSERT_OPS as readonly string[]).includes(a.op))
+    .map((a) => stripEmpty({ enabled: a.enabled !== false, source: a.source, path: a.path ? String(a.path) : undefined, op: a.op, value: a.value == null ? undefined : String(a.value) }))
 }
 
 function normScripts(raw: unknown): Scripts | undefined {
@@ -97,7 +107,7 @@ function normFolder(raw: Partial<FolderDoc>, fallbackName: string): Folder {
 
 function requestToYaml(r: RequestDoc): object {
   const { kind: _k, ...rest } = r
-  return stripEmpty({ ...rest, scripts: normScripts(rest.scripts) })
+  return stripEmpty({ ...rest, scripts: normScripts(rest.scripts), assertions: normAssertions(rest.assertions) })
 }
 
 function folderToYaml(f: FolderDoc | Folder): object {

@@ -1,5 +1,5 @@
 import type { CodeLang } from './curl'
-import type { AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
+import type { RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
 
 export interface Created {
   workspaces: Workspace[]
@@ -77,6 +77,15 @@ export interface ZenoApi {
   /** desfaz um pull que parou em conflito */
   gitAbort(wsId: string): Promise<GitStatus>
   gitInit(wsId: string): Promise<GitStatus>
+
+  /** roda os requests da pasta (ou do workspace) em ordem; progresso chega por onRunStep */
+  runCollection(opts: RunOptions): Promise<RunReport>
+  runCancel(): Promise<void>
+  /** escolhe CSV/JSON de dados (diálogo) */
+  runPickData(): Promise<{ name: string; rows: Record<string, unknown>[] } | null>
+  /** salva o relatório como JUnit XML (diálogo); devolve o caminho */
+  runSaveJUnit(report: RunReport): Promise<string | null>
+  onRunStep(cb: (step: RunStep, index: number, total: number) => void): () => void
 
   pickFile(): Promise<string | null>
   openDataDir(): Promise<void>

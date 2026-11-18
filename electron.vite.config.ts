@@ -6,7 +6,11 @@ import tailwindcss from '@tailwindcss/vite'
 const shared = { '@shared': resolve(__dirname, 'src/shared') }
 
 export default defineConfig({
-  main: { resolve: { alias: shared } },
+  main: {
+    resolve: { alias: shared },
+    // cli.js: a CLI roda com node puro, sem Electron
+    build: { rollupOptions: { input: { index: resolve(__dirname, 'src/main/index.ts'), cli: resolve(__dirname, 'src/main/cli-node.ts') } } }
+  },
   preload: { resolve: { alias: shared } },
   renderer: {
     resolve: { alias: shared },
