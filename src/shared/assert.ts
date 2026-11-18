@@ -49,6 +49,20 @@ export function parsePath(path: string): Seg[] {
         out.push({ k: 'all' })
       } else out.push({ k: 'key', name: name() })
     } else if (p[i] === '[') {
+      // ['chave'] / ["chave"]: aspas com escape (\' e \\) e ] dentro do nome
+      const q = p[i + 1]
+      if (q === "'" || q === '"') {
+        let j = i + 2
+        let key = ''
+        while (j < p.length && p[j] !== q) {
+          if (p[j] === '\\' && j + 1 < p.length) j++
+          key += p[j++]
+        }
+        if (p[j] !== q || p[j + 1] !== ']') throw new Error(`JSONPath inválido: ${path}`)
+        out.push({ k: 'key', name: key })
+        i = j + 2
+        continue
+      }
       const end = p.indexOf(']', i)
       if (end < 0) throw new Error(`JSONPath inválido: ${path}`)
       const inner = p.slice(i + 1, end).trim()

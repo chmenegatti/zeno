@@ -118,6 +118,8 @@ export interface AppState {
   activeEnv: Record<string, string | null>
   /** requests fixados no topo da lateral (Ctrl+Shift+P) */
   pinned?: string[]
+  /** filtro do body da resposta por request (JSONPath/XPath) */
+  responseFilter?: Record<string, string>
   ui?: UiPrefs
 }
 
