@@ -205,7 +205,7 @@ export async function runCli(argv: string[], protector: KeyProtector, out: Out =
     const data = args.data ? parseData(fs.readFileSync(args.data, 'utf8'), args.data) : undefined
 
     // variáveis gravadas por scripts valem só durante a execução: a CLI não altera os YAML
-    const engine = new Engine(store, vault, {}, { persist: false })
+    const engine = new Engine(store, vault, {}, { persist: false, softSecrets: true })
     const report = await runCollection(
       engine,
       store,
@@ -217,6 +217,7 @@ export async function runCli(argv: string[], protector: KeyProtector, out: Out =
         const status = s.status ? (s.status < 400 ? c(32, String(s.status)) : c(31, String(s.status))) : c(31, '---')
         out.log(`${ok ? c(32, '✓') : c(31, '✗')} ${s.method.padEnd(6)} ${where}${s.name}${it}  ${status}  ${c(2, `${s.timeMs} ms`)}`)
         if (s.error) out.log(`    ${c(31, s.error)}`)
+        for (const w of s.warnings ?? []) out.log(`    ${c(33, w)}`)
         if (s.missing) out.log(`    ${c(33, `variável sem valor: ${s.missing.join(', ')}`)}`)
         for (const t of s.tests) out.log(`    ${t.ok ? c(32, '✓') : c(31, '✗')} ${t.name}${t.ok || !t.error ? '' : c(2, ` — ${t.error}`)}`)
       }

@@ -237,6 +237,7 @@ export function RunModal({ ws, folderId, onClose }: { ws: Workspace; folderId: s
                 {expanded && (
                   <div className="ml-6 mt-1 flex flex-col gap-0.5 text-[12px]">
                     {s.error && <div className="font-mono text-[11.5px] text-tpink select-text">{s.error}</div>}
+                    {s.warnings?.map((w) => <div key={w} className="text-[11.5px] text-torange">{w}</div>)}
                     {s.missing && <div className="text-[11.5px] text-torange">variável sem valor: {s.missing.join(', ')}</div>}
                     {s.tests.map((t, j) => (
                       <div key={j} className="flex gap-2">

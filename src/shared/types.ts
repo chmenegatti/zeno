@@ -214,6 +214,8 @@ export interface RunStep {
   error?: string
   /** variáveis {{ }} sem valor */
   missing?: string[]
+  /** tags não resolvidas, segredos que não abriram… */
+  warnings?: string[]
 }
 
 export interface RunOptions {

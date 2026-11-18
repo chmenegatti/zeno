@@ -68,7 +68,8 @@ export async function runCollection(
           timeMs: res.timing.totalMs,
           tests: r.scripts?.tests ?? [],
           error: res.error ?? (r.scripts?.errors.length ? r.scripts.errors.join('; ') : undefined),
-          ...(r.missing.length ? { missing: r.missing } : {})
+          ...(r.missing.length ? { missing: r.missing } : {}),
+          ...(r.warnings.length ? { warnings: r.warnings } : {})
         }
       } catch (e) {
         step = { iteration: it + 1, requestId: req.id, name: req.name, path, method: req.method, url: req.url, status: 0, timeMs: 0, tests: [], error: (e as Error).message }

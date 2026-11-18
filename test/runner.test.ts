@@ -9,6 +9,7 @@ import { collect, parseCsv, parseData, runCollection, toJUnit } from '../src/mai
 import { runCli } from '../src/main/cli'
 import { Store } from '../src/main/store'
 import { Vault, type KeyProtector } from '../src/main/vault'
+import { noKeyring } from '../src/main/cli'
 import { evaluate, queryJson } from '../src/shared/assert'
 import { findNode } from '../src/shared/tree'
 import type { Assertion, RequestDoc, ResponseRecord, Workspace } from '../src/shared/types'
@@ -75,6 +76,9 @@ describe('JSONPath e asserções', () => {
     expect(queryJson(doc, '$..id').values).toEqual([1, 2, 3])
     expect(queryJson(doc, "$['x y']").values).toEqual([true])
     expect(queryJson(doc, '$.nada').values).toEqual([])
+    // só chaves próprias, nada herdado do protótipo
+    expect(queryJson(doc, '$.constructor').values).toEqual([])
+    expect(queryJson(doc, '$.a.toString').values).toEqual([])
   })
 
   const res: ResponseRecord = {
@@ -227,5 +231,18 @@ describe('CLI', () => {
     // token passou de um request pro outro, mas não foi gravado no YAML do repo
     expect(envFile()).toBe(before)
     expect(store.getResponses(collect(ws.children)[0].req.id)).toHaveLength(0)
+  })
+
+  it('sem chaveiro: segredo cifrado não aborta; --var supre o valor', async () => {
+    const { store, ws, dir } = setup([{ name: 'me', url: '{{ base_url }}/me', auth: { type: 'bearer', token: '{{ token }}' }, assertions: [a('status', 'eq', '200')] }])
+    const base = ws.environments.find((e) => e.parentId === null)!
+    store.saveEnvironment(ws.id, { ...base, data: { ...base.data, token: await new Vault(dir, fake).encrypt('tk-123') } })
+    let c = capture()
+    expect(await runCli(['run', 'Loja', '--data-dir', dir, '--var', 'token=tk-123'], noKeyring, c.out, false)).toBe(0)
+    c = capture()
+    expect(await runCli(['run', 'Loja', '--data-dir', dir], noKeyring, c.out, false)).toBe(1)
+    expect(c.lines.join('\n')).toMatch(/segredo cifrado "token" não abriu[\s\S]*variável sem valor: token/)
+    // com chaveiro, abre normalmente
+    expect(await runCli(['run', 'Loja', '--data-dir', dir], fake, capture().out, false)).toBe(0)
   })
 })

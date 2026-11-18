@@ -27,6 +27,11 @@ export interface EngineOptions {
    * nem cifra, nem deixa token em texto puro no disco quando não há chaveiro
    */
   persist?: boolean
+  /**
+   * true = segredo cifrado que não abre (sem chaveiro, chave de outra máquina) fica sem valor em vez de abortar o envio;
+   * a CLI usa pra deixar --var / dados suprirem o valor
+   */
+  softSecrets?: boolean
 }
 
 export interface ExecOptions {
@@ -59,9 +64,10 @@ export class Engine {
     const wsRaw = this.withOverlay(wsIn)
     const depth = opts.depth ?? 0
     // segredos só são decifrados aqui, e só para o envio
-    let ws: Workspace = { ...wsRaw, environments: await vault.decryptDeep(wsRaw.environments) }
-    let req: RequestDoc = await vault.decryptDeep(reqRaw)
-    let ancestors: Folder[] = await vault.decryptDeep(findNode(wsRaw, reqRaw.id)?.ancestors ?? [])
+    const locked = new Set<string>()
+    let ws: Workspace = { ...wsRaw, environments: await this.open(wsRaw.environments, locked) }
+    let req: RequestDoc = await this.open(reqRaw, locked)
+    let ancestors: Folder[] = await this.open(findNode(wsRaw, reqRaw.id)?.ancestors ?? [], locked)
     if (opts.extraVars && Object.keys(opts.extraVars).length) ancestors = [...ancestors, pseudoFolder('_data', opts.extraVars)]
     const report: ScriptReport = { logs: [], tests: [], errors: [] }
 
@@ -140,6 +146,7 @@ export class Engine {
       }
     }
     warnings.push(...prepared.unsupported.map((t) => `tag não resolvida: ${t}`))
+    for (const k of locked) if (!(opts.extraVars && k in opts.extraVars)) warnings.push(`segredo cifrado "${k}" não abriu (sem chaveiro?); passe o valor com --var`)
     const response = await send(prepared.input)
 
     if (state && post.length && !response.error) {
@@ -172,6 +179,29 @@ export class Engine {
     const history = store.addResponse(response)
     const hasReport = !!state || assertions.length > 0
     return { response, history, missing: prepared.missing, warnings: [...new Set(warnings)], scripts: hasReport ? report : undefined }
+  }
+
+  /** decifra segredos; com softSecrets, o que não abre some do objeto (e o nome vai pra `locked`) */
+  private async open<T>(value: T, locked: Set<string>): Promise<T> {
+    if (!this.opts.softSecrets) return this.vault.decryptDeep(value)
+    const walk = async (v: unknown): Promise<unknown> => {
+      if (Array.isArray(v)) return Promise.all(v.map(walk))
+      if (!v || typeof v !== 'object') return v
+      const out: Record<string, unknown> = {}
+      for (const [k, x] of Object.entries(v)) {
+        if (isEncrypted(x)) {
+          try {
+            out[k] = await this.vault.decrypt(x)
+          } catch {
+            // KV: o nome da variável/header é mais útil que "value"
+            const name = (v as { name?: unknown }).name
+            locked.add(k === 'value' && typeof name === 'string' ? name : k)
+          }
+        } else out[k] = await walk(x)
+      }
+      return out
+    }
+    return (await walk(value)) as T
   }
 
   /**

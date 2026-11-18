@@ -79,7 +79,7 @@ export function queryJson(doc: unknown, path: string): { values: unknown[]; many
     const next: unknown[] = []
     for (const v of cur) {
       if (s.k === 'key') {
-        if (v && typeof v === 'object' && !Array.isArray(v) && s.name in v) next.push((v as Record<string, unknown>)[s.name])
+        if (v && typeof v === 'object' && !Array.isArray(v) && Object.hasOwn(v, s.name)) next.push((v as Record<string, unknown>)[s.name])
       } else if (s.k === 'idx') {
         if (Array.isArray(v)) {
           const j = s.i < 0 ? v.length + s.i : s.i
