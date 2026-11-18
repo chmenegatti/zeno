@@ -112,6 +112,8 @@ export interface AppState {
   activeRequestId?: string
   /** wsId -> id do sub-ambiente ativo */
   activeEnv: Record<string, string | null>
+  /** requests fixados no topo da lateral (Ctrl+Shift+P) */
+  pinned?: string[]
   ui?: UiPrefs
 }
 

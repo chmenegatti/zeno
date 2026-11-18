@@ -253,6 +253,21 @@ handle('windowAction', (action: 'fullscreen' | 'devtools' | 'quit') => {
   if (action === 'fullscreen') win.setFullScreen(!win.isFullScreen())
   if (action === 'devtools') win.webContents.toggleDevTools()
 })
+// atalhos personalizados do Insomnia (NeDB: vale o último registro)
+handle('insomniaHotkeys', () => {
+  const file = path.join(INSOMNIA_DIR, 'insomnia.Settings.db')
+  if (!fs.existsSync(file)) return null
+  let reg: unknown = null
+  for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+    try {
+      const doc = JSON.parse(line)
+      if (doc?.hotKeyRegistry) reg = doc.hotKeyRegistry
+    } catch {
+      /* linha vazia ou quebrada */
+    }
+  }
+  return reg
+})
 handle('responses', (id: string) => store.getResponses(id))
 handle('clearResponses', (id: string) => store.clearResponses(id))
 

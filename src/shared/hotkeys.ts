@@ -14,6 +14,8 @@ export interface HotkeyDef {
   notInEditor?: boolean
   /** não dispara com o foco em campo de texto */
   notInText?: boolean
+  /** só dispara com o foco num editor de código (divide a tecla com uma ação notInEditor) */
+  onlyInEditor?: boolean
 }
 
 export const HOTKEYS: HotkeyDef[] = [
@@ -36,6 +38,9 @@ export const HOTKEYS: HotkeyDef[] = [
   { id: 'quit', label: 'Sair', group: 'Interface', keys: ['Ctrl+Q'], global: true },
   // request
   { id: 'send', label: 'Enviar request', group: 'Request', keys: ['Ctrl+Enter', 'Ctrl+R', 'F5'] },
+  { id: 'sendOptions', label: 'Opções de envio (atrasar, repetir)', group: 'Request', keys: ['Ctrl+Shift+Enter'] },
+  { id: 'beautify', label: 'Formatar JSON do editor', group: 'Request', keys: ['Ctrl+Shift+F'], global: true, onlyInEditor: true },
+  { id: 'togglePin', label: 'Fixar/desafixar request', group: 'Request', keys: ['Ctrl+Shift+P'] },
   { id: 'save', label: 'Salvar agora', group: 'Request', keys: ['Ctrl+S'] },
   { id: 'newRequest', label: 'Novo request', group: 'Request', keys: ['Ctrl+N', 'Ctrl+Alt+N'] },
   { id: 'newFolder', label: 'Nova pasta', group: 'Request', keys: ['Ctrl+Shift+N'] },
@@ -46,7 +51,8 @@ export const HOTKEYS: HotkeyDef[] = [
   { id: 'generateCode', label: 'Gerar código', group: 'Request', keys: ['Ctrl+Shift+G'] },
   // ambientes
   { id: 'envEditor', label: 'Editar ambientes', group: 'Ambientes', keys: ['Ctrl+E'] },
-  { id: 'envSwitch', label: 'Trocar ambiente', group: 'Ambientes', keys: ['Ctrl+Shift+E'] }
+  { id: 'envSwitch', label: 'Trocar ambiente', group: 'Ambientes', keys: ['Ctrl+Shift+E'] },
+  { id: 'showValues', label: 'Mostrar valor das variáveis', group: 'Ambientes', keys: ['Alt+Shift+U'], global: true }
 ]
 
 export interface KeyLike {
@@ -89,6 +95,12 @@ export function parseCombo(combo: string): { ctrl: boolean; shift: boolean; alt:
   return { ctrl: mods.has('Ctrl'), shift: mods.has('Shift'), alt: mods.has('Alt'), key }
 }
 
+/** forma única: Ctrl, Shift, Alt, tecla ("Alt+Shift+U" = "Shift+Alt+U") */
+export function canon(combo: string): string {
+  const c = parseCombo(combo)
+  return [c.ctrl ? 'Ctrl' : '', c.shift ? 'Shift' : '', c.alt ? 'Alt' : '', c.key].filter(Boolean).join('+')
+}
+
 export function matches(e: KeyLike, combo: string): boolean {
   if (e.altGraph) return false
   const c = parseCombo(combo)
@@ -113,16 +125,90 @@ export function bindings(overrides: HotkeyOverrides = {}): Record<string, string
   return Object.fromEntries(HOTKEYS.map((h) => [h.id, overrides[h.id] ?? h.keys]))
 }
 
-export function findHotkey(e: KeyLike, overrides: HotkeyOverrides = {}): HotkeyDef | undefined {
+/** ações cuja combinação casa com o evento (na ordem da lista; quem chama escolhe pelo contexto) */
+export function findHotkeys(e: KeyLike, overrides: HotkeyOverrides = {}): HotkeyDef[] {
   const b = bindings(overrides)
-  return HOTKEYS.find((h) => b[h.id].some((c) => matches(e, c)))
+  return HOTKEYS.filter((h) => b[h.id].some((c) => matches(e, c)))
 }
+
+export function findHotkey(e: KeyLike, overrides: HotkeyOverrides = {}): HotkeyDef | undefined {
+  return findHotkeys(e, overrides)[0]
+}
+
+const byId = (id: string): HotkeyDef | undefined => HOTKEYS.find((h) => h.id === id)
+/** uma só no editor, a outra só fora dele: dividem a tecla sem brigar */
+const disjoint = (a?: HotkeyDef, b?: HotkeyDef): boolean => !!a && !!b && ((!!a.onlyInEditor && !!b.notInEditor) || (!!a.notInEditor && !!b.onlyInEditor))
 
 /** ações que usam a mesma combinação */
 export function conflicts(overrides: HotkeyOverrides = {}): Record<string, string[]> {
   const by: Record<string, string[]> = {}
-  for (const [id, keys] of Object.entries(bindings(overrides))) for (const k of keys) (by[k] ??= []).push(id)
-  return Object.fromEntries(Object.entries(by).filter(([, ids]) => ids.length > 1))
+  for (const [id, keys] of Object.entries(bindings(overrides))) for (const k of keys) (by[canon(k)] ??= []).push(id)
+  return Object.fromEntries(
+    Object.entries(by).filter(([, ids]) => ids.some((a, i) => ids.slice(i + 1).some((b) => !disjoint(byId(a), byId(b)))))
+  )
+}
+
+// ---------- importar do Insomnia (insomnia.Settings.db → hotKeyRegistry) ----------
+
+export interface InsomniaKey {
+  ctrl?: boolean
+  shift?: boolean
+  alt?: boolean
+  meta?: boolean
+  keyCode: number
+}
+
+const INSOMNIA_IDS: Record<string, string> = {
+  beautifyRequestBody: 'beautify',
+  environment_showEditor: 'envEditor',
+  environment_showSwitchMenu: 'envSwitch',
+  environment_showVariableSourceAndValue: 'showValues',
+  preferences_showGeneral: 'showPreferences',
+  preferences_showKeyboardShortcuts: 'showShortcuts',
+  request_createHTTP: 'newRequest',
+  request_focusUrl: 'focusUrl',
+  request_quickSwitch: 'quickSwitch',
+  request_send: 'send',
+  request_showCreateFolder: 'newFolder',
+  request_showDelete: 'delete',
+  request_showDuplicate: 'duplicate',
+  request_showGenerateCodeEditor: 'generateCode',
+  request_showOptions: 'sendOptions',
+  request_toggleHistory: 'history',
+  request_toggleHttpMethodMenu: 'methodMenu',
+  request_togglePin: 'togglePin',
+  response_focus: 'focusResponse',
+  sidebar_focusFilter: 'sidebarFilter',
+  sidebar_toggle: 'sidebarToggle',
+  workspace_showSettings: 'workspaceSettings'
+}
+
+const KEYCODE: Record<number, string> = {
+  8: 'Backspace', 9: 'Tab', 13: 'Enter', 27: 'Escape', 32: 'Space', 46: 'Delete', 186: ';', 187: '=', 188: ',', 189: '-',
+  190: '.', 191: '/', 192: '`', 219: '[', 220: '\\', 221: ']', 222: "'", 107: '=', 109: '-', 111: '/'
+}
+
+export function comboFromInsomnia(k: InsomniaKey): string | null {
+  const c = k.keyCode
+  const key =
+    c >= 65 && c <= 90 ? String.fromCharCode(c) : c >= 48 && c <= 57 ? String(c - 48) : c >= 96 && c <= 105 ? String(c - 96) : c >= 112 && c <= 123 ? `F${c - 111}` : KEYCODE[c]
+  if (!key) return null
+  return [k.ctrl || k.meta ? 'Ctrl' : '', k.shift ? 'Shift' : '', k.alt ? 'Alt' : '', key].filter(Boolean).join('+')
+}
+
+/** atalhos do Insomnia que diferem dos nossos; se o nosso padrão já cobre os dele, não mexe */
+export function fromInsomnia(registry: Record<string, { macKeys?: InsomniaKey[]; winLinuxKeys?: InsomniaKey[] }>, mac = false): HotkeyOverrides {
+  const out: HotkeyOverrides = {}
+  for (const [insId, def] of Object.entries(registry)) {
+    const id = INSOMNIA_IDS[insId]
+    const h = id && byId(id)
+    const list = mac ? def.macKeys : def.winLinuxKeys
+    if (!h || !list) continue
+    const keys = [...new Set(list.map(comboFromInsomnia).filter((k): k is string => !!k))]
+    if (keys.length && keys.every((k) => h.keys.some((d) => canon(d) === canon(k)))) continue
+    out[id] = keys
+  }
+  return out
 }
 
 

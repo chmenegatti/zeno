@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Folder, TreeNode, Workspace } from '@shared/types'
+import type { Folder, RequestDoc, TreeNode, Workspace } from '@shared/types'
 import { walk } from '@shared/tree'
 import {
   activeEnvId,
@@ -197,6 +197,7 @@ export function Sidebar() {
           setMenu({ x: e.clientX, y: e.clientY, node: null })
         }}
       >
+        {!query && <Pinned ws={ws} active={app.activeRequestId} ids={app.pinned ?? []} />}
         {visible.length ? renderNodes(visible, ws.id, 0) : <p className="px-3 py-6 text-center text-faint">{query ? 'Nada encontrado' : 'Vazio. Crie um request ou importe do Insomnia.'}</p>}
       </div>
       <div className="flex items-center gap-1 border-t border-line px-2 py-1.5 text-[11.5px]">
@@ -205,6 +206,37 @@ export function Sidebar() {
       </div>
       {menu && <ContextMenu menu={menu} ws={ws} onRename={setRenaming} />}
     </aside>
+  )
+}
+
+function togglePin(id: string): void {
+  const { app, setApp } = useStore.getState()
+  const pinned = app.pinned ?? []
+  setApp({ pinned: pinned.includes(id) ? pinned.filter((x) => x !== id) : [...pinned, id] })
+}
+
+/** requests fixados (Ctrl+Shift+P) no topo da lateral */
+function Pinned({ ws, ids, active }: { ws: Workspace; ids: string[]; active?: string }) {
+  const list: RequestDoc[] = []
+  walk(ws.children, (n) => {
+    if (n.kind === 'request' && ids.includes(n.id)) list.push(n)
+  })
+  if (!list.length) return null
+  return (
+    <div className="mb-1 border-b border-line/70 pb-1">
+      <div className="px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-faint">Fixados</div>
+      {list.map((n) => (
+        <div
+          key={n.id}
+          onClick={() => useStore.getState().selectRequest(n.id)}
+          className={`group flex h-[26px] cursor-pointer items-center gap-1.5 rounded-md pl-2 pr-1 ${n.id === active ? 'bg-raised text-ink' : 'text-dim hover:bg-raised/60 hover:text-ink'}`}
+        >
+          <MethodBadge method={n.method} className="w-[30px] shrink-0 text-right" />
+          <span className="flex-1 truncate">{n.name}</span>
+          <button className="invisible px-1 text-faint hover:text-ink group-hover:visible" title="Desafixar" onClick={(e) => { e.stopPropagation(); togglePin(n.id) }}>×</button>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -222,6 +254,8 @@ function ContextMenu({ menu, ws, onRename }: { menu: Menu; ws: Workspace; onRena
   }
   if (!n) items.push(['Rodar workspace…', () => useStore.getState().openModal({ kind: 'run', id: ws.id })])
   if (n?.kind === 'request') {
+    const pinned = useStore.getState().app.pinned ?? []
+    items.push([pinned.includes(n.id) ? 'Desafixar' : 'Fixar no topo', () => togglePin(n.id)])
     items.push(['Copiar como cURL', () => copyAsCurl(n.id)])
     items.push(['Gerar código…', () => useStore.getState().openModal({ kind: 'code', id: n.id })])
   }

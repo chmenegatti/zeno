@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { bindings, comboFromEvent, conflicts, HOTKEYS, type HotkeyGroup } from '@shared/hotkeys'
-import { useStore } from '../state'
+import { bindings, canon, comboFromEvent, conflicts, fromInsomnia, HOTKEYS, type HotkeyGroup } from '@shared/hotkeys'
+import { api, useStore } from '../state'
 import { EDITOR_FONT, recording, setUi, UI_FONT, ZOOM_STEPS } from '../hotkeys'
 import { Modal } from './ui'
 
@@ -91,6 +91,18 @@ export function ShortcutsModal({ onClose }: { onClose: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rec])
 
+  const importInsomnia = async (): Promise<void> => {
+    const { notify, run } = useStore.getState()
+    const reg = await run(api.insomniaHotkeys())
+    if (reg === undefined) return
+    if (!reg) return notify('Insomnia não encontrado neste computador')
+    const got = fromInsomnia(reg, navigator.platform.startsWith('Mac'))
+    const n = Object.keys(got).length
+    if (!n) return notify('Nenhum atalho personalizado no Insomnia: o padrão já é o mesmo')
+    setUi({ hotkeys: { ...overrides, ...got } })
+    notify(`${n} atalho${n > 1 ? 's' : ''} importado${n > 1 ? 's' : ''} do Insomnia`)
+  }
+
   const q = query.trim().toLowerCase()
   const rows = HOTKEYS.filter((h) => !q || `${h.label} ${b[h.id].join(' ')}`.toLowerCase().includes(q))
 
@@ -116,7 +128,7 @@ export function ShortcutsModal({ onClose }: { onClose: () => void }) {
                         <span className="flex flex-wrap items-center gap-1">
                           {b[h.id].length ? (
                             b[h.id].map((c) => (
-                              <span key={c} className={`flex items-center gap-0.5 ${clash[c] ? 'text-tpink' : ''}`} title={clash[c] ? `também usado em: ${clash[c].filter((x) => x !== h.id).map((x) => HOTKEYS.find((y) => y.id === x)?.label).join(', ')}` : undefined}>
+                              <span key={c} className={`flex items-center gap-0.5 ${clash[canon(c)] ? 'text-tpink' : ''}`} title={clash[canon(c)] ? `também usado em: ${clash[canon(c)].filter((x) => x !== h.id).map((x) => HOTKEYS.find((y) => y.id === x)?.label).join(', ')}` : undefined}>
                                 <Kbd combo={c} />
                                 <button className="invisible px-0.5 text-faint hover:text-tpink group-hover:visible" title="remover" onClick={() => save(h.id, b[h.id].filter((x) => x !== c))}>×</button>
                               </span>
@@ -138,7 +150,11 @@ export function ShortcutsModal({ onClose }: { onClose: () => void }) {
             </div>
           )
         })}
-        <p className="text-[11.5px] text-faint">Padrão igual ao do Insomnia. Em vermelho: combinação usada por mais de uma ação.</p>
+        <div className="flex items-center gap-2">
+          <p className="flex-1 text-[11.5px] text-faint">Padrão igual ao do Insomnia. Em vermelho: combinação usada por mais de uma ação.</p>
+          <button className="btn" title="Lê os atalhos que você mudou no Insomnia (~/.config/Insomnia)" onClick={importInsomnia}>Importar do Insomnia</button>
+          {Object.keys(overrides).length > 0 && <button className="btn" onClick={() => setUi({ hotkeys: undefined })}>Restaurar todos</button>}
+        </div>
       </div>
     </Modal>
   )

@@ -1,6 +1,8 @@
 // Atalhos globais (padrão do Insomnia) e preferências de interface: zoom, fontes, lateral.
 
-import { findHotkey } from '@shared/hotkeys'
+import { EditorView } from '@uiw/react-codemirror'
+import { beautifyJson } from '@shared/format'
+import { findHotkeys, type HotkeyDef } from '@shared/hotkeys'
 import { findNode } from '@shared/tree'
 import type { UiPrefs } from '@shared/types'
 import { activeWorkspace, api, createFolderIn, createRequestIn, deleteNode, duplicateNode, useStore } from './state'
@@ -111,7 +113,40 @@ const ACTIONS: Record<string, () => void> = {
     const { s, ws } = current()
     if (ws) s.openModal({ kind: 'env', id: ws.id })
   },
-  envSwitch: () => focusTarget('env', true)
+  envSwitch: () => focusTarget('env', true),
+  sendOptions: () => {
+    if (current().found?.node.kind === 'request') useStore.setState({ sendMenu: true })
+  },
+  beautify: () => beautifyFocused(),
+  togglePin: () => {
+    const { s, found } = current()
+    if (found?.node.kind !== 'request') return
+    const id = found.node.id
+    const pinned = s.app.pinned ?? []
+    const on = !pinned.includes(id)
+    s.setApp({ pinned: on ? [...pinned, id] : pinned.filter((x) => x !== id) })
+    s.notify(on ? `"${found.node.name}" fixado` : `"${found.node.name}" desafixado`)
+  },
+  showValues: () => {
+    const on = !useStore.getState().showValues
+    useStore.setState({ showValues: on })
+    useStore.getState().notify(on ? 'Variáveis mostrando o valor (Alt+Shift+U volta)' : 'Variáveis mostrando o nome')
+  }
+}
+
+/** formata o JSON do editor com foco (body, ambientes, pasta) */
+function beautifyFocused(): void {
+  const dom = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('.cm-editor')
+  const view = dom && EditorView.findFromDOM(dom)
+  if (!view || view.state.readOnly) return
+  const text = view.state.doc.toString()
+  if (!text.trim()) return
+  try {
+    const out = beautifyJson(text)
+    if (out !== text) view.dispatch({ changes: { from: 0, to: text.length, insert: out } })
+  } catch {
+    useStore.getState().notify('Só dá pra formatar JSON válido')
+  }
 }
 
 function showSearch(): void {
@@ -129,15 +164,18 @@ export const recording = { on: false }
 
 function onKey(e: KeyboardEvent): void {
   if (recording.on) return
-  const hk = findHotkey({ key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey, altGraph: e.getModifierState?.('AltGraph') }, ui().hotkeys)
-  if (!hk) return
-  // segurar a tecla repete só zoom/fonte
-  if (e.repeat && !/^(zoom|editorFont)/.test(hk.id)) return
   const s = useStore.getState()
-  if (!hk.global && (s.modal || s.tagEdit)) return
   const t = e.target as HTMLElement | null
-  if (hk.notInEditor && t?.closest('.cm-editor')) return
-  if (hk.notInText && t?.matches('input,textarea,select,[contenteditable="true"]')) return
+  const inEditor = !!t?.closest('.cm-editor')
+  const allowed = (hk: HotkeyDef): boolean =>
+    !(e.repeat && !/^(zoom|editorFont)/.test(hk.id)) && // segurar a tecla repete só zoom/fonte
+    (hk.global || (!s.modal && !s.tagEdit)) &&
+    !(hk.notInEditor && inEditor) &&
+    !(hk.onlyInEditor && !inEditor) &&
+    !(hk.notInText && !!t?.matches('input,textarea,select,[contenteditable="true"]'))
+  const keys = { key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey, altGraph: e.getModifierState?.('AltGraph') }
+  const hk = findHotkeys(keys, ui().hotkeys).find(allowed)
+  if (!hk) return
   e.preventDefault()
   ACTIONS[hk.id]?.()
 }
