@@ -533,8 +533,16 @@ export class Store {
 /** o que fica na máquina nunca vai pro git (hoje já mora fora do workspace; isto protege se alguém juntar as pastas) */
 export function writeGitignore(dir: string): void {
   const file = path.join(dir, '.gitignore')
-  if (fs.existsSync(file)) return
-  fs.writeFileSync(file, '# gerado pelo Zeno: respostas, estado da interface e chave do cofre ficam só na máquina\n.responses/\n.vault/\nstate.json\nlinks.json\n')
+  const need = ['.responses/', '.vault/', '.cookies/', 'state.json', 'links.json']
+  if (!fs.existsSync(file)) {
+    fs.writeFileSync(file, `# gerado pelo Zeno: respostas, cookies, estado da interface e chave do cofre ficam só na máquina\n${need.join('\n')}\n`)
+    return
+  }
+  // versões antigas não tinham tudo: só acrescenta o que falta
+  const cur = fs.readFileSync(file, 'utf8')
+  const lines = new Set(cur.split(/\r?\n/).map((l) => l.trim()))
+  const missing = need.filter((n) => !lines.has(n))
+  if (missing.length) fs.writeFileSync(file, `${cur}${cur.endsWith('\n') || !cur ? '' : '\n'}${missing.join('\n')}\n`)
 }
 
 /** arquivo `foo` ou `foo-3` corresponde ao nome `Foo`? */

@@ -15,7 +15,7 @@ const channels = [
   'vaultStatus', 'vaultEncrypt', 'vaultReveal', 'vaultScan', 'vaultProtect',
   'linkWorkspace', 'moveWorkspace',
   'gitStatus', 'gitDiff', 'gitCommit', 'gitPull', 'gitPush', 'gitSwitch', 'gitAbort', 'gitInit',
-  'codeSnippet', 'copyText', 'tagPreview', 'windowAction', 'insomniaHotkeys',
+  'codeSnippet', 'copyText', 'tagPreview', 'windowAction', 'insomniaHotkeys', 'cookiesList', 'cookiesSave',
   'runCollection', 'runCancel', 'runPickData', 'runSaveJUnit'
 ] as const
 

@@ -22,6 +22,8 @@ export interface InsDoc {
   authentication?: Record<string, unknown>
   preRequestScript?: string
   afterResponseScript?: string
+  settingSendCookies?: boolean
+  settingStoreCookies?: boolean
   // request group / environment
   environment?: Record<string, unknown>
   data?: Record<string, unknown>
@@ -279,6 +281,8 @@ export function convert(docs: InsDoc[], opts: { insecureTLS?: boolean } = {}): P
           body: body(d.body, where, warn),
           auth: auth(d.authentication, where, warn),
           scripts: scriptsOf(d),
+          sendCookies: d.settingSendCookies === false ? false : undefined,
+          storeCookies: d.settingStoreCookies === false ? false : undefined,
           sortKey: sortKey(d)
         }
         checkTags(where, req.url, req.body.text, ...req.headers.map((h) => h.value))

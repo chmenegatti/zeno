@@ -1,6 +1,6 @@
 import type { InsomniaKey } from './hotkeys'
 import type { CodeLang } from './curl'
-import type { RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
+import type { CookieInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
 
 export interface Created {
   workspaces: Workspace[]
@@ -24,6 +24,9 @@ export interface ZenoApi {
   /** zoom da janela (1 = 100%) */
   setZoom(factor: number): void
   windowAction(action: 'fullscreen' | 'devtools' | 'quit'): Promise<void>
+  cookiesList(wsId: string): Promise<CookieInfo[]>
+  /** troca o jar inteiro; devolve a lista válida */
+  cookiesSave(wsId: string, list: CookieInfo[]): Promise<CookieInfo[]>
   /** hotKeyRegistry do Insomnia (null = não instalado) */
   insomniaHotkeys(): Promise<Record<string, { macKeys?: InsomniaKey[]; winLinuxKeys?: InsomniaKey[] }> | null>
 

@@ -47,6 +47,10 @@ export interface RequestDoc {
   scripts?: Scripts
   /** checagens da resposta sem programar (rodam depois dos scripts pós-resposta) */
   assertions?: Assertion[]
+  /** false = não manda os cookies do workspace */
+  sendCookies?: boolean
+  /** false = não guarda os Set-Cookie da resposta */
+  storeCookies?: boolean
   sortKey: number
 }
 
@@ -139,6 +143,20 @@ export interface SendInput {
   body: { kind: 'none' } | { kind: 'text'; text: string } | { kind: 'form'; fields: [string, string][] } | { kind: 'multipart'; fields: { name: string; value: string; file?: string }[] }
   insecureTLS: boolean
   timeoutMs: number
+}
+
+/** cookie do jar do workspace (tela de cookies) */
+export interface CookieInfo {
+  key: string
+  value: string
+  domain: string
+  path: string
+  /** ISO; sem = cookie de sessão */
+  expires?: string
+  secure: boolean
+  httpOnly: boolean
+  /** só o host exato (sem Domain=) */
+  hostOnly?: boolean
 }
 
 export interface ResponseRecord {

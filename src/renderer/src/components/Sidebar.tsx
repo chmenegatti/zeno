@@ -203,6 +203,7 @@ export function Sidebar() {
       <div className="flex items-center gap-1 border-t border-line px-2 py-1.5 text-[11.5px]">
         <button className="btn btn-ghost px-2 py-0.5 text-dim" title="Preferências (Ctrl+,)" onClick={() => useStore.getState().openModal({ kind: 'prefs' })}>⚙ Preferências</button>
         <button className="btn btn-ghost px-2 py-0.5 text-dim" title="Atalhos de teclado (Ctrl+Shift+/)" onClick={() => useStore.getState().openModal({ kind: 'shortcuts' })}>⌨ Atalhos</button>
+        <button className="btn btn-ghost px-2 py-0.5 text-dim" title="Cookies do workspace (Ctrl+K)" onClick={() => useStore.getState().openModal({ kind: 'cookies', id: ws.id })}>Cookies</button>
       </div>
       {menu && <ContextMenu menu={menu} ws={ws} onRename={setRenaming} />}
     </aside>

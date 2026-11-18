@@ -118,6 +118,10 @@ const ACTIONS: Record<string, () => void> = {
     if (current().found?.node.kind === 'request') useStore.setState({ sendMenu: true })
   },
   beautify: () => beautifyFocused(),
+  cookies: () => {
+    const { s, ws } = current()
+    if (ws) s.openModal({ kind: 'cookies', id: ws.id })
+  },
   togglePin: () => {
     const { s, found } = current()
     if (found?.node.kind !== 'request') return

@@ -2,6 +2,7 @@
 // e grava o que os scripts mudaram nos ambientes. Sem Electron: usado pelo app, pelo executor de coleção e pela CLI.
 
 import { send } from './http'
+import type { Cookies } from './cookies'
 import { resolveTags } from './tags'
 import { runPhase, type PhaseState } from './scripts'
 import type { Store } from './store'
@@ -32,6 +33,8 @@ export interface EngineOptions {
    * a CLI usa pra deixar --var / dados suprirem o valor
    */
   softSecrets?: boolean
+  /** cookie jar por workspace (sem = não usa cookies) */
+  cookies?: Cookies
 }
 
 export interface ExecOptions {
@@ -147,7 +150,11 @@ export class Engine {
     }
     warnings.push(...prepared.unsupported.map((t) => `tag não resolvida: ${t}`))
     for (const k of locked) if (!(opts.extraVars && k in opts.extraVars)) warnings.push(`segredo cifrado "${k}" não abriu (sem chaveiro?); passe o valor com --var`)
-    const response = await send(prepared.input)
+    const jar = this.opts.cookies
+    const response = await send(prepared.input, {
+      header: jar && req.sendCookies !== false ? (url) => jar.header(wsRaw.id, url) : undefined,
+      store: jar && req.storeCookies !== false ? (url, set) => void jar.store(wsRaw.id, url, set) : undefined
+    })
 
     if (state && post.length && !response.error) {
       const r = await runPhase(

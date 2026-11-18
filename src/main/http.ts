@@ -19,7 +19,16 @@ export function cancel(requestId: string): void {
   inflight.get(requestId)?.abort()
 }
 
-export async function send(input: SendInput): Promise<ResponseRecord> {
+/** cookie jar do workspace (opcional): header pra URL e guardar Set-Cookie */
+export interface CookieHooks {
+  header?: (url: string) => string
+  store?: (url: string, setCookies: string[]) => void
+}
+
+const REDIRECT = new Set([301, 302, 303, 307, 308])
+const MAX_REDIRECTS = 10
+
+export async function send(input: SendInput, cookies: CookieHooks = {}): Promise<ResponseRecord> {
   inflight.get(input.requestId)?.abort()
   const ctrl = new AbortController()
   inflight.set(input.requestId, ctrl)
@@ -51,21 +60,43 @@ export async function send(input: SendInput): Promise<ResponseRecord> {
     }
     if (input.method === 'GET' || input.method === 'HEAD') body = undefined
 
-    const res = await fetch(input.url, {
-      method: input.method,
-      headers,
-      body,
-      redirect: 'follow',
-      signal: ctrl.signal,
-      dispatcher: input.insecureTLS ? insecureAgent : secureAgent
-    })
+    // redirects na mão: cada salto guarda/manda cookies (login com 302 + Set-Cookie)
+    let url = input.url
+    let method = input.method
+    let res: Awaited<ReturnType<typeof fetch>>
+    let userCookie = headers.get('cookie')
+    for (let hop = 0; ; hop++) {
+      const jarCookie = cookies.header?.(url) ?? ''
+      const cookie = [userCookie, jarCookie].filter(Boolean).join('; ')
+      if (cookie) headers.set('cookie', cookie)
+      else headers.delete('cookie')
+      res = await fetch(url, { method, headers, body, redirect: 'manual', signal: ctrl.signal, dispatcher: input.insecureTLS ? insecureAgent : secureAgent })
+      const set = res.headers.getSetCookie()
+      if (set.length) cookies.store?.(url, set)
+      const loc = res.headers.get('location')
+      if (!REDIRECT.has(res.status) || !loc || hop >= MAX_REDIRECTS) break
+      await res.body?.cancel()
+      const next = new URL(loc, url)
+      // origem diferente: não leva credenciais escritas à mão (como o fetch faz)
+      if (next.origin !== new URL(url).origin) {
+        headers.delete('authorization')
+        userCookie = null
+      }
+      if (res.status === 303 || ((res.status === 301 || res.status === 302) && method === 'POST')) {
+        if (method !== 'HEAD') method = 'GET'
+        body = undefined
+        headers.delete('content-type')
+        headers.delete('content-length')
+      }
+      url = next.toString()
+    }
     const headersMs = performance.now() - t0
     const buf = Buffer.from(await res.arrayBuffer())
     const totalMs = performance.now() - t0
     const text = isText(res.headers.get('content-type') ?? undefined, buf)
     return {
       ...base,
-      url: res.url || input.url,
+      url,
       status: res.status,
       statusText: res.statusText,
       headers: [...res.headers.entries()],
