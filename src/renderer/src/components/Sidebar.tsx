@@ -13,6 +13,7 @@ import {
   renameNode,
   useStore
 } from '../state'
+import { GitButton } from './Git'
 import { Chevron, FolderIcon, MethodBadge } from './ui'
 import { EnvVarList } from './Vars'
 
@@ -249,12 +250,14 @@ function WorkspaceBar() {
         <span className="truncate font-semibold">{ws?.name ?? 'Nenhum workspace'}</span>
         <span className="text-faint">▾</span>
       </button>
+      {ws && <GitButton ws={ws} />}
       {ws && <button className="btn btn-ghost px-2" title="Configurações do workspace" onClick={() => openModal({ kind: 'workspace', id: ws.id })}>⚙</button>}
       {open && (
         <div className="absolute left-2 right-2 top-[42px] z-40 max-h-[60vh] overflow-auto rounded-lg border border-line bg-raised py-1 shadow-xl" onMouseLeave={() => setOpen(false)}>
           {workspaces.map((w) => (
             <button key={w.id} className={`block w-full truncate px-3 py-1.5 text-left hover:bg-line ${w.id === ws?.id ? 'text-accent' : ''}`} onClick={() => { setApp({ activeWorkspaceId: w.id, activeRequestId: undefined }); setOpen(false) }}>
               {w.name}
+              {w.location?.linked && <span className="ml-1.5 text-[10.5px] text-faint" title={w.location.dir}>⎇</span>}
             </button>
           ))}
           <div className="my-1 border-t border-line" />
@@ -268,6 +271,13 @@ function WorkspaceBar() {
               if (created) setApp({ activeWorkspaceId: created.id, activeRequestId: undefined })
             } })
           }}>＋ Novo workspace</button>
+          <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={async () => {
+            setOpen(false)
+            const r = await useStore.getState().run(api.linkWorkspace())
+            if (!r) return
+            useStore.getState().setWorkspaces(r.workspaces)
+            setApp({ activeWorkspaceId: r.id, activeRequestId: undefined })
+          }}>Abrir workspace de uma pasta…</button>
           <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); openModal({ kind: 'import' }) }}>⇣ Importar do Insomnia…</button>
           <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); api.openDataDir() }}>Abrir pasta de dados</button>
         </div>

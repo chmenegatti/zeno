@@ -20,7 +20,9 @@ describe('Store', () => {
     store.writeWorkspace(workspaces[0])
     const loaded = store.load()
     expect(loaded).toHaveLength(1)
-    expect(JSON.parse(JSON.stringify(loaded[0]))).toEqual(JSON.parse(JSON.stringify(workspaces[0])))
+    const { location, ...rest } = loaded[0]
+    expect(location).toEqual({ dir: path.join(dir, 'loja'), linked: false })
+    expect(JSON.parse(JSON.stringify(rest))).toEqual(JSON.parse(JSON.stringify(workspaces[0])))
     expect(fs.existsSync(path.join(dir, 'loja', 'itens', 'listar-v2.yaml'))).toBe(true)
   })
 
@@ -46,5 +48,41 @@ describe('Store', () => {
     store.createRequest(ws.id, 'Igual')
     store.createRequest(ws.id, 'Igual')
     expect(fs.readdirSync(store.pathOf(ws.id)!).filter((f) => f.endsWith('.yaml')).sort()).toEqual(['igual-2.yaml', 'igual.yaml', 'workspace.yaml'])
+  })
+})
+
+describe('workspaces fora da pasta de dados', () => {
+  it('move pra outra pasta, continua aberto e sobrevive a reabrir o Store', () => {
+    const [ws] = store.createWorkspace('API')
+    store.createRequest(ws.id, 'Listar')
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'zeno-repo-'))
+    fs.writeFileSync(path.join(repo, 'README.md'), 'projeto')
+    const [moved] = store.moveWorkspace(ws.id, repo)
+    // pasta com outros arquivos: cria subpasta com o nome do workspace
+    expect(moved.location).toEqual({ dir: path.join(repo, 'api'), linked: true })
+    expect(fs.existsSync(path.join(dir, 'api'))).toBe(false)
+    expect(fs.existsSync(path.join(repo, 'api', 'listar.yaml'))).toBe(true)
+    expect(fs.readFileSync(path.join(repo, 'api', '.gitignore'), 'utf8')).toContain('.vault/')
+    const again = new Store(dir).load()
+    expect(again.map((w) => w.id)).toEqual([ws.id])
+    expect(again[0].children[0].name).toBe('Listar')
+  })
+
+  it('vincula pasta existente; remover não apaga os arquivos', () => {
+    const other = new Store(fs.mkdtempSync(path.join(os.tmpdir(), 'zeno-b-')))
+    const [ws] = other.createWorkspace('Compartilhado')
+    const wsPath = ws.location!.dir
+    const r = store.linkWorkspace(wsPath)
+    expect(r.id).toBe(ws.id)
+    expect(() => store.linkWorkspace(wsPath)).toThrow(/já está aberto/)
+    store.createRequest(ws.id, 'Novo')
+    expect(fs.existsSync(path.join(wsPath, 'novo.yaml'))).toBe(true)
+    expect(store.deleteWorkspace(ws.id)).toEqual([])
+    expect(fs.existsSync(path.join(wsPath, 'workspace.yaml'))).toBe(true)
+  })
+
+  it('recusa mover pra dentro da pasta de dados', () => {
+    const [ws] = store.createWorkspace('X')
+    expect(() => store.moveWorkspace(ws.id, path.join(dir, 'sub'))).toThrow(/fora da pasta de dados/)
   })
 })

@@ -12,7 +12,7 @@
 ![Plataforma](https://img.shields.io/badge/plataforma-Linux-002233)
 [![Contribuições bem-vindas](https://img.shields.io/badge/PRs-bem--vindos-00ffd4)](CONTRIBUTING.md)
 
-[Instalação](#instalação) · [Recursos](#recursos) · [Primeiros passos](#primeiros-passos) · [Cofre de segredos](#cofre-de-segredos) · [Roadmap](#roadmap) · [Contribuir](CONTRIBUTING.md)
+[Instalação](#instalação) · [Recursos](#recursos) · [Primeiros passos](#primeiros-passos) · [Cofre de segredos](#cofre-de-segredos) · [Git](#git-e-trabalho-em-equipe) · [Roadmap](#roadmap) · [Contribuir](CONTRIBUTING.md)
 
 <img src="docs/screenshot.png" alt="Tela do Zeno: coleções à esquerda, request no meio e resposta à direita" width="100%" />
 
@@ -41,7 +41,8 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 | **Import do Insomnia** | Lê `~/.config/Insomnia` ou export JSON v4, com prévia e lista do que não foi convertido |
 | **Organização** | Pastas aninhadas, arrastar pra mover/reordenar, duplicar, renomear, busca com `Ctrl+K` |
 | **Resposta** | JSON formatado com destaque de sintaxe, headers, tempos e histórico das últimas 20 respostas |
-| **Arquivos vivos** | Editou o YAML por fora? O app recarrega na hora |
+| **Git integrado** | Workspace dentro do repo do projeto, com status, diff por request, commit, pull, push e branches |
+| **Arquivos vivos** | Editou o YAML por fora ou deu `pull`? O app recarrega na hora |
 
 ## Instalação
 
@@ -121,6 +122,23 @@ A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem aju
 
 Detalhes e limitações em [SECURITY.md](SECURITY.md).
 
+## Git e trabalho em equipe
+
+Um workspace pode morar dentro do repositório do seu projeto, junto do código:
+
+1. *Configurações do workspace → Local e git → Mover para pasta…* e escolha uma pasta do repo (ex.: `meu-projeto/api/`). Se a pasta já tiver outros arquivos, o Zeno cria uma subpasta com o nome do workspace.
+2. O botão de branch ao lado do nome do workspace abre o painel Git: arquivos alterados com o nome do request, diff, commit, pull, push e troca ou criação de branch.
+3. Quem clona o repo usa *Abrir workspace de uma pasta…* no menu de workspaces.
+
+Detalhes:
+
+- Cada request é um arquivo, então duas pessoas editando requests diferentes fazem merge sem conflito. O pull usa `--rebase --autostash`; se mesmo assim houver conflito, o painel avisa e oferece desfazer.
+- O commit leva só a pasta do workspace, nunca o resto do repositório.
+- Respostas, estado da tela e a chave do cofre ficam na pasta de dados, fora do repo. Se houver segredo em texto puro, o painel bloqueia o commit e oferece criptografar antes.
+- Quem não tem a chave do cofre vê os segredos como indisponíveis e define o próprio valor.
+- Usa o `git` instalado, com a sua configuração, chaves SSH e credential helpers.
+- Remover um workspace vinculado só o tira do Zeno; os arquivos continuam no repo.
+
 ## Onde ficam os dados
 
 Por padrão em `~/.local/share/zeno/` (ou na pasta indicada por `ZENO_DATA_DIR`):
@@ -133,6 +151,7 @@ Por padrão em `~/.local/share/zeno/` (ou na pasta indicada por `ZENO_DATA_DIR`)
 .vault/key                              # chave do cofre, protegida pelo chaveiro
 .responses/<requestId>.json             # últimas 20 respostas (não versionar)
 state.json                              # workspace, request e ambiente ativos
+links.json                              # workspaces que moram em outras pastas (ex.: num repo)
 ```
 
 Exemplo de request:
@@ -160,7 +179,7 @@ Os próximos passos estão nas [issues abertas](https://github.com/chmenegatti/z
 - GraphQL, gRPC, WebSocket e SSE
 - scripts pré-request e pós-resposta, testes e executor de coleção
 - OAuth 2.0, cookies, proxy e mTLS
-- paleta de comandos, Git integrado e plugins
+- paleta de comandos e plugins
 
 Quer ajudar em algum? Comente na issue antes de começar.
 
@@ -178,7 +197,7 @@ Quer ajudar em algum? Comente na issue antes de começar.
 Stack: Electron, React, TypeScript, Vite (electron-vite), Tailwind CSS, CodeMirror 6, Zustand e undici.
 
 ```text
-src/main/       processo principal: armazenamento YAML, HTTP, cofre, import, tags
+src/main/       processo principal: armazenamento YAML, HTTP, cofre, git, import, tags
 src/preload/    ponte segura entre main e interface (contextBridge)
 src/renderer/   interface React
 src/shared/     tipos e lógica pura usada pelos dois lados (variáveis, templates)

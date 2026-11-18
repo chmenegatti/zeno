@@ -1,8 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
-import { watch } from 'chokidar'
+import { watch, type FSWatcher } from 'chokidar'
 import { Store } from './store'
+import * as Git from './git'
 import { send, cancel } from './http'
 import { resolveTags } from './tags'
 import { electronProtector, Vault } from './vault'
@@ -59,12 +60,12 @@ function createWindow(): void {
   else win.loadFile(path.join(__dirname, '../renderer/index.html'))
 }
 
+let watcher: FSWatcher | null = null
+
 function watchDataDir(): void {
   let timer: NodeJS.Timeout | null = null
-  const watcher = watch(store.dir, {
-    ignoreInitial: true,
-    ignored: (p) => p.includes(`${path.sep}.responses`) || p.includes(`${path.sep}.vault`) || p.endsWith('state.json')
-  })
+  const hidden = (p: string): boolean => /[\\/]\.(responses|vault|git)([\\/]|$)/.test(p) || p.endsWith('state.json') || p.endsWith('links.json')
+  watcher = watch([store.dir, ...store.linkedDirs()], { ignoreInitial: true, ignored: hidden })
   watcher.on('all', () => {
     if (Date.now() - store.lastWrite < 1500) return
     if (timer) clearTimeout(timer)
@@ -86,6 +87,57 @@ handle('setState', (s) => store.setState(s))
 handle('createWorkspace', (name: string) => store.createWorkspace(name))
 handle('saveWorkspace', (doc) => store.saveWorkspace(doc))
 handle('deleteWorkspace', (id: string) => store.deleteWorkspace(id))
+
+/** vigia também as pastas vinculadas (pull do git aparece na hora) */
+function watchLinks(): void {
+  watcher?.add(store.linkedDirs())
+}
+
+async function pickDir(title: string): Promise<string | null> {
+  const r = await dialog.showOpenDialog(win!, { title, properties: ['openDirectory', 'createDirectory'] })
+  return r.canceled ? null : (r.filePaths[0] ?? null)
+}
+
+handle('linkWorkspace', async () => {
+  const dir = await pickDir('Pasta do workspace (com workspace.yaml)')
+  if (!dir) return null
+  const r = store.linkWorkspace(dir)
+  watchLinks()
+  return r
+})
+handle('moveWorkspace', async (id: string) => {
+  const dir = await pickDir('Mover workspace para… (ex.: uma pasta dentro do repositório do projeto)')
+  if (!dir) return null
+  const list = store.moveWorkspace(id, dir)
+  watchLinks()
+  return list
+})
+
+// ---------- git ----------
+
+function wsDir(wsId: string): string {
+  const dir = store.list().find((w) => w.id === wsId)?.location?.dir
+  if (!dir) throw new Error('workspace não encontrado')
+  return dir
+}
+
+/** roda a operação e devolve o status novo; mudanças nos arquivos chegam pelo watcher */
+const gitOp =
+  <A extends unknown[]>(fn: (dir: string, ...a: A) => Promise<unknown>) =>
+  async (wsId: string, ...a: A) => {
+    const dir = wsDir(wsId)
+    await fn(dir, ...a)
+    return Git.status(dir)
+  }
+
+handle('gitStatus', (wsId: string) => Git.status(wsDir(wsId)))
+handle('gitDiff', (wsId: string, file: string) => Git.diff(wsDir(wsId), file))
+handle('gitCommit', gitOp(Git.commit))
+handle('gitPull', gitOp(Git.pull))
+handle('gitPush', gitOp(Git.push))
+handle('gitSwitch', gitOp(Git.switchBranch))
+handle('gitAbort', gitOp(Git.abortRebase))
+handle('gitInit', gitOp(Git.init))
 
 handle('createRequest', (parentId: string, name: string) => store.createRequest(parentId, name))
 handle('createFolder', (parentId: string, name: string) => store.createFolder(parentId, name))
