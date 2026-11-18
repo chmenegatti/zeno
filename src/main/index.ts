@@ -248,15 +248,19 @@ handle('tagPreview', async (raw: string, send: boolean) => {
     // prévia com as variáveis do workspace e ambiente ativos; prompt não pergunta aqui
     const st = store.getState()
     const ws = store.list().find((w) => w.id === st.activeWorkspaceId) ?? store.list()[0]
-    const vars = ws ? buildVars(ws, st.activeEnv[ws.id] ?? null, []) : {}
+    // segredos decifrados como no envio (senão a prévia usaria o texto cifrado)
     try {
+      const vars = ws ? await engine.previewVars(ws, st.activeEnv[ws.id] ?? null) : {}
       return { value: await evalFn(t.tag, t.args, { render: (x) => render(x, vars).value }) }
     } catch (e) {
       return { error: (e as Error).message }
     }
   }
   if (t.name !== 'response') return { error: 'tag não suportada' }
-  const ws = store.list().find((w) => findRequestRef(w.children, t.requestId))
+  // workspace ativo primeiro, como no envio
+  const activeId = store.getState().activeWorkspaceId
+  const ordered = [...store.list()].sort((a, b) => Number(b.id === activeId) - Number(a.id === activeId))
+  const ws = ordered.find((w) => findRequestRef(w.children, t.requestId))
   const node = ws && findRequestRef(ws.children, t.requestId)
   if (!ws || node?.kind !== 'request') return { error: 'request não encontrado' }
   let res = store.getResponses(node.id)[0]

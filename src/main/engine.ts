@@ -214,6 +214,12 @@ export class Engine {
   }
 
   /** decifra segredos; com softSecrets, o que não abre some do objeto (e o nome vai pra `locked`) */
+  /** variáveis (base + ambiente) já decifradas, pra prévia de tags; segredo que não abre fica vazio */
+  async previewVars(ws: Workspace, envId: string | null): Promise<Record<string, unknown>> {
+    const environments = await this.open(ws.environments, new Set<string>())
+    return buildVars({ ...ws, environments }, envId, [])
+  }
+
   private async open<T>(value: T, locked: Set<string>): Promise<T> {
     if (!this.opts.softSecrets) return this.vault.decryptDeep(value)
     const walk = async (v: unknown): Promise<unknown> => {
