@@ -7,6 +7,7 @@ import { CodeEditor } from './CodeEditor'
 import { KeyValueTable } from './KeyValueTable'
 import { AuthEditor } from './RequestPane'
 import { GitModal, MoveHint } from './Git'
+import { CodeModal } from './Code'
 import { LockIcon, useVaultStatus } from './Secret'
 import { Modal } from './ui'
 
@@ -40,6 +41,8 @@ export function Modals() {
     }
     case 'import':
       return <ImportModal onClose={close} />
+    case 'code':
+      return modal.id ? <CodeModal reqId={modal.id} onClose={close} /> : null
     case 'git':
       return ws ? <GitModal ws={ws} onClose={close} /> : null
   }

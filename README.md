@@ -38,6 +38,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 | **Badges de variáveis** | Variáveis aparecem como badges na URL e na lateral; clique pra ver, editar, criar ou mover |
 | **Encadeamento** | `{% response %}` usa o body, header ou URL de outro request, reenviando só quando o valor expira |
 | **Cofre de segredos** | AES-256-GCM com a chave protegida pelo chaveiro do sistema (gnome-keyring, KWallet) |
+| **cURL e código** | Cole um `curl` na URL e o request é montado; copie como cURL ou gere Go, JavaScript e Python |
 | **Import do Insomnia** | Lê `~/.config/Insomnia` ou export JSON v4, com prévia e lista do que não foi convertido |
 | **Organização** | Pastas aninhadas, arrastar pra mover/reordenar, duplicar, renomear, busca com `Ctrl+K` |
 | **Resposta** | JSON formatado com destaque de sintaxe, headers, tempos e histórico das últimas 20 respostas |
@@ -81,6 +82,8 @@ npm run dev
 3. **Defina variáveis**: clique no ✎ ao lado do ambiente ou em ＋ na seção *Variáveis*. Use `{{ base_url }}/recurso` na URL.
 4. **Envie** com `Ctrl+Enter`.
 
+> Tem um `curl` pronto (da documentação ou do *Copy as cURL* do navegador)? Cole no campo de URL: método, headers, body, query, `-u` e Bearer viram campos do request.
+
 ### Atalhos
 
 | Atalho | Ação |
@@ -91,7 +94,8 @@ npm run dev
 | `Ctrl+E` | Trocar ambiente |
 | `Ctrl+S` | Salvar agora (o salvamento já é automático) |
 | Duplo clique | Renomear item na lateral |
-| Botão direito | Menu de contexto (novo, duplicar, excluir, configurar pasta) |
+| Botão direito | Menu de contexto (novo, duplicar, copiar como cURL, gerar código, excluir) |
+| `</>` | Gerar código do request (cURL, Go, JavaScript, Python) |
 
 ## Variáveis e ambientes
 
@@ -175,7 +179,7 @@ sortKey: 1
 
 Os próximos passos estão nas [issues abertas](https://github.com/chmenegatti/zeno/issues), entre eles:
 
-- importar e exportar cURL, OpenAPI e Postman
+- importar OpenAPI e Postman
 - GraphQL, gRPC, WebSocket e SSE
 - scripts pré-request e pós-resposta, testes e executor de coleção
 - OAuth 2.0, cookies, proxy e mTLS

@@ -1,3 +1,4 @@
+import type { CodeLang } from './curl'
 import type { AppState, GitStatus, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
 
 export interface Created {
@@ -40,6 +41,9 @@ export interface ZenoApi {
 
   send(wsId: string, req: RequestDoc, envId: string | null): Promise<SendResult>
   cancel(requestId: string): Promise<void>
+  /** código pronto do request; resolveVars=false mantém as {{ variáveis }} */
+  codeSnippet(wsId: string, req: RequestDoc, envId: string | null, lang: CodeLang, resolveVars: boolean): Promise<string>
+  copyText(text: string): Promise<void>
   responses(requestId: string): Promise<ResponseRecord[]>
   clearResponses(requestId: string): Promise<void>
 

@@ -14,7 +14,8 @@ const channels = [
   'importPreview', 'importRun', 'pickFile', 'openDataDir',
   'vaultStatus', 'vaultEncrypt', 'vaultReveal', 'vaultScan', 'vaultProtect',
   'linkWorkspace', 'moveWorkspace',
-  'gitStatus', 'gitDiff', 'gitCommit', 'gitPull', 'gitPush', 'gitSwitch', 'gitAbort', 'gitInit'
+  'gitStatus', 'gitDiff', 'gitCommit', 'gitPull', 'gitPush', 'gitSwitch', 'gitAbort', 'gitInit',
+  'codeSnippet', 'copyText'
 ] as const
 
 const api = Object.fromEntries(channels.map((c) => [c, call(c)])) as unknown as ZenoApi

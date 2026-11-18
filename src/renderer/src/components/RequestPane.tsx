@@ -9,6 +9,7 @@ import { Count, METHOD_COLOR, Segmented } from './ui'
 import { RequestVars, UrlField } from './Vars'
 import { SecretInput } from './Secret'
 import { maskSecrets } from '@shared/secret'
+import { parseCurl } from '@shared/curl'
 
 type Section = 'params' | 'headers' | 'body' | 'auth' | 'notes'
 
@@ -54,6 +55,27 @@ export function RequestPane() {
   const { req, ancestors } = cur
   const update = (patch: Partial<RequestDoc>) => useStore.getState().updateRequest({ ...req, ...patch })
   const isSending = !!sending[req.id]
+  /** substitui o request pelo que o curl descreve (nome só muda se ainda for o padrão) */
+  const applyCurl = (cmd: string) => {
+    const { showError, notify } = useStore.getState()
+    try {
+      const p = parseCurl(cmd)
+      update({
+        name: req.name === 'Novo request' ? p.name : req.name,
+        method: p.method,
+        url: p.url,
+        params: p.params,
+        headers: p.headers,
+        body: p.body,
+        auth: p.auth
+      })
+      const notes = [...p.warnings]
+      if (p.insecure && !cur.ws.settings.insecureTLS) notes.push('o curl usa -k: ative "Aceitar certificado TLS inválido" nas configurações do workspace')
+      notify(notes.length ? `curl importado. ${notes.join('; ')}` : 'curl importado')
+    } catch (e) {
+      showError(e)
+    }
+  }
   const warn = lastSend[req.id]
 
   return (
@@ -67,6 +89,7 @@ export function RequestPane() {
           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
         />
         {ancestors.length > 0 && <span className="truncate text-[11.5px] text-faint">{ancestors.map((a) => a.name).join(' / ')}</span>}
+        <button className="btn btn-ghost px-2 py-0.5 font-mono text-[11.5px]" title="Gerar código (cURL, Go, JavaScript, Python)" onClick={() => useStore.getState().openModal({ kind: 'code', id: req.id })}>{'</>'}</button>
       </div>
 
       <div className="flex items-center gap-1.5 p-3">
@@ -75,7 +98,7 @@ export function RequestPane() {
             <option key={m} value={m}>{m}</option>
           ))}
         </select>
-        <UrlField value={req.url} onChange={(url) => update({ url })} onEnter={() => useStore.getState().sendActive()} />
+        <UrlField value={req.url} onChange={(url) => update({ url })} onEnter={() => useStore.getState().sendActive()} onCurl={applyCurl} />
         {isSending ? (
           <button className="btn w-[88px]" onClick={() => api.cancel(req.id)}>Cancelar</button>
         ) : (
