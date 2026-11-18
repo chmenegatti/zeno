@@ -1,6 +1,7 @@
 {
   "name": "zeno",
   "version": "0.1.0",
+  "private": true,
   "description": "Cliente de API desktop, sem abas",
   "main": "./out/main/index.js",
   "license": "MIT",
