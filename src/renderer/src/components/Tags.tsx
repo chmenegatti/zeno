@@ -89,12 +89,15 @@ function useVarAutocomplete(value: string, onChange: (v: string) => void, ref: R
   const close = (): void => setSt(null)
   const check = (el: HTMLInputElement, explicit: boolean): void => {
     const caret = el.selectionStart ?? el.value.length
+    const selEnd = el.selectionEnd ?? caret
     const before = el.value.slice(0, caret)
     const open = openVarAt(before)
     const word = /[A-Za-z_][\w.]*$/.exec(before)
     if (!open && !explicit) return close()
     const r = el.getBoundingClientRect()
     setSel(0)
+    // Ctrl+Espaço com texto selecionado: a escolha substitui a seleção
+    if (explicit && selEnd > caret) return setSt({ start: caret, end: selEnd, query: '', explicit, x: r.left, y: r.bottom + 2, w: r.width })
     setSt(
       open
         ? { start: open.start, end: caret, query: open.query, explicit, x: r.left, y: r.bottom + 2, w: r.width }
