@@ -11,7 +11,8 @@ const channels = [
   'load', 'setState', 'createWorkspace', 'saveWorkspace', 'deleteWorkspace',
   'createRequest', 'createFolder', 'saveRequest', 'saveFolder', 'deleteNode', 'moveNode', 'duplicate',
   'saveEnvironment', 'deleteEnvironment', 'send', 'cancel', 'responses', 'clearResponses',
-  'importPreview', 'importRun', 'pickFile', 'openDataDir'
+  'importPreview', 'importRun', 'pickFile', 'openDataDir',
+  'vaultStatus', 'vaultEncrypt', 'vaultReveal', 'vaultScan', 'vaultProtect'
 ] as const
 
 const api = Object.fromEntries(channels.map((c) => [c, call(c)])) as unknown as ZenoApi

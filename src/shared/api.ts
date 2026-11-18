@@ -1,4 +1,4 @@
-import type { AppState, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
+import type { AppState, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
 
 export interface Created {
   workspaces: Workspace[]
@@ -40,7 +40,17 @@ export interface ZenoApi {
 
   /** 'insomnia' = ~/.config/Insomnia; 'file' = abre diálogo pra escolher export JSON */
   importPreview(source: 'insomnia' | 'file'): Promise<ImportPreview | null>
-  importRun(workspaceIds: string[]): Promise<Workspace[]>
+  /** protect = cifrar senhas/tokens no cofre logo após importar */
+  importRun(workspaceIds: string[], protect: boolean): Promise<Workspace[]>
+
+  vaultStatus(): Promise<VaultStatus>
+  /** cifra texto e devolve o token `$zeno$v1$…` */
+  vaultEncrypt(plain: string): Promise<string>
+  /** decifra um token (só sob pedido explícito do usuário) */
+  vaultReveal(token: string): Promise<string>
+  /** plain: segredos em texto puro que dá pra cifrar; warnings: segredos no meio de URL/body (mover à mão) */
+  vaultScan(wsId: string): Promise<{ plain: string[]; warnings: string[] }>
+  vaultProtect(wsId: string): Promise<{ count: number; workspaces: Workspace[] }>
 
   pickFile(): Promise<string | null>
   openDataDir(): Promise<void>

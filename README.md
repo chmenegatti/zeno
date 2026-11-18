@@ -32,6 +32,15 @@ state.json                              # workspace/request/ambiente ativos
 ```
 Dá pra editar os YAML com o app aberto: ele recarrega sozinho.
 
+### Cofre de segredos
+- Valor marcado como secreto vai pro YAML como `$zeno$v1$<chave>$<iv>$<dados>` (AES-256-GCM). Dá pra subir no git.
+- A chave mestra (aleatória, 256 bits) fica em `.vault/key`, cifrada pelo chaveiro do sistema (`safeStorage` do Electron: gnome-keyring/kwallet no Linux). Sem chaveiro de verdade (`basic_text`), o app recusa criar o cofre.
+- Só o processo principal decifra, e só na hora de enviar ou quando você clica em "mostrar".
+- Onde marcar: no popover da variável (caixa "secreta"), no cadeado dos campos de auth e em **Workspace → Cofre de segredos**, que acha e cifra de uma vez senhas, tokens, headers `Authorization` e valores repetidos de segredos.
+- O import do Insomnia já cifra tudo isso (opção ligada por padrão).
+- Outro computador sem a chave: o app avisa que o segredo foi cifrado com outra chave; redefina o valor.
+- Senha escrita no meio de URL ou body não é cifrada automaticamente: aparece como aviso pra virar variável.
+
 ### O que já faz
 - HTTP: métodos, params, headers, body (JSON, XML, texto, form, multipart com arquivo), redirect, timeout, cancelar, TLS inválido opcional por workspace.
 - Auth: basic, bearer, API key (header/query), herdar da pasta.

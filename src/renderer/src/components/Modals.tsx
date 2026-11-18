@@ -6,6 +6,7 @@ import { activeWorkspace, api, deleteEnvironment, saveEnvironment, saveFolder, u
 import { CodeEditor } from './CodeEditor'
 import { KeyValueTable } from './KeyValueTable'
 import { AuthEditor } from './RequestPane'
+import { LockIcon, useVaultStatus } from './Secret'
 import { Modal } from './ui'
 
 export function Modals() {
@@ -125,7 +126,7 @@ function EnvForm({ ws, env, onDeleted }: { ws: Workspace; env: Environment; onDe
         {env.parentId !== null && <input type="color" className="h-8 w-10 cursor-pointer rounded border border-line bg-transparent" value={color} onChange={(e) => setColor(e.target.value)} />}
       </div>
       <p className="text-[11.5px] text-faint">
-        {env.parentId === null ? 'Valores valem pra todos os sub-ambientes.' : 'Sobrescreve as chaves do Base.'} Use como <code>{'{{ nome }}'}</code> ou <code>{'{{ _.nome }}'}</code>.
+        {env.parentId === null ? 'Valores valem pra todos os sub-ambientes.' : 'Sobrescreve as chaves do Base.'} Use como <code>{'{{ nome }}'}</code> ou <code>{'{{ _.nome }}'}</code>. Valores <code>$zeno$v1$…</code> são segredos do cofre: edite pela badge da variável.
       </p>
       <div className="min-h-0 flex-1 rounded-md border border-line" onKeyDown={(e) => (e.ctrlKey || e.metaKey) && e.key === 's' && (e.preventDefault(), save())}>
         <CodeEditor value={text} onChange={setText} lang="json" />
@@ -224,6 +225,7 @@ function WorkspaceModal({ ws, onClose }: { ws: Workspace; onClose: () => void })
           <input type="number" min={0} className="field w-[110px]" value={settings.timeoutMs} onChange={(e) => setSettings({ ...settings, timeoutMs: Number(e.target.value) })} />
           <span className="text-faint">ms (0 = sem limite)</span>
         </label>
+        <VaultSection ws={ws} />
         <p className="text-[11.5px] text-faint">Dados em <code className="select-text">{dataDir}</code></p>
         <div className="flex items-center gap-2 pt-2">
           <button
@@ -254,6 +256,70 @@ function WorkspaceModal({ ws, onClose }: { ws: Workspace; onClose: () => void })
   )
 }
 
+// ---------- cofre ----------
+
+function VaultSection({ ws }: { ws: Workspace }) {
+  const status = useVaultStatus()
+  const [plain, setPlain] = useState<string[] | null>(null)
+  const [warnings, setWarnings] = useState<string[]>([])
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState<number | null>(null)
+  const { run, setWorkspaces } = useStore.getState()
+  useEffect(() => {
+    api.vaultScan(ws.id).then((r) => {
+      setPlain(r.plain)
+      setWarnings(r.warnings)
+    })
+  }, [ws.id, done])
+  const ok = !!status?.available && !status.weak && !status.error
+  return (
+    <div className="rounded-md border border-line p-3">
+      <div className="mb-1 flex items-center gap-2 font-semibold">
+        <span className="text-tpurple"><LockIcon size={13} /></span> Cofre de segredos
+      </div>
+      {!status ? (
+        <p className="text-faint">verificando…</p>
+      ) : (
+        <p className="text-[12px] text-dim">
+          Chaveiro: <code>{status.backend}</code>
+          {status.keyId && <> · chave <code>{status.keyId}</code></>}
+          {!status.available && <span className="text-torange"> · indisponível</span>}
+          {status.weak && <span className="text-torange"> · sem proteção real (abra o gnome-keyring/kwallet)</span>}
+          {status.error && <span className="text-tpink"> · {status.error}</span>}
+        </p>
+      )}
+      {plain && plain.length > 0 ? (
+        <div className="mt-2 flex flex-col gap-2">
+          <p className="text-[12px] text-torange">{plain.length} segredo(s) em texto puro neste workspace</p>
+          <pre className="max-h-[100px] overflow-auto rounded bg-bg p-2 text-[11px] text-dim">{plain.join('\n')}</pre>
+          <button
+            className="btn self-start text-tpurple"
+            disabled={!ok || busy}
+            onClick={async () => {
+              setBusy(true)
+              const r = await run(api.vaultProtect(ws.id))
+              setBusy(false)
+              if (!r) return
+              setWorkspaces(r.workspaces)
+              setDone(r.count)
+            }}
+          >
+            {busy ? 'criptografando…' : `Criptografar ${plain.length} segredo(s)`}
+          </button>
+        </div>
+      ) : (
+        <p className="mt-1 text-[12px] text-tgreen">{done ? `${done} segredo(s) criptografado(s). ` : ''}Nenhum segredo em texto puro encontrado.</p>
+      )}
+      {warnings.length > 0 && (
+        <details className="mt-2 text-[12px]">
+          <summary className="cursor-pointer text-torange">{warnings.length} lugar(es) com senha escrita direto na URL/body — troque por variável secreta</summary>
+          <pre className="mt-1 max-h-[100px] overflow-auto rounded bg-bg p-2 text-[11px] text-dim">{warnings.join('\n')}</pre>
+        </details>
+      )}
+    </div>
+  )
+}
+
 // ---------- import ----------
 
 function ImportModal({ onClose }: { onClose: () => void }) {
@@ -261,6 +327,9 @@ function ImportModal({ onClose }: { onClose: () => void }) {
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
   const [showWarn, setShowWarn] = useState(false)
+  const vault = useVaultStatus()
+  const vaultOk = !!vault?.available && !vault.weak
+  const [protect, setProtect] = useState(true)
   const { run, setWorkspaces, setApp } = useStore.getState()
 
   const load = async (source: 'insomnia' | 'file') => {
@@ -279,7 +348,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
 
   const doImport = async () => {
     setBusy(true)
-    const list = await run(api.importRun([...picked]))
+    const list = await run(api.importRun([...picked], protect && vaultOk))
     setBusy(false)
     if (!list) return
     setWorkspaces(list)
@@ -339,6 +408,11 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                 {showWarn && <pre className="mt-1 max-h-[160px] overflow-auto whitespace-pre-wrap rounded-md bg-bg p-2 text-[11px] text-dim select-text">{preview.warnings.join('\n')}</pre>}
               </div>
             )}
+            <label className={`flex items-center gap-2 text-[12.5px] ${vaultOk ? '' : 'opacity-50'}`} title="Senhas, tokens e chaves vão para o cofre: no YAML fica só o valor cifrado">
+              <input type="checkbox" className="accent-[var(--color-tpurple)]" disabled={!vaultOk} checked={protect && vaultOk} onChange={(e) => setProtect(e.target.checked)} />
+              <span className="text-tpurple"><LockIcon /></span> Criptografar senhas, tokens e chaves no cofre
+              {!vaultOk && <span className="text-torange">(chaveiro do sistema indisponível)</span>}
+            </label>
             <div className="flex items-center justify-end gap-2">
               <span className="text-dim">{picked.size} workspace(s), {total} requests</span>
               <button className="btn" onClick={onClose}>Cancelar</button>

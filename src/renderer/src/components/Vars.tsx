@@ -1,7 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { envSource, formatValue, isSecret, requestVarRefs, tokenize, varSources, type VarInfo, type VarSource } from '@shared/vars'
 import type { Folder, RequestDoc, Workspace } from '@shared/types'
-import { activeEnvId, activeRequest, activeWorkspace, saveEnvironment, saveFolder, useStore } from '../state'
+import { isEncrypted, looksSecret, MASK } from '@shared/secret'
+import { LockIcon } from './Secret'
+import { api, activeEnvId, activeRequest, activeWorkspace, saveEnvironment, saveFolder, useStore } from '../state'
 
 /** abre o popover de edição ancorado no elemento */
 export function openVar(name: string, el: Element): void {
@@ -24,11 +26,14 @@ export function VarBadge({ name, label }: { name: string; label?: string }) {
   const { sources } = useVarContext()
   const info = sources.get(name)
   const value = info ? formatValue(info.value) : undefined
-  const title = info ? `${name} = ${isSecret(name) ? '••••••' : value}\n(${info.source.label}) — clique pra editar` : `${name} não definida — clique pra criar`
+  const enc = info ? isEncrypted(info.value) : false
+  const title = info
+    ? `${name} = ${enc ? '🔒 criptografado' : isSecret(name) ? MASK : value}\n(${info.source.label}) — clique pra editar`
+    : `${name} não definida — clique pra criar`
   return (
     <span
       role="button"
-      className={`var-pill ${info ? 'ok' : 'missing'}`}
+      className={`var-pill ${info ? (enc ? 'secret' : 'ok') : 'missing'}`}
       title={title}
       onMouseDown={(e) => e.preventDefault()}
       onClick={(e) => {
@@ -36,6 +41,7 @@ export function VarBadge({ name, label }: { name: string; label?: string }) {
         openVar(name, e.currentTarget)
       }}
     >
+      {enc && <LockIcon size={10} />}
       {label ?? name}
     </span>
   )
@@ -166,6 +172,10 @@ export function VarPopover() {
   const [targetId, setTargetId] = useState('')
   const [show, setShow] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [secret, setSecret] = useState(false)
+  const [secretTouched, setSecretTouched] = useState(false)
+  /** valor atual é token cifrado ainda não revelado/alterado */
+  const [locked, setLocked] = useState(false)
 
   const info = edit?.name ? sources.get(edit.name) : undefined
 
@@ -182,8 +192,12 @@ export function VarPopover() {
 
   useEffect(() => {
     if (!edit) return
+    const enc = !!info && isEncrypted(info.value)
     setName(edit.name)
-    setValue(info ? formatValue(info.value) : '')
+    setValue(info && !enc ? formatValue(info.value) : '')
+    setLocked(enc)
+    setSecret(enc)
+    setSecretTouched(false)
     setShow(!isSecret(edit.name))
     setErr(null)
     const src = info?.source
@@ -210,8 +224,22 @@ export function VarPopover() {
     }
   }, [edit])
 
+  // variável nova com nome de senha/token já sugere cifrar
+  useEffect(() => {
+    if (edit && !edit.name && !secretTouched) setSecret(looksSecret(name))
+  }, [name, edit, secretTouched])
+
   if (!edit || !ws) return null
   const isNew = !edit.name
+
+  const reveal = async () => {
+    if (!info || !isEncrypted(info.value)) return
+    const plain = await useStore.getState().run(api.vaultReveal(info.value))
+    if (plain === undefined) return
+    setValue(plain)
+    setLocked(false)
+    setShow(true)
+  }
 
   const save = async () => {
     const key = name.trim()
@@ -220,7 +248,16 @@ export function VarPopover() {
     if (!target) return setErr('Escolha onde salvar')
     // mantém tipo original (número, objeto…) quando o valor era JSON
     let parsed: unknown = value
-    if (info && typeof info.value !== 'string') {
+    if (locked && info) {
+      // não revelado nem alterado: mantém o token, ou decifra se for deixar de ser secreto
+      parsed = secret ? info.value : await useStore.getState().run(api.vaultReveal(info.value as string))
+      if (parsed === undefined) return
+    } else if (secret) {
+      if (!value) return setErr('Valor vazio')
+      const tok = await useStore.getState().run(api.vaultEncrypt(value))
+      if (!tok) return
+      parsed = tok
+    } else if (info && typeof info.value !== 'string' && !isEncrypted(info.value)) {
       try {
         parsed = JSON.parse(value)
       } catch {
@@ -273,7 +310,19 @@ export function VarPopover() {
         )}
         {info && info.shadowed.length > 0 && <p className="text-[11px] text-faint">sobrescreve: {info.shadowed.map((s) => s.label).join(', ')}</p>}
         <div className="flex items-start gap-1">
-          {multiline && show ? (
+          {locked ? (
+            <input
+              className="field min-w-0 flex-1 font-mono text-[12px]"
+              type="password"
+              placeholder="criptografado — digite pra trocar"
+              value={value}
+              onChange={(e) => {
+                setValue(e.target.value)
+                setLocked(false)
+              }}
+              autoFocus={!isNew}
+            />
+          ) : multiline && show ? (
             <textarea className="field h-24 min-w-0 flex-1 resize-y font-mono text-[12px]" value={value} onChange={(e) => setValue(e.target.value)} autoFocus={!isNew} spellCheck={false} />
           ) : (
             <input
@@ -286,10 +335,24 @@ export function VarPopover() {
               spellCheck={false}
             />
           )}
-          <button type="button" className="btn btn-ghost px-2" title={show ? 'Esconder' : 'Mostrar'} onClick={() => setShow(!show)}>
-            {show ? '◉' : '◎'}
+          <button type="button" className="btn btn-ghost px-2" title={show ? 'Esconder' : 'Mostrar'} onClick={() => (locked ? reveal() : setShow(!show))}>
+            {show && !locked ? '◉' : '◎'}
           </button>
         </div>
+        <label className="flex items-center gap-2 text-[11.5px]" title="Cifra com AES-256-GCM; a chave fica no chaveiro do sistema. No YAML vai só o valor cifrado.">
+          <input
+            type="checkbox"
+            className="accent-[var(--color-tpurple)]"
+            checked={secret}
+            onChange={(e) => {
+              setSecret(e.target.checked)
+              setSecretTouched(true)
+            }}
+          />
+          <span className={`inline-flex items-center gap-1 ${secret ? 'text-tpurple' : 'text-dim'}`}>
+            <LockIcon /> secreta (guardar criptografada no cofre)
+          </span>
+        </label>
         <label className="flex items-center gap-2 text-[11.5px]">
           <span className="text-dim">Salvar em</span>
           <select className="field min-w-0 flex-1 py-0.5" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
