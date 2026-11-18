@@ -54,6 +54,9 @@ describe('Store', () => {
     store.addResponse(rec)
     store.clearResponses('req_1')
     expect(fs.existsSync(bodyFile)).toBe(false)
+    // acentos: 3 M caracteres = 6 MB em UTF-8; conta bytes
+    const acc = 'ã'.repeat(3 * 1024 * 1024)
+    expect(store.addResponse({ ...rec, id: 'res_acc', body: acc, size: Buffer.byteLength(acc) })[0].bodyFile).toBe(true)
   })
 
   it('cria, renomeia, move, duplica e apaga', () => {

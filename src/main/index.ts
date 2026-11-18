@@ -4,6 +4,7 @@ import path from 'node:path'
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, shell } from 'electron'
 import { watch, type FSWatcher } from 'chokidar'
 import { Store } from './store'
+import { suggestFileName } from './filename'
 import * as Git from './git'
 import { cancel } from './http'
 import { randomUUID } from 'node:crypto'
@@ -221,17 +222,7 @@ handle('responseBody', (requestId: string, resId: string) => store.responseBody(
 /** salva o body numa pasta escolhida; nome sugerido pelo Content-Disposition, URL ou tipo */
 handle('saveResponse', async (requestId: string, resId: string) => {
   const rec = findResponse(requestId, resId)
-  const header = (n: string): string | undefined => rec.headers.find(([k]) => k.toLowerCase() === n)?.[1]
-  const disp = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(header('content-disposition') ?? '')?.[1]
-  const fromUrl = (() => {
-    try {
-      return decodeURIComponent(new URL(rec.url).pathname.split('/').pop() ?? '')
-    } catch {
-      return ''
-    }
-  })()
-  const ext = mimeExt(header('content-type'))
-  const name = disp || (fromUrl && /\.\w{1,8}$/.test(fromUrl) ? fromUrl : `${fromUrl || 'resposta'}${ext}`)
+  const name = suggestFileName(rec.headers, rec.url)
   const r = await dialog.showSaveDialog(win!, { defaultPath: path.join(app.getPath('downloads'), name) })
   if (r.canceled || !r.filePath) return null
   const body = store.responseBody(rec)
@@ -239,15 +230,6 @@ handle('saveResponse', async (requestId: string, resId: string) => {
   return r.filePath
 })
 
-function mimeExt(ct: string | undefined): string {
-  const t = (ct ?? '').split(';')[0].trim().toLowerCase()
-  const map: Record<string, string> = {
-    'application/json': '.json', 'application/xml': '.xml', 'text/xml': '.xml', 'text/html': '.html', 'text/plain': '.txt', 'text/csv': '.csv',
-    'application/pdf': '.pdf', 'image/png': '.png', 'image/jpeg': '.jpg', 'image/gif': '.gif', 'image/webp': '.webp', 'image/svg+xml': '.svg',
-    'application/zip': '.zip', 'audio/mpeg': '.mp3', 'video/mp4': '.mp4', 'application/octet-stream': '.bin'
-  }
-  return map[t] ?? (t.endsWith('+json') ? '.json' : t.endsWith('+xml') ? '.xml' : '')
-}
 
 // ---------- executor de coleção ----------
 

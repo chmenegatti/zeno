@@ -520,7 +520,8 @@ export class Store {
   /** guarda a resposta; body grande vai pra arquivo e o registro fica só com a prévia */
   addResponse(full: ResponseRecord): ResponseRecord[] {
     let rec = full
-    if (full.body.length > LARGE_BODY) {
+    // tamanho em bytes (size), não em caracteres: texto com acento passa de 5 MB antes de ter 5 M caracteres
+    if (full.size > LARGE_BODY || full.body.length > LARGE_BODY) {
       const bp = this.bodyPath(full.id)
       fs.mkdirSync(path.dirname(bp), { recursive: true })
       fs.writeFileSync(bp, full.body)
