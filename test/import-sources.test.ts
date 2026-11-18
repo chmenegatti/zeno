@@ -128,6 +128,11 @@ describe('Postman', () => {
     expect(req(ws, 'Upload').auth).toEqual({ type: 'none' })
   })
 
+  it('scripts: coleção vai pro primeiro nível, antes do script do item', () => {
+    expect(ws.children[0].scripts).toEqual({ pre: 'console.log(1)' })
+    expect(req(ws, 'Obter produto').scripts).toBeUndefined()
+  })
+
   it('body raw JSON e formdata com arquivo', () => {
     expect(req(ws, 'Criar produto').body).toEqual({ mime: 'application/json', text: '{"nome":"Caneta"}' })
     expect(req(ws, 'Upload').body.fields).toEqual([{ name: 'nome', value: 'a', enabled: true }, { name: 'arq', value: '', enabled: true, file: '/tmp/a.png' }])
@@ -136,7 +141,7 @@ describe('Postman', () => {
   it('avisos', () => {
     expect(warnings).toEqual(
       expect.arrayContaining([
-        'Loja Postman: scripts da coleção ignorados',
+        'Loja Postman: scripts da coleção copiados para cada item do primeiro nível',
         'Loja Postman / Produtos / Obter produto: variável dinâmica $randomInt não suportada',
         'Loja Postman / Login OAuth: auth "oauth2" não suportada (ficou sem auth)'
       ])
@@ -160,7 +165,8 @@ describe('Insomnia v5', () => {
     expect(f.children.map((n) => n.name)).toEqual(['Listar', 'Criar'])
     expect(req(ws, 'Criar').body).toEqual({ mime: 'application/json', text: '{"nome": "Caneta"}' })
     expect(ws.environments.map((e) => [e.name, e.parentId])).toEqual([['Base Environment', null], ['Produção', 'env_v5base']])
-    expect(warnings).toEqual(['Loja v5 / Produtos / Criar: scripts ignorados'])
+    expect(warnings).toEqual([])
+    expect(req(ws, 'Criar').scripts).toEqual({ pre: 'console.log(1)' })
   })
 })
 

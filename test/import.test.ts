@@ -25,7 +25,7 @@ describe('import Insomnia (NeDB)', () => {
   })
   it('avisa o que não converteu', () => {
     expect(warnings.some((w) => w.includes('oauth2'))).toBe(true)
-    expect(warnings.some((w) => w.includes('scripts'))).toBe(true)
+    expect(warnings.some((w) => w.includes('scripts'))).toBe(false)
     expect(warnings.some((w) => w.includes('{% %}'))).toBe(true)
   })
   it('prepare resolve com env + vars da pasta', () => {

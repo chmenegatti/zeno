@@ -8,6 +8,7 @@ import { KeyValueTable } from './KeyValueTable'
 import { AuthEditor } from './RequestPane'
 import { GitModal, MoveHint } from './Git'
 import { CodeModal } from './Code'
+import { ScriptsEditor } from './Scripts'
 import { LockIcon, useVaultStatus } from './Secret'
 import { Modal } from './ui'
 
@@ -186,6 +187,12 @@ function FolderModal({ folder, onClose }: { folder: Folder; onClose: () => void 
           <h3 className="mb-1 font-semibold">Variáveis da pasta <span className="font-normal text-faint">(sobrescrevem o ambiente)</span></h3>
           <div className="h-[160px] rounded-md border border-line">
             <CodeEditor value={vars} onChange={setVars} lang="json" />
+          </div>
+        </div>
+        <div>
+          <h3 className="font-semibold">Scripts da pasta <span className="font-normal text-faint">(rodam antes dos scripts de cada request)</span></h3>
+          <div className="-mx-3 h-[420px]">
+            <ScriptsEditor scripts={draft.scripts} onChange={(scripts) => setDraft({ ...draft, scripts })} folder />
           </div>
         </div>
         {err && <p className="text-tpink">{err}</p>}

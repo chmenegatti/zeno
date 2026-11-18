@@ -3,8 +3,9 @@ import type { ResponseRecord } from '@shared/types'
 import { activeRequest, api, useStore } from '../state'
 import { CodeEditor, langFor } from './CodeEditor'
 import { Count, formatBytes, Segmented } from './ui'
+import { ScriptResults } from './Scripts'
 
-type Section = 'body' | 'headers' | 'info'
+type Section = 'body' | 'headers' | 'tests' | 'info'
 
 function statusColor(r: ResponseRecord): string {
   if (r.error) return 'bg-tpink/15 text-tpink'
@@ -24,6 +25,7 @@ export function ResponsePane({ width }: { width: number }) {
   const responses = useStore((s) => s.responses)
   const selected = useStore((s) => s.selectedResponse)
   const sending = useStore((s) => s.sending)
+  const lastSend = useStore((s) => s.lastSend)
   const cur = activeRequest({ workspaces, app })
   const [section, setSection] = useState<Section>('body')
   const [pretty, setPretty] = useState(true)
@@ -31,6 +33,9 @@ export function ResponsePane({ width }: { width: number }) {
   const id = cur?.req.id
   const history = (id && responses[id]) || []
   const res = history.find((r) => r.id === selected[id ?? '']) ?? history[0]
+  // resultado dos scripts vale para o envio mais recente
+  const report = id && res && res.id === history[0]?.id ? lastSend[id]?.scripts : undefined
+  const failed = report ? report.tests.filter((t) => !t.ok).length + report.errors.length : 0
 
   const body = useMemo(() => {
     if (!res) return ''
@@ -83,7 +88,10 @@ export function ResponsePane({ width }: { width: number }) {
             </button>
           </div>
           {res.error ? (
-            <div className="m-3 whitespace-pre-wrap rounded-md border border-tpink/30 bg-tpink/10 p-3 font-mono text-[12px] text-tpink">{res.error}</div>
+            <div className="min-h-0 flex-1 overflow-auto">
+              <div className="m-3 whitespace-pre-wrap rounded-md border border-tpink/30 bg-tpink/10 p-3 font-mono text-[12px] text-tpink">{res.error}</div>
+              {report && (report.tests.length > 0 || report.logs.length > 0) && <ScriptResults report={{ ...report, errors: [] }} />}
+            </div>
           ) : (
             <>
               <div className="flex items-center border-b border-line px-2 pb-1.5">
@@ -93,6 +101,9 @@ export function ResponsePane({ width }: { width: number }) {
                   options={[
                     { id: 'body', label: 'Body' },
                     { id: 'headers', label: <>Headers<Count n={res.headers.length} /></> },
+                    ...(report
+                      ? [{ id: 'tests' as const, label: <>Testes{report.tests.length ? <span className={`ml-1 text-[10.5px] ${failed ? 'text-tpink' : 'text-tgreen'}`}>{report.tests.length - report.tests.filter((t) => !t.ok).length}/{report.tests.length}</span> : failed ? <span className="ml-1 text-[10.5px] text-tpink">erro</span> : null}</> }]
+                      : []),
                     { id: 'info', label: 'Info' }
                   ]}
                 />
@@ -120,6 +131,7 @@ export function ResponsePane({ width }: { width: number }) {
                     </tbody>
                   </table>
                 )}
+                {section === 'tests' && (report ? <ScriptResults report={report} /> : <p className="p-3 text-faint">Este envio não rodou scripts.</p>)}
                 {section === 'info' && (
                   <dl className="grid grid-cols-[120px_1fr] gap-y-1.5 p-3 text-[12px]">
                     <dt className="text-dim">Requisição</dt>

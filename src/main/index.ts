@@ -6,16 +6,20 @@ import { Store } from './store'
 import * as Git from './git'
 import { send, cancel } from './http'
 import { resolveTags } from './tags'
+import { runPhase, type PhaseState } from './scripts'
 import { electronProtector, Vault } from './vault'
 import { getAt, literalSecrets, scanSecrets, setAt, type SecretSpot } from '../shared/protect'
-import { SECRET_RE } from '../shared/secret'
+import { isEncrypted, looksSecret, SECRET_RE } from '../shared/secret'
 import { convert, insomniaSkipsTLS, INSOMNIA_DIR, readNedbDir, type ParseResult } from './import-insomnia'
 import { fetchSource, parseSources } from './import-sources'
 import { prepare } from '../shared/prepare'
 import { generate, type CodeLang } from '../shared/curl'
 import { countTree, findNode } from '../shared/tree'
-import type { Environment, Folder, ImportPreview, RequestDoc, Workspace } from '../shared/types'
+import type { Environment, Folder, ImportPreview, RequestDoc, ResponseRecord, ScriptReport, Workspace } from '../shared/types'
 import type { SendResult } from '../shared/api'
+
+// promise rejeitada sem tratamento (ex.: num script do usuário) não derruba o app
+process.on('unhandledRejection', (e) => console.error('promise rejeitada sem tratamento:', e))
 
 const store = new Store()
 store.load()
@@ -155,12 +159,64 @@ handle('duplicate', (id: string) => store.duplicate(id))
 handle('saveEnvironment', (wsId: string, env) => store.saveEnvironment(wsId, env))
 handle('deleteEnvironment', (id: string) => store.deleteEnvironment(id))
 
-/** prepara (resolvendo tags {% response %} que podem disparar outros requests) e envia */
+/** prepara (resolvendo tags {% response %} que podem disparar outros requests), roda scripts e envia */
 async function execute(wsRaw: Workspace, reqRaw: RequestDoc, envId: string | null, depth = 0): Promise<SendResult> {
   // segredos só são decifrados aqui, no main, e só para o envio
-  const ws: Workspace = { ...wsRaw, environments: await vault.decryptDeep(wsRaw.environments) }
-  const req: RequestDoc = await vault.decryptDeep(reqRaw)
-  const ancestors: Folder[] = await vault.decryptDeep(findNode(wsRaw, reqRaw.id)?.ancestors ?? [])
+  let ws: Workspace = { ...wsRaw, environments: await vault.decryptDeep(wsRaw.environments) }
+  let req: RequestDoc = await vault.decryptDeep(reqRaw)
+  let ancestors: Folder[] = await vault.decryptDeep(findNode(wsRaw, reqRaw.id)?.ancestors ?? [])
+  const report: ScriptReport = { logs: [], tests: [], errors: [] }
+
+  // ---------- scripts: pastas de fora pra dentro, depois o request ----------
+  const chain = (phase: 'pre' | 'post') =>
+    [...ancestors.map((a) => ({ where: `pasta ${a.name}`, code: a.scripts?.[phase] ?? '' })), { where: req.name, code: req.scripts?.[phase] ?? '' }].filter((x) => x.code.trim())
+  const pre = chain('pre')
+  const post = chain('post')
+  const baseEnv = ws.environments.find((e) => e.parentId === null)
+  const subEnv = envId ? ws.environments.find((e) => e.id === envId && e.parentId !== null) : undefined
+  let state: PhaseState | null = null
+  if (pre.length || post.length) {
+    const base = structuredClone(baseEnv?.data ?? {})
+    state = {
+      base,
+      env: subEnv ? structuredClone(subEnv.data) : base,
+      envIsBase: !subEnv,
+      vars: {},
+      request: { method: req.method, url: req.url, headers: structuredClone(req.headers), params: structuredClone(req.params), body: { mime: req.body.mime, text: req.body.text } }
+    }
+  }
+  const before = state && { base: structuredClone(state.base), env: structuredClone(state.env) }
+
+  if (state && pre.length) {
+    const r = await runPhase('pre', pre, state, report)
+    state = r.state
+    // o que o script mudou vale pro envio
+    ws = { ...ws, environments: ws.environments.map((e) => (e === baseEnv ? { ...e, data: state!.base } : e === subEnv ? { ...e, data: state!.env } : e)) }
+    const rq = state.request
+    req = { ...req, method: rq.method, url: rq.url, headers: rq.headers, params: rq.params, body: req.body.fields ? req.body : { ...req.body, mime: rq.body.mime, text: rq.body.text } }
+    if (Object.keys(state.vars).length)
+      ancestors = [...ancestors, { kind: 'folder', id: '_script', name: 'script', sortKey: 0, headers: [], auth: { type: 'inherit' }, vars: state.vars, children: [] }]
+    if (r.failed) {
+      await persistEnvChanges(wsRaw, baseEnv?.id, subEnv?.id, before!, state)
+      const response: ResponseRecord = {
+        id: `res_${Date.now().toString(36)}`,
+        requestId: reqRaw.id,
+        at: Date.now(),
+        method: req.method,
+        url: req.url,
+        status: 0,
+        statusText: '',
+        headers: [],
+        body: '',
+        bodyEncoding: 'utf8',
+        size: 0,
+        timing: { headersMs: 0, totalMs: 0 },
+        error: `Não enviado: o script ${report.errors[0]}`
+      }
+      return { response, history: store.addResponse(response), missing: [], warnings: [], scripts: report }
+    }
+  }
+
   let prepared = prepare(ws, req, ancestors, envId)
   const warnings: string[] = []
   if (prepared.unsupported.length) {
@@ -184,8 +240,58 @@ async function execute(wsRaw: Workspace, reqRaw: RequestDoc, envId: string | nul
   }
   warnings.push(...prepared.unsupported.map((t) => `tag não resolvida: ${t}`))
   const response = await send(prepared.input)
+
+  if (state && post.length && !response.error) {
+    const r = await runPhase('post', post, {
+      ...state,
+      response: {
+        code: response.status,
+        status: response.statusText,
+        headers: response.headers,
+        body: response.bodyEncoding === 'utf8' ? response.body : '',
+        time: response.timing.totalMs
+      }
+    }, report)
+    state = r.state
+  }
+  if (state) await persistEnvChanges(wsRaw, baseEnv?.id, subEnv?.id, before!, state)
+
   const history = store.addResponse(response)
-  return { response, history, missing: prepared.missing, warnings: [...new Set(warnings)] }
+  return { response, history, missing: prepared.missing, warnings: [...new Set(warnings)], scripts: state ? report : undefined }
+}
+
+/**
+ * grava no YAML o que os scripts mudaram nos ambientes. Valor que já era secreto (cifrado) ou cujo nome
+ * parece segredo (token, senha…) vai cifrado pro cofre quando dá.
+ */
+async function persistEnvChanges(
+  wsRaw: Workspace,
+  baseId: string | undefined,
+  subId: string | undefined,
+  before: { base: Record<string, unknown>; env: Record<string, unknown> },
+  after: PhaseState
+): Promise<void> {
+  const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b)
+  const targets: [string | undefined, Record<string, unknown>, Record<string, unknown>][] = [[baseId, before.base, after.base]]
+  if (!after.envIsBase) targets.push([subId, before.env, after.env])
+  let changed = false
+  for (const [id, old, next] of targets) {
+    const raw = wsRaw.environments.find((e) => e.id === id)
+    if (!raw || same(old, next)) continue
+    const data: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(next)) {
+      if (k in old && same(old[k], v)) {
+        data[k] = raw.data[k]
+        continue
+      }
+      let value = v
+      if (typeof v === 'string' && v && (isEncrypted(raw.data[k]) || looksSecret(k))) value = await vault.encrypt(v).catch(() => v)
+      data[k] = value
+    }
+    store.saveEnvironment(wsRaw.id, { ...raw, data })
+    changed = true
+  }
+  if (changed) win?.webContents.send('store:changed', store.list())
 }
 
 handle('send', (wsId: string, req: RequestDoc, envId: string | null) => {

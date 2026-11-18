@@ -1,5 +1,5 @@
 import type { CodeLang } from './curl'
-import type { AppState, GitStatus, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
+import type { AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
 
 export interface Created {
   workspaces: Workspace[]
@@ -13,6 +13,8 @@ export interface SendResult {
   missing: string[]
   /** tags {% %} não resolvidas e erros de dependência */
   warnings: string[]
+  /** saída dos scripts pré/pós (só quando há script) */
+  scripts?: ScriptReport
 }
 
 export interface ZenoApi {

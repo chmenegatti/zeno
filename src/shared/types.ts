@@ -25,6 +25,12 @@ export interface Body {
   fields?: BodyField[]
 }
 
+/** JavaScript rodado antes do envio (pre) e depois da resposta (post) */
+export interface Scripts {
+  pre?: string
+  post?: string
+}
+
 export const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const
 
 export interface RequestDoc {
@@ -38,6 +44,7 @@ export interface RequestDoc {
   headers: KV[]
   body: Body
   auth: Auth
+  scripts?: Scripts
   sortKey: number
 }
 
@@ -51,6 +58,8 @@ export interface FolderDoc {
   auth: Auth
   /** variáveis da pasta (sobrepõem o ambiente) */
   vars: Record<string, unknown>
+  /** herdados por todos os requests da pasta (rodam antes dos do request) */
+  scripts?: Scripts
 }
 
 export interface Folder extends FolderDoc {
@@ -157,4 +166,19 @@ export interface GitStatus {
   /** rebase parado no meio por conflito */
   conflict: boolean
   files: GitFile[]
+}
+
+export interface ScriptTest {
+  name: string
+  ok: boolean
+  error?: string
+  /** pre ou post, e de quem (request ou pasta) */
+  where: string
+}
+
+export interface ScriptReport {
+  logs: string[]
+  tests: ScriptTest[]
+  /** erros de script (o envio para se o pré-request falhar) */
+  errors: string[]
 }

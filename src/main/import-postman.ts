@@ -17,6 +17,18 @@ export function isPostmanEnvironment(doc: Any): boolean {
   return !!doc && Array.isArray(doc.values) && (doc._postman_variable_scope === 'environment' || (typeof doc.name === 'string' && !doc.info))
 }
 
+/** eventos prerequest/test do Postman -> scripts (a API pm.* é aceita pelo Zeno) */
+function scriptsOf(events: Any): { pre?: string; post?: string } | undefined {
+  const code = (listen: string): string | undefined => {
+    const lines = (events ?? []).filter((e: Any) => e?.listen === listen).flatMap((e: Any) => (Array.isArray(e.script?.exec) ? e.script.exec : [String(e.script?.exec ?? '')]))
+    const text = lines.join('\n')
+    return text.trim() ? text : undefined
+  }
+  const pre = code('prerequest')
+  const post = code('test')
+  return pre || post ? { ...(pre ? { pre } : {}), ...(post ? { post } : {}) } : undefined
+}
+
 const str = (v: unknown): string => (v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v))
 
 /** variáveis dinâmicas do Postman com equivalente no Zeno */
@@ -105,7 +117,6 @@ export function convertPostman(collection: Any, envs: Any[] = []): ParseResult {
   const request = (item: Any, trail: string, i: number): RequestDoc => {
     const where = `${trail} / ${item.name ?? 'request'}`
     const r = typeof item.request === 'string' ? { url: item.request, method: 'GET' } : (item.request ?? {})
-    if (item.event?.some((e: Any) => e?.script?.exec?.join?.('').trim())) warn(`${where}: scripts (pre-request/tests) ignorados`)
     const u = r.url
     let raw = typeof u === 'string' ? u : str(u?.raw)
     let params: KV[] = []
@@ -142,6 +153,7 @@ export function convertPostman(collection: Any, envs: Any[] = []): ParseResult {
       headers,
       body: b,
       auth: auth(r.auth, where),
+      scripts: scriptsOf(item.event),
       sortKey: i
     }
   }
@@ -150,7 +162,6 @@ export function convertPostman(collection: Any, envs: Any[] = []): ParseResult {
     (list ?? []).map((item, i): TreeNode => {
       if (Array.isArray(item.item)) {
         const where = `${trail} / ${item.name ?? 'pasta'}`
-        if (item.event?.some((e: Any) => e?.script?.exec?.join?.('').trim())) warn(`${where}: scripts da pasta ignorados`)
         const folder: Folder = {
           kind: 'folder',
           id: stableId('fld', wsId, trail, String(item.id ?? item._postman_id ?? ''), String(i), str(item.name)),
@@ -160,6 +171,7 @@ export function convertPostman(collection: Any, envs: Any[] = []): ParseResult {
           headers: [],
           auth: auth(item.auth, where),
           vars: Object.fromEntries((item.variable ?? []).filter((v: Any) => v?.key).map((v: Any) => [v.key, v.value ?? ''])),
+          scripts: scriptsOf(item.event),
           children: items(item.item, where)
         }
         return folder
@@ -168,7 +180,13 @@ export function convertPostman(collection: Any, envs: Any[] = []): ParseResult {
     })
 
   let children = items(collection.item, title)
-  if (collection.event?.some((e: Any) => e?.script?.exec?.join?.('').trim())) warn(`${title}: scripts da coleção ignorados`)
+  // workspace não tem script: os da coleção vão pra cada item do primeiro nível, antes dos dele
+  const rootScripts = scriptsOf(collection.event)
+  if (rootScripts) {
+    const join = (a?: string, b?: string): string | undefined => [a, b].filter(Boolean).join('\n\n') || undefined
+    children = children.map((n) => ({ ...n, scripts: { ...(join(rootScripts.pre, n.scripts?.pre) ? { pre: join(rootScripts.pre, n.scripts?.pre) } : {}), ...(join(rootScripts.post, n.scripts?.post) ? { post: join(rootScripts.post, n.scripts?.post) } : {}) } }))
+    warn(`${title}: scripts da coleção copiados para cada item do primeiro nível`)
+  }
   // workspace não tem auth: a da coleção desce para o primeiro nível que herda
   const rootAuth = auth(collection.auth, title)
   if (rootAuth.type !== 'inherit') children = children.map((n) => (n.auth.type === 'inherit' ? { ...n, auth: rootAuth } : n))

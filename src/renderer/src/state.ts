@@ -32,7 +32,7 @@ interface Store {
   /** resposta escolhida no histórico */
   selectedResponse: Record<string, string>
   sending: Record<string, boolean>
-  lastSend: Record<string, Pick<SendResult, 'missing' | 'warnings'>>
+  lastSend: Record<string, Pick<SendResult, 'missing' | 'warnings' | 'scripts'>>
   modal: Modal | null
   /** popover de edição de variável */
   varEdit: VarEdit | null
@@ -166,7 +166,7 @@ export const useStore = create<Store>((set, get) => ({
       set((st) => ({
         responses: { ...st.responses, [id]: r.history },
         selectedResponse: { ...st.selectedResponse, [id]: r.response.id },
-        lastSend: { ...st.lastSend, [id]: { missing: r.missing, warnings: r.warnings } }
+        lastSend: { ...st.lastSend, [id]: { missing: r.missing, warnings: r.warnings, scripts: r.scripts } }
       }))
     } catch (e) {
       get().showError(e)

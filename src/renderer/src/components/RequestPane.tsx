@@ -8,10 +8,11 @@ import { KeyValueTable } from './KeyValueTable'
 import { Count, METHOD_COLOR, Segmented } from './ui'
 import { RequestVars, UrlField } from './Vars'
 import { SecretInput } from './Secret'
+import { hasScripts, ScriptsEditor } from './Scripts'
 import { maskSecrets } from '@shared/secret'
 import { parseCurl } from '@shared/curl'
 
-type Section = 'params' | 'headers' | 'body' | 'auth' | 'notes'
+type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'notes'
 
 const BODY_TYPES: { mime: string | null; label: string }[] = [
   { mime: null, label: 'Sem body' },
@@ -125,6 +126,7 @@ export function RequestPane() {
             { id: 'headers', label: <>Headers<Count n={req.headers.length} /></> },
             { id: 'body', label: <>Body{req.body.mime && <span className="ml-1 text-[10.5px] text-faint">{BODY_TYPES.find((b) => b.mime === req.body.mime)?.label ?? req.body.mime}</span>}</> },
             { id: 'auth', label: <>Auth<span className="ml-1 text-[10.5px] text-faint">{req.auth.type === 'inherit' ? '↑' : req.auth.type === 'none' ? '' : AUTH_LABEL[req.auth.type]}</span></> },
+            { id: 'scripts', label: <>Scripts{hasScripts(req.scripts) ? <span className="ml-1 text-[10.5px] text-tpurple">●</span> : ancestors.some((a) => hasScripts(a.scripts)) ? <span className="ml-1 text-[10.5px] text-faint">↑</span> : null}</> },
             { id: 'notes', label: 'Notas' }
           ]}
         />
@@ -149,6 +151,7 @@ export function RequestPane() {
         )}
         {section === 'body' && <BodyEditor body={req.body} onChange={(body) => update({ body })} />}
         {section === 'auth' && <AuthEditor auth={req.auth} inherited={effectiveAuth({ ...req, auth: { type: 'inherit' } }, ancestors)} onChange={(auth) => update({ auth })} />}
+        {section === 'scripts' && <ScriptsEditor scripts={req.scripts} onChange={(scripts) => update({ scripts })} />}
         {section === 'notes' && (
           <textarea className="h-full w-full resize-none bg-transparent p-3 outline-none" placeholder="Anotações sobre este request…" value={req.description ?? ''} onChange={(e) => update({ description: e.target.value })} />
         )}
