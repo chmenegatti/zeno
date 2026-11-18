@@ -46,6 +46,8 @@ export interface ZenoApi {
   /** código pronto do request; resolveVars=false mantém as {{ variáveis }} */
   codeSnippet(wsId: string, req: RequestDoc, envId: string | null, lang: CodeLang, resolveVars: boolean): Promise<string>
   copyText(text: string): Promise<void>
+  /** valor que a tag {% %} daria agora (send=true envia o request de origem antes) */
+  tagPreview(raw: string, send: boolean): Promise<{ value?: string; error?: string; at?: number }>
   responses(requestId: string): Promise<ResponseRecord[]>
   clearResponses(requestId: string): Promise<void>
 

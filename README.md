@@ -118,7 +118,7 @@ Clique em qualquer badge para ver de onde vem o valor, mudar, mover para outro n
 | `{% uuid 'v4' %}` | UUID aleatório |
 | `{% now %}` | Data e hora atual (ISO 8601) |
 
-A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem ajuste.
+A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem ajuste. Nos campos (URL, params, headers, auth, body) a tag aparece como badge, por exemplo `ƒ Resposta ⇒ Login · $.access_token`; clique nele pra editar request, atributo, filtro e gatilho, com prévia do valor. `Ctrl+Espaço` num campo insere uma tag nova. Badge vermelho = request referenciado não existe.
 
 ## Scripts e testes
 

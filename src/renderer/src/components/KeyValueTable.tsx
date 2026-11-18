@@ -1,6 +1,7 @@
 import type { KV } from '@shared/types'
 import { isEncrypted } from '@shared/secret'
 import { SecretInput } from './Secret'
+import { TemplateInput } from './Tags'
 
 interface Row extends KV {
   file?: string
@@ -37,7 +38,7 @@ export function KeyValueTable<T extends Row>({ rows, onChange, keyPlaceholder = 
               onChange={(e) => update(i, { enabled: e.target.checked })}
               title="Ativo"
             />
-            <input className="field min-w-0 flex-1 font-mono text-[12px]" placeholder={keyPlaceholder} value={r.name} onChange={(e) => update(i, { name: e.target.value })} />
+            <TemplateInput className="text-[12px]" placeholder={keyPlaceholder} value={r.name} onChange={(name) => update(i, { name })} />
             {isEncrypted(r.value as unknown) && !ghost ? (
               <div className="flex min-w-0 flex-[2]">
                 <SecretInput value={r.value} onChange={(value) => update(i, { value })} />
@@ -47,7 +48,9 @@ export function KeyValueTable<T extends Row>({ rows, onChange, keyPlaceholder = 
                 📎 {r.file || 'escolher arquivo…'}
               </button>
             ) : (
-              <input className="field min-w-0 flex-[2] font-mono text-[12px]" placeholder={valuePlaceholder} value={r.value} onChange={(e) => update(i, { value: e.target.value })} />
+              <div className="flex min-w-0 flex-[2]">
+                <TemplateInput className="text-[12px]" placeholder={valuePlaceholder} value={r.value} onChange={(value) => update(i, { value })} />
+              </div>
             )}
             {allowFiles && !ghost && (
               <button className="btn-ghost btn px-1.5 py-0.5 text-[11px]" title="Alternar texto/arquivo" onClick={() => update(i, { file: r.file === undefined ? '' : undefined })}>

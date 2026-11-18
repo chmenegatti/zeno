@@ -5,7 +5,10 @@ import { watch, type FSWatcher } from 'chokidar'
 import { Store } from './store'
 import * as Git from './git'
 import { cancel } from './http'
+import { randomUUID } from 'node:crypto'
 import { Engine } from './engine'
+import { extract } from './tags'
+import { parseTag } from '../shared/tagdef'
 import { parseData, runCollection, toJUnit, type RunHandle } from './runner'
 import { runCli } from './cli'
 import { electronProtector, Vault } from './vault'
@@ -205,6 +208,29 @@ handle('runSaveJUnit', async (report: RunReport) => {
   return r.filePath
 })
 handle('cancel', (id: string) => cancel(id))
+
+/** prévia do valor de uma tag {% response %}; send=true envia o request de origem antes */
+handle('tagPreview', async (raw: string, send: boolean) => {
+  const t = parseTag(raw)
+  if (t.name === 'uuid') return { value: randomUUID() }
+  if (t.name === 'now') return { value: new Date().toISOString() }
+  if (t.name !== 'response') return { error: 'tag não suportada' }
+  const ws = store.list().find((w) => findNode(w, t.requestId)?.node.kind === 'request')
+  const node = ws && findNode(ws, t.requestId)?.node
+  if (!ws || node?.kind !== 'request') return { error: 'request não encontrado' }
+  let res = store.getResponses(t.requestId)[0]
+  if (send) {
+    const r = await engine.execute(ws, node, store.getState().activeEnv[ws.id] ?? null)
+    win?.webContents.send('response:added', r.response.requestId, r.history)
+    res = r.response
+  }
+  if (!res) return { error: 'ainda sem resposta: envie o request' }
+  try {
+    return { value: extract(res, t.field, t.filter), at: res.at }
+  } catch (e) {
+    return { error: (e as Error).message, at: res.at }
+  }
+})
 
 /** código do request (cURL, Go…). resolveVars=false mantém {{ var }}; segredos literais são decifrados (pedido explícito) */
 handle('codeSnippet', async (wsId: string, reqRaw: RequestDoc, envId: string | null, lang: CodeLang, resolveVars: boolean) => {
