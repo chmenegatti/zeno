@@ -32,6 +32,9 @@ const vault = new Vault(store.dir, electronProtector())
 let win: BrowserWindow | null = null
 let pendingImport: Workspace[] = []
 
+// ícone da janela: no pacote vem em resources/ (extraResources); em dev, direto de build/
+const windowIcon = app.isPackaged ? path.join(process.resourcesPath, 'icon.png') : path.join(__dirname, '../../build/icon.png')
+
 function createWindow(): void {
   win = new BrowserWindow({
     width: 1400,
@@ -41,8 +44,8 @@ function createWindow(): void {
     backgroundColor: '#00121c',
     title: 'Zeno',
     autoHideMenuBar: true,
-    // em dev usa o ícone do repositório; empacotado, o ícone vem do .desktop
-    ...(fs.existsSync(path.join(__dirname, '../../build/icon.png')) ? { icon: path.join(__dirname, '../../build/icon.png') } : {}),
+    // ícone da janela (barra no X11); no GNOME/Wayland vale o do .desktop
+    ...(fs.existsSync(windowIcon) ? { icon: windowIcon } : {}),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       sandbox: false,

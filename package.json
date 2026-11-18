@@ -1,5 +1,6 @@
 {
   "name": "zeno",
+  "desktopName": "zeno.desktop",
   "version": "0.5.0",
   "private": true,
   "description": "Cliente de API desktop sem abas: coleções em YAML, segredos criptografados e import do Insomnia",
@@ -52,7 +53,7 @@
         "AppImage"
       ],
       "maintainer": "Cesar Menegatti <zeno@localhost>",
-      "icon": "build/icon.png",
+      "icon": "build/icons",
       "synopsis": "Cliente de API desktop sem abas",
       "description": "Cliente de API desktop: coleções em YAML, segredos criptografados e import do Insomnia.",
       "desktop": {
@@ -60,8 +61,15 @@
           "StartupWMClass": "zeno",
           "Keywords": "api;http;rest;insomnia;"
         }
-      }
+      },
+      "syncDesktopName": true
     },
+    "extraResources": [
+      {
+        "from": "build/icons/512x512.png",
+        "to": "icon.png"
+      }
+    ],
     "directories": {
       "buildResources": "build",
       "output": "dist"
