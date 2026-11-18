@@ -1,0 +1,28 @@
+name: Sugerir recurso
+description: Ideia de recurso ou melhoria
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qual problema isso resolve?
+      description: Conte o contexto e a dificuldade atual.
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Como você imagina a solução?
+    validations:
+      required: true
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas consideradas
+      description: Como outros clientes de API resolvem, ou soluções de contorno que você usa hoje.
+  - type: checkboxes
+    id: ajuda
+    attributes:
+      label: Contribuição
+      options:
+        - label: Posso ajudar a implementar
