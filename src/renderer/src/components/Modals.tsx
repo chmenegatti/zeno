@@ -9,7 +9,7 @@ import { AuthEditor } from './RequestPane'
 import { GitModal, MoveHint } from './Git'
 import { CodeModal } from './Code'
 import { RunModal } from './Runner'
-import { TagModal } from './Tags'
+import { editorTags } from './Tags'
 import { ScriptsEditor } from './Scripts'
 import { LockIcon, useVaultStatus } from './Secret'
 import { Modal } from './ui'
@@ -48,8 +48,6 @@ export function Modals() {
       return modal.id ? <CodeModal reqId={modal.id} onClose={close} /> : null
     case 'git':
       return ws ? <GitModal ws={ws} onClose={close} /> : null
-    case 'tag':
-      return <TagModal initial={modal.value ?? ''} onOk={(raw) => { close(); modal.onOk?.(raw) }} onClose={close} />
     case 'run':
       return ws ? <RunModal ws={ws} folderId={modal.folderId ?? null} onClose={close} /> : null
   }
@@ -142,7 +140,7 @@ function EnvForm({ ws, env, onDeleted }: { ws: Workspace; env: Environment; onDe
         {env.parentId === null ? 'Valores valem pra todos os sub-ambientes.' : 'Sobrescreve as chaves do Base.'} Use como <code>{'{{ nome }}'}</code> ou <code>{'{{ _.nome }}'}</code>. Valores <code>$zeno$v1$…</code> são segredos do cofre: edite pela badge da variável.
       </p>
       <div className="min-h-0 flex-1 rounded-md border border-line" onKeyDown={(e) => (e.ctrlKey || e.metaKey) && e.key === 's' && (e.preventDefault(), save())}>
-        <CodeEditor value={text} onChange={setText} lang="json" />
+        <CodeEditor value={text} onChange={setText} lang="json" tags={editorTags} />
       </div>
       {err && <p className="text-tpink">{err}</p>}
       <div className="flex items-center gap-2">
@@ -192,7 +190,7 @@ function FolderModal({ folder, onClose }: { folder: Folder; onClose: () => void 
         <div>
           <h3 className="mb-1 font-semibold">Variáveis da pasta <span className="font-normal text-faint">(sobrescrevem o ambiente)</span></h3>
           <div className="h-[160px] rounded-md border border-line">
-            <CodeEditor value={vars} onChange={setVars} lang="json" />
+            <CodeEditor value={vars} onChange={setVars} lang="json" tags={editorTags} />
           </div>
         </div>
         <div>

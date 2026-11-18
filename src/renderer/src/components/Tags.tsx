@@ -6,6 +6,7 @@ import type { TreeNode, Workspace } from '@shared/types'
 import { activeWorkspace, api, useStore } from '../state'
 import { MethodBadge, Modal } from './ui'
 import { VarBadge } from './Vars'
+import type { TagSupport } from './CodeEditor'
 
 // ---------- rótulo ----------
 
@@ -43,7 +44,21 @@ export function TagBadge({ raw, onChange }: { raw: string; onChange?: (next: str
 
 /** abre o editor; raw vazio = tag nova */
 export function openTagEditor(raw: string, onOk: (next: string) => void): void {
-  useStore.getState().openModal({ kind: 'tag', value: raw, onOk })
+  useStore.setState({ tagEdit: { value: raw, onOk } })
+}
+
+/** badges + autocomplete de tags nos editores de código (body, ambientes, variáveis da pasta) */
+export const editorTags: TagSupport = {
+  label: (raw) => tagLabel(raw, useStore.getState().workspaces),
+  edit: (raw, apply) => openTagEditor(raw, apply)
+}
+
+/** editor de tag por cima de qualquer modal */
+export function TagEditHost() {
+  const edit = useStore((s) => s.tagEdit)
+  if (!edit) return null
+  const close = (): void => useStore.setState({ tagEdit: null })
+  return <TagModal key={edit.value} initial={edit.value} onOk={(raw) => { close(); edit.onOk(raw) }} onClose={close} />
 }
 
 // ---------- campo com badges ----------
