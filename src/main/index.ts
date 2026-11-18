@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import { Cookies } from './cookies'
 import path from 'node:path'
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, shell } from 'electron'
 import { watch, type FSWatcher } from 'chokidar'
@@ -19,7 +20,7 @@ import { fetchSource, parseSources } from './import-sources'
 import { prepare } from '../shared/prepare'
 import { generate, type CodeLang } from '../shared/curl'
 import { countTree, findNode, slugify } from '../shared/tree'
-import type { Environment, Folder, ImportPreview, RequestDoc, RunOptions, RunReport, Workspace } from '../shared/types'
+import type { CookieInfo, Environment, Folder, ImportPreview, RequestDoc, RunOptions, RunReport, Workspace } from '../shared/types'
 
 // promise rejeitada sem tratamento (ex.: num script do usuário) não derruba o app
 process.on('unhandledRejection', (e) => console.error('promise rejeitada sem tratamento:', e))
@@ -162,10 +163,14 @@ handle('duplicate', (id: string) => store.duplicate(id))
 handle('saveEnvironment', (wsId: string, env) => store.saveEnvironment(wsId, env))
 handle('deleteEnvironment', (id: string) => store.deleteEnvironment(id))
 
+const cookies = new Cookies(store.dir)
 const engine = new Engine(store, vault, {
   onChanged: (list) => win?.webContents.send('store:changed', list),
   onResponse: (id, history) => win?.webContents.send('response:added', id, history)
-})
+}, { cookies })
+
+handle('cookiesList', (wsId: string) => cookies.list(wsId))
+handle('cookiesSave', (wsId: string, list: CookieInfo[]) => cookies.replace(wsId, list))
 
 handle('send', (wsId: string, req: RequestDoc, envId: string | null) => {
   const ws = store.list().find((w) => w.id === wsId)

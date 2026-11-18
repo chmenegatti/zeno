@@ -51,7 +51,7 @@ export function RequestPane() {
       <div className="flex flex-1 flex-col items-center justify-center gap-2 text-faint">
         <div className="text-3xl text-line">◇</div>
         <p>Escolha um request na lateral</p>
-        <p className="text-[12px]">Ctrl+N novo · Ctrl+K buscar · Ctrl+E ambiente · Ctrl+Enter enviar</p>
+        <p className="text-[12px]">Ctrl+N novo · Ctrl+P buscar · Ctrl+E ambiente · Ctrl+Enter enviar</p>
       </div>
     )
   }
@@ -148,6 +148,17 @@ export function RequestPane() {
         {section === 'headers' && (
           <div className="p-3">
             <KeyValueTable rows={req.headers} onChange={(headers) => update({ headers })} keyPlaceholder="Header" />
+            <div className="mt-3 flex items-center gap-4 text-[11.5px] text-dim">
+              <label className="flex items-center gap-1.5" title="Manda os cookies guardados do workspace que valem pra esta URL">
+                <input type="checkbox" checked={req.sendCookies !== false} onChange={(e) => update({ sendCookies: e.target.checked ? undefined : false })} />
+                Enviar cookies
+              </label>
+              <label className="flex items-center gap-1.5" title="Guarda os Set-Cookie da resposta no jar do workspace">
+                <input type="checkbox" checked={req.storeCookies !== false} onChange={(e) => update({ storeCookies: e.target.checked ? undefined : false })} />
+                Guardar cookies da resposta
+              </label>
+              <button className="btn btn-ghost px-1.5 py-0 text-[11.5px]" onClick={() => useStore.getState().openModal({ kind: 'cookies', id: cur.ws.id })}>ver cookies (Ctrl+K)</button>
+            </div>
             {ancestors.some((a) => a.headers.length) && (
               <div className="mt-3 text-[11.5px] text-faint">
                 Herdados das pastas:{' '}

@@ -69,7 +69,7 @@ describe('hotkeys', () => {
     expect(comboFromInsomnia({ meta: true, keyCode: 220 })).toBe('Ctrl+\\')
     expect(comboFromInsomnia({ keyCode: 116 })).toBe('F5')
     const reg = {
-      request_quickSwitch: { winLinuxKeys: [{ ctrl: true, keyCode: 80 }] }, // igual ao nosso (Ctrl+K é extra): não mexe
+      request_quickSwitch: { winLinuxKeys: [{ ctrl: true, keyCode: 80 }] }, // igual ao nosso: não mexe
       request_send: { winLinuxKeys: [{ ctrl: true, keyCode: 13 }, { ctrl: true, keyCode: 82 }, { keyCode: 116 }] },
       environment_showEditor: { winLinuxKeys: [{ alt: true, keyCode: 69 }], macKeys: [{ meta: true, keyCode: 69 }] }, // personalizado
       request_togglePin: { winLinuxKeys: [], macKeys: [] }, // removido

@@ -1,6 +1,7 @@
 // CLI: `zeno run <workspace> [pasta] [opções]` — roda a coleção e sai com código ≠ 0 se algo falhar.
 // Funciona no app instalado (usa o chaveiro pra decifrar segredos) e com `node out/main/cli.js` (sem cofre).
 
+import { Cookies } from './cookies'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -205,7 +206,7 @@ export async function runCli(argv: string[], protector: KeyProtector, out: Out =
     const data = args.data ? parseData(fs.readFileSync(args.data, 'utf8'), args.data) : undefined
 
     // variáveis gravadas por scripts valem só durante a execução: a CLI não altera os YAML
-    const engine = new Engine(store, vault, {}, { persist: false, softSecrets: true })
+    const engine = new Engine(store, vault, {}, { persist: false, softSecrets: true, cookies: new Cookies(null) })
     const report = await runCollection(
       engine,
       store,

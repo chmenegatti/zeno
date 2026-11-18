@@ -72,6 +72,9 @@ function normRequest(raw: Partial<RequestDoc>, fallbackName: string): RequestDoc
     auth: raw.auth && typeof raw.auth === 'object' && 'type' in raw.auth ? raw.auth : { type: 'inherit' },
     scripts: normScripts(raw.scripts),
     assertions: normAssertions(raw.assertions),
+    // só o "desligado" é gravado; ausente = ligado
+    sendCookies: raw.sendCookies === false ? false : undefined,
+    storeCookies: raw.storeCookies === false ? false : undefined,
     sortKey: Number(raw.sortKey ?? 0)
   }
 }
@@ -132,6 +135,8 @@ export class Store {
   constructor(dir = defaultDataDir()) {
     this.dir = dir
     fs.mkdirSync(dir, { recursive: true })
+    // respostas, cookies e estado nunca vão pro git, mesmo com a pasta de dados dentro de um repo
+    writeGitignore(dir)
     try {
       const raw = JSON.parse(fs.readFileSync(this.linksFile, 'utf8'))
       if (Array.isArray(raw)) this.links = raw.filter((x) => typeof x === 'string')
@@ -533,8 +538,16 @@ export class Store {
 /** o que fica na máquina nunca vai pro git (hoje já mora fora do workspace; isto protege se alguém juntar as pastas) */
 export function writeGitignore(dir: string): void {
   const file = path.join(dir, '.gitignore')
-  if (fs.existsSync(file)) return
-  fs.writeFileSync(file, '# gerado pelo Zeno: respostas, estado da interface e chave do cofre ficam só na máquina\n.responses/\n.vault/\nstate.json\nlinks.json\n')
+  const need = ['.responses/', '.vault/', '.cookies/', 'state.json', 'links.json']
+  if (!fs.existsSync(file)) {
+    fs.writeFileSync(file, `# gerado pelo Zeno: respostas, cookies, estado da interface e chave do cofre ficam só na máquina\n${need.join('\n')}\n`)
+    return
+  }
+  // versões antigas não tinham tudo: só acrescenta o que falta
+  const cur = fs.readFileSync(file, 'utf8')
+  const lines = new Set(cur.split(/\r?\n/).map((l) => l.trim()))
+  const missing = need.filter((n) => !lines.has(n))
+  if (missing.length) fs.writeFileSync(file, `${cur}${cur.endsWith('\n') || !cur ? '' : '\n'}${missing.join('\n')}\n`)
 }
 
 /** arquivo `foo` ou `foo-3` corresponde ao nome `Foo`? */

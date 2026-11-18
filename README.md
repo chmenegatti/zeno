@@ -97,13 +97,14 @@ Mesmo padrão do Insomnia. Todos podem ser trocados em **⌨ Atalhos** (`Ctrl+Sh
 | `Ctrl+=` / `Ctrl+-` / `Ctrl+0` | Zoom da janela (fica salvo) |
 | `Ctrl+Shift+=` / `Ctrl+Shift+-` | Fonte dos editores |
 | `Ctrl+\` | Mostrar/esconder a lateral |
-| `Ctrl+P` (ou `Ctrl+K`) | Paleta de comandos: busca difusa em requests de todos os workspaces e ações (trocar ambiente/workspace, importar, preferências…). `>` no começo = só comandos |
+| `Ctrl+P` | Paleta de comandos: busca difusa em requests de todos os workspaces e ações (trocar ambiente/workspace, importar, preferências…). `>` no começo = só comandos |
 | `Ctrl+Shift+F` | Filtrar a lateral; com o foco num editor, formata o JSON (mantém `{{ }}` e `{% %}`) |
 | `Ctrl+L` / `Ctrl+'` | Focar a URL / a resposta |
 | `Ctrl+,` / `Ctrl+Shift+,` | Preferências (zoom, fontes) / configurações do workspace |
 | `Ctrl+Shift+/` | Lista de atalhos |
 | `Ctrl+Enter`, `Ctrl+R`, `F5` | Enviar request |
 | `Ctrl+Shift+Enter` | Opções de envio: enviar depois de N segundos ou repetir a cada N segundos (também no ▾ ao lado do Enviar) |
+| `Ctrl+K` | Cookies do workspace |
 | `Ctrl+Shift+P` | Fixar/desafixar o request no topo da lateral |
 | `Ctrl+N` / `Ctrl+Shift+N` | Novo request / nova pasta (na pasta atual) |
 | `Ctrl+D` / `Ctrl+Shift+Backspace` | Duplicar / excluir o request |
@@ -133,6 +134,10 @@ Clique em qualquer badge para ver de onde vem o valor, mudar, mover para outro n
 | `{% now %}` | Data e hora atual (ISO 8601) |
 
 A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem ajuste. Nos campos (URL, params, headers, auth, body) e no JSON dos ambientes e das variáveis da pasta, a tag aparece como badge, por exemplo `ƒ Resposta ⇒ Login · $.access_token`; clique nele pra editar request, atributo, filtro e gatilho, com prévia do valor. `Ctrl+Espaço` num campo insere uma tag nova; nos editores (body, ambientes) também dá pra digitar `respon…`, `uuid` ou `now` e escolher a sugestão. Badge vermelho = request referenciado não existe.
+
+## Cookies
+
+Cada workspace tem um jar de cookies, como no Insomnia: o `Set-Cookie` das respostas (inclusive nos redirects, como no login que devolve 302) fica guardado e vai automaticamente nos requests seguintes, respeitando domínio, caminho, `Secure` e expiração. Cookies expirados são descartados. `Ctrl+K` (ou **Cookies** no rodapé da lateral) abre a tela para ver, editar, apagar e limpar. Na aba **Headers** de cada request dá para desligar *Enviar cookies* ou *Guardar cookies da resposta*. O jar fica em `<pasta de dados>/.cookies/`, fora dos YAML e do git.
 
 ## Scripts e testes
 
