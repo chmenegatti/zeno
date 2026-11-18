@@ -20,6 +20,9 @@ export interface SendResult {
 export interface ZenoApi {
   load(): Promise<{ workspaces: Workspace[]; state: AppState; dataDir: string }>
   setState(state: AppState): Promise<void>
+  /** zoom da janela (1 = 100%) */
+  setZoom(factor: number): void
+  windowAction(action: 'fullscreen' | 'devtools' | 'quit'): Promise<void>
 
   createWorkspace(name: string): Promise<Workspace[]>
   saveWorkspace(doc: WorkspaceDoc): Promise<void>

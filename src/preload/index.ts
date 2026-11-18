@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webFrame } from 'electron'
 import type { ZenoApi } from '../shared/api'
 import type { ResponseRecord, RunStep, Workspace } from '../shared/types'
 
@@ -15,7 +15,7 @@ const channels = [
   'vaultStatus', 'vaultEncrypt', 'vaultReveal', 'vaultScan', 'vaultProtect',
   'linkWorkspace', 'moveWorkspace',
   'gitStatus', 'gitDiff', 'gitCommit', 'gitPull', 'gitPush', 'gitSwitch', 'gitAbort', 'gitInit',
-  'codeSnippet', 'copyText', 'tagPreview',
+  'codeSnippet', 'copyText', 'tagPreview', 'windowAction',
   'runCollection', 'runCancel', 'runPickData', 'runSaveJUnit'
 ] as const
 
@@ -37,5 +37,7 @@ api.onRunStep = (cb) => {
   ipcRenderer.on('run:step', listener)
   return () => ipcRenderer.removeListener('run:step', listener)
 }
+
+api.setZoom = (factor) => webFrame.setZoomFactor(factor)
 
 contextBridge.exposeInMainWorld('zeno', api)

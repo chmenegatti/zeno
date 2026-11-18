@@ -96,12 +96,14 @@ export function RequestPane() {
       </div>
 
       <div className="flex items-center gap-1.5 p-3">
-        <select className={`field w-[96px] font-mono font-semibold ${METHOD_COLOR[req.method] ?? ''}`} value={req.method} onChange={(e) => update({ method: e.target.value })}>
+        <select data-hk="method" className={`field w-[96px] font-mono font-semibold ${METHOD_COLOR[req.method] ?? ''}`} value={req.method} onChange={(e) => update({ method: e.target.value })}>
           {METHODS.map((m) => (
             <option key={m} value={m}>{m}</option>
           ))}
         </select>
-        <UrlField value={req.url} onChange={(url) => update({ url })} onEnter={() => useStore.getState().sendActive()} onCurl={applyCurl} />
+        <div data-hk="url" className="contents">
+          <UrlField value={req.url} onChange={(url) => update({ url })} onEnter={() => useStore.getState().sendActive()} onCurl={applyCurl} />
+        </div>
         {isSending ? (
           <button className="btn w-[88px]" onClick={() => api.cancel(req.id)}>Cancelar</button>
         ) : (

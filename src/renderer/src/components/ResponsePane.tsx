@@ -51,7 +51,7 @@ export function ResponsePane({ width }: { width: number }) {
   }, [res, pretty])
 
   return (
-    <section className="flex shrink-0 flex-col border-l border-line bg-panel" style={{ width }}>
+    <section data-hk="response" className="flex shrink-0 flex-col border-l border-line bg-panel" style={{ width }}>
       {!res ? (
         <div className="flex flex-1 items-center justify-center text-faint">{id && sending[id] ? 'Enviando…' : 'Sem resposta ainda'}</div>
       ) : (
@@ -64,6 +64,7 @@ export function ResponsePane({ width }: { width: number }) {
             <div className="flex-1" />
             {history.length > 1 && (
               <select
+                data-hk="history"
                 className="field max-w-[180px] py-0.5 text-[11.5px]"
                 value={res.id}
                 onChange={(e) => useStore.setState((s) => ({ selectedResponse: { ...s.selectedResponse, [id!]: e.target.value } }))}

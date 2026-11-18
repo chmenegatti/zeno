@@ -6,7 +6,7 @@ import type { AppState, Environment, Folder, FolderDoc, RequestDoc, ResponseReco
 const api = window.zeno
 
 interface Modal {
-  kind: 'env' | 'folder' | 'workspace' | 'import' | 'prompt' | 'confirm' | 'code' | 'git' | 'run'
+  kind: 'env' | 'folder' | 'workspace' | 'import' | 'prompt' | 'confirm' | 'code' | 'git' | 'run' | 'shortcuts' | 'prefs'
   /** id do alvo (pasta/workspace) */
   id?: string
   /** run: pasta a rodar (sem = workspace inteiro) */
