@@ -131,7 +131,7 @@ export function ResponsePane({ width }: { width: number }) {
                     </tbody>
                   </table>
                 )}
-                {section === 'tests' && (report ? <ScriptResults report={report} /> : <p className="p-3 text-faint">Este envio não rodou scripts.</p>)}
+                {section === 'tests' && (report ? <ScriptResults report={report} /> : <p className="p-3 text-faint">Este envio não teve scripts nem asserções.</p>)}
                 {section === 'info' && (
                   <dl className="grid grid-cols-[120px_1fr] gap-y-1.5 p-3 text-[12px]">
                     <dt className="text-dim">Requisição</dt>

@@ -33,6 +33,7 @@
     "build": "electron-vite build",
     "start": "electron-vite preview --noSandbox",
     "test": "vitest run",
+    "cli": "node out/main/cli.js",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "dist": "electron-vite build && electron-builder --linux deb AppImage",
     "release": "commit-and-tag-version",

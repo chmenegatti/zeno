@@ -45,7 +45,22 @@ export interface RequestDoc {
   body: Body
   auth: Auth
   scripts?: Scripts
+  /** checagens da resposta sem programar (rodam depois dos scripts pós-resposta) */
+  assertions?: Assertion[]
   sortKey: number
+}
+
+export const ASSERT_SOURCES = ['status', 'header', 'json', 'body', 'time'] as const
+export const ASSERT_OPS = ['eq', 'neq', 'contains', 'notContains', 'lt', 'gt', 'exists', 'notExists', 'matches'] as const
+
+/** ex.: { source: 'json', path: '$.user.id', op: 'exists' }; { source: 'time', op: 'lt', value: '500' } */
+export interface Assertion {
+  enabled: boolean
+  source: (typeof ASSERT_SOURCES)[number]
+  /** nome do header ou JSONPath ($.a.b[0], $.items[*].id) */
+  path?: string
+  op: (typeof ASSERT_OPS)[number]
+  value?: string
 }
 
 export interface FolderDoc {
@@ -181,4 +196,49 @@ export interface ScriptReport {
   tests: ScriptTest[]
   /** erros de script (o envio para se o pré-request falhar) */
   errors: string[]
+}
+
+/** um request rodado pelo executor de coleção */
+export interface RunStep {
+  iteration: number
+  requestId: string
+  name: string
+  /** pastas até o request, ex.: "Usuários / Admin" */
+  path: string
+  method: string
+  url: string
+  status: number
+  timeMs: number
+  tests: ScriptTest[]
+  /** erro de envio ou de script */
+  error?: string
+  /** variáveis {{ }} sem valor */
+  missing?: string[]
+  /** tags não resolvidas, segredos que não abriram… */
+  warnings?: string[]
+}
+
+export interface RunOptions {
+  wsId: string
+  /** null = workspace inteiro */
+  folderId: string | null
+  envId: string | null
+  iterations: number
+  delayMs: number
+  /** uma linha por iteração (CSV/JSON); vira variável */
+  data?: Record<string, unknown>[]
+  /** variáveis fixas (CLI --var); valem sobre ambiente e dados */
+  vars?: Record<string, unknown>
+  /** para no primeiro request com falha */
+  bail?: boolean
+}
+
+export interface RunReport {
+  name: string
+  startedAt: number
+  totalMs: number
+  steps: RunStep[]
+  passed: number
+  failed: number
+  cancelled?: boolean
 }

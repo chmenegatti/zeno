@@ -9,10 +9,13 @@ import { Count, METHOD_COLOR, Segmented } from './ui'
 import { RequestVars, UrlField } from './Vars'
 import { SecretInput } from './Secret'
 import { hasScripts, ScriptsEditor } from './Scripts'
+import { AssertionsEditor } from './Runner'
+import { openTagEditor, tagLabel, TemplateInput } from './Tags'
+import type { TagSupport } from './CodeEditor'
 import { maskSecrets } from '@shared/secret'
 import { parseCurl } from '@shared/curl'
 
-type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'notes'
+type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'assertions' | 'notes'
 
 const BODY_TYPES: { mime: string | null; label: string }[] = [
   { mime: null, label: 'Sem body' },
@@ -110,7 +113,7 @@ export function RequestPane() {
       <div className="-mt-1.5 truncate px-3 pb-1.5 font-mono text-[11px] text-faint select-text" title={maskSecrets(preview?.input.url ?? '')}>
         → {maskSecrets(preview?.input.url ?? '') || '…'}
       </div>
-      <RequestVars req={req} tags={preview?.unsupported ?? []} />
+      <RequestVars req={req} />
       {warn && warn.warnings.length > 0 && (
         <div className="mx-3 mb-2 rounded-md border border-torange/30 bg-torange/10 px-2 py-1 text-[11.5px] text-torange">
           {warn.warnings.map((w) => <div key={w} className="truncate" title={w}>{w}</div>)}
@@ -127,6 +130,7 @@ export function RequestPane() {
             { id: 'body', label: <>Body{req.body.mime && <span className="ml-1 text-[10.5px] text-faint">{BODY_TYPES.find((b) => b.mime === req.body.mime)?.label ?? req.body.mime}</span>}</> },
             { id: 'auth', label: <>Auth<span className="ml-1 text-[10.5px] text-faint">{req.auth.type === 'inherit' ? '↑' : req.auth.type === 'none' ? '' : AUTH_LABEL[req.auth.type]}</span></> },
             { id: 'scripts', label: <>Scripts{hasScripts(req.scripts) ? <span className="ml-1 text-[10.5px] text-tpurple">●</span> : ancestors.some((a) => hasScripts(a.scripts)) ? <span className="ml-1 text-[10.5px] text-faint">↑</span> : null}</> },
+            { id: 'assertions', label: <>Asserções<Count n={req.assertions?.filter((a) => a.enabled).length ?? 0} /></> },
             { id: 'notes', label: 'Notas' }
           ]}
         />
@@ -152,6 +156,7 @@ export function RequestPane() {
         {section === 'body' && <BodyEditor body={req.body} onChange={(body) => update({ body })} />}
         {section === 'auth' && <AuthEditor auth={req.auth} inherited={effectiveAuth({ ...req, auth: { type: 'inherit' } }, ancestors)} onChange={(auth) => update({ auth })} />}
         {section === 'scripts' && <ScriptsEditor scripts={req.scripts} onChange={(scripts) => update({ scripts })} />}
+        {section === 'assertions' && <AssertionsEditor list={req.assertions ?? []} onChange={(assertions) => update({ assertions: assertions.length ? assertions : undefined })} />}
         {section === 'notes' && (
           <textarea className="h-full w-full resize-none bg-transparent p-3 outline-none" placeholder="Anotações sobre este request…" value={req.description ?? ''} onChange={(e) => update({ description: e.target.value })} />
         )}
@@ -197,11 +202,16 @@ function BodyEditor({ body, onChange }: { body: Body; onChange: (b: Body) => voi
       )}
       {body.mime !== null && !isForm && (
         <div className="min-h-0 flex-1 border-t border-line">
-          <CodeEditor value={body.text ?? ''} lang={langFor(body.mime)} onChange={(text) => onChange({ ...body, text })} />
+          <CodeEditor value={body.text ?? ''} lang={langFor(body.mime)} onChange={(text) => onChange({ ...body, text })} tags={bodyTags} />
         </div>
       )}
     </div>
   )
+}
+
+const bodyTags: TagSupport = {
+  label: (raw) => tagLabel(raw, useStore.getState().workspaces),
+  edit: (raw, apply) => openTagEditor(raw, apply)
 }
 
 export function AuthEditor({ auth, inherited, onChange, allowInherit = true }: { auth: Auth; inherited?: Auth; onChange: (a: Auth) => void; allowInherit?: boolean }) {
@@ -213,10 +223,10 @@ export function AuthEditor({ auth, inherited, onChange, allowInherit = true }: {
     else onChange({ type })
   }
   const row = (label: string, value: string, set: (v: string) => void, secret = false) => (
-    <label className="flex items-center gap-3">
+    <div className="flex items-center gap-3">
       <span className="w-[90px] text-dim">{label}</span>
-      <input className="field min-w-0 flex-1 font-mono text-[12px]" type={secret ? 'password' : 'text'} value={value} onChange={(e) => set(e.target.value)} spellCheck={false} />
-    </label>
+      <TemplateInput className="text-[12px]" password={secret} value={value} onChange={set} />
+    </div>
   )
   const secretRow = (label: string, value: string, set: (v: string) => void) => (
     <div className="flex items-center gap-3">

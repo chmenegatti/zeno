@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { ZenoApi } from '../shared/api'
-import type { ResponseRecord, Workspace } from '../shared/types'
+import type { ResponseRecord, RunStep, Workspace } from '../shared/types'
 
 const call =
   (channel: string) =>
@@ -15,7 +15,8 @@ const channels = [
   'vaultStatus', 'vaultEncrypt', 'vaultReveal', 'vaultScan', 'vaultProtect',
   'linkWorkspace', 'moveWorkspace',
   'gitStatus', 'gitDiff', 'gitCommit', 'gitPull', 'gitPush', 'gitSwitch', 'gitAbort', 'gitInit',
-  'codeSnippet', 'copyText'
+  'codeSnippet', 'copyText', 'tagPreview',
+  'runCollection', 'runCancel', 'runPickData', 'runSaveJUnit'
 ] as const
 
 const api = Object.fromEntries(channels.map((c) => [c, call(c)])) as unknown as ZenoApi
@@ -29,6 +30,12 @@ api.onResponse = (cb) => {
   const listener = (_e: unknown, id: string, h: ResponseRecord[]): void => cb(id, h)
   ipcRenderer.on('response:added', listener)
   return () => ipcRenderer.removeListener('response:added', listener)
+}
+
+api.onRunStep = (cb) => {
+  const listener = (_e: unknown, step: RunStep, i: number, total: number): void => cb(step, i, total)
+  ipcRenderer.on('run:step', listener)
+  return () => ipcRenderer.removeListener('run:step', listener)
 }
 
 contextBridge.exposeInMainWorld('zeno', api)

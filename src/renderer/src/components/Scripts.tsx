@@ -107,7 +107,7 @@ export function ScriptResults({ report }: { report: ScriptReport }) {
           <pre className="max-h-[40vh] overflow-auto rounded-md bg-bg p-2 font-mono text-[11.5px] text-dim select-text">{report.logs.join('\n')}</pre>
         </div>
       )}
-      {!report.errors.length && !report.tests.length && !report.logs.length && <p className="text-faint">Os scripts rodaram sem testes nem saída no console.</p>}
+      {!report.errors.length && !report.tests.length && !report.logs.length && <p className="text-faint">Sem testes nem saída no console.</p>}
     </div>
   )
 }

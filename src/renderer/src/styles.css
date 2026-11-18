@@ -46,6 +46,8 @@ input, textarea, select { user-select: text; }
 .var-pill.ok:hover { border-color: color-mix(in srgb, var(--color-tblue) 55%, transparent); }
 .var-pill.missing { background: color-mix(in srgb, var(--color-torange) 14%, transparent); color: var(--color-torange); }
 .var-pill.missing:hover { border-color: color-mix(in srgb, var(--color-torange) 55%, transparent); }
-.var-pill.tag { background: color-mix(in srgb, var(--color-tpurple) 16%, transparent); color: #c99bff; cursor: default; }
+.var-pill.tag { background: color-mix(in srgb, var(--color-tpurple) 16%, transparent); color: #c99bff; }
+.var-pill.tag:hover { border-color: color-mix(in srgb, var(--color-tpurple) 60%, transparent); }
+.var-pill.tag.broken { background: color-mix(in srgb, var(--color-tpink) 14%, transparent); color: var(--color-tpink); }
 .var-pill.secret { background: color-mix(in srgb, var(--color-tpurple) 16%, transparent); color: #c99bff; }
 .var-pill.secret:hover { border-color: color-mix(in srgb, var(--color-tpurple) 60%, transparent); }

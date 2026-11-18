@@ -37,6 +37,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 | **Ambientes e variáveis** | `{{ var }}` e `{{ _.var }}` com herança Base → sub-ambiente → pasta, troca rápida com `Ctrl+E` |
 | **Badges de variáveis** | Variáveis aparecem como badges na URL e na lateral; clique pra ver, editar, criar ou mover |
 | **Scripts e testes** | JavaScript antes do envio e depois da resposta (por request ou pasta), com `zeno.test`/`zeno.expect`; scripts do Insomnia e do Postman rodam sem mudança |
+| **Asserções e executor** | Checagens de status, header, JSONPath, body e tempo sem programar; rode uma pasta inteira com iterações, dados CSV/JSON e relatório JUnit, no app ou com `zeno run` no CI |
 | **Encadeamento** | `{% response %}` usa o body, header ou URL de outro request, reenviando só quando o valor expira |
 | **Cofre de segredos** | AES-256-GCM com a chave protegida pelo chaveiro do sistema (gnome-keyring, KWallet) |
 | **cURL e código** | Cole um `curl` na URL e o request é montado; copie como cURL ou gere Go, JavaScript e Python |
@@ -117,7 +118,7 @@ Clique em qualquer badge para ver de onde vem o valor, mudar, mover para outro n
 | `{% uuid 'v4' %}` | UUID aleatório |
 | `{% now %}` | Data e hora atual (ISO 8601) |
 
-A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem ajuste.
+A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem ajuste. Nos campos (URL, params, headers, auth, body) a tag aparece como badge, por exemplo `ƒ Resposta ⇒ Login · $.access_token`; clique nele pra editar request, atributo, filtro e gatilho, com prévia do valor. `Ctrl+Espaço` num campo insere uma tag nova. Badge vermelho = request referenciado não existe.
 
 ## Scripts e testes
 
@@ -143,6 +144,33 @@ zeno.test('login ok', () => {
 | `zeno.test(nome, fn)` / `zeno.expect` | Testes com asserções no estilo chai; o resultado aparece na aba *Testes* da resposta |
 
 `insomnia.*` e `pm.*` são apelidos de `zeno.*`, então scripts importados do Insomnia e do Postman funcionam nos casos comuns. Os scripts rodam isolados: sem rede, arquivos, `require` ou timers, com limite de 5 s. Erro no script aparece no painel; se for no pré-request, o envio não acontece.
+
+### Asserções
+
+Na aba *Asserções* do request dá pra checar a resposta sem escrever código: status, header, campo por JSONPath (`$.user.id`, `$.items[*].id`, `$..id`), body e tempo, com `=`, `≠`, `contém`, `<`, `>`, `existe` e regex. O valor esperado aceita `{{ variáveis }}`. O resultado aparece junto dos testes dos scripts.
+
+### Rodar uma pasta (executor de coleção)
+
+Clique com o botão direito numa pasta e escolha **Rodar pasta…** (ou, no espaço vazio da lateral, **Rodar workspace…**). Os requests rodam na ordem da lateral e o que um script grava (um token, por exemplo) vale para os seguintes. Dá pra escolher o ambiente, repetir em várias iterações, esperar entre requests, parar na primeira falha e usar um CSV (com cabeçalho) ou JSON (lista de objetos) em que cada linha vira variáveis de uma iteração. O relatório mostra cada request e cada asserção, e pode ser exportado como JUnit XML.
+
+### Linha de comando (CI)
+
+```sh
+zeno run "Minha API" Usuários --env Homolog --junit relatorio.xml
+zeno run ./api-workspace --data usuarios.csv --var token=$API_TOKEN   # pasta com workspace.yaml, ex.: no repositório
+```
+
+| Opção | |
+|---|---|
+| `-e, --env <nome>` | sub-ambiente |
+| `-n, --iterations <n>` / `-d, --delay <ms>` | repetições e atraso entre requests |
+| `--data <arquivo>` | CSV ou JSON; uma iteração por linha |
+| `--var nome=valor` | variável extra (vale sobre ambiente e dados); repita quantas vezes quiser |
+| `--junit <arquivo>` | relatório JUnit XML |
+| `--bail` | para no primeiro request que falhar |
+| `--data-dir <dir>` | pasta de dados do Zeno |
+
+Sai com `0` se tudo passou, `1` se algum request ou teste falhou e `2` em erro de uso. Na CLI, o que os scripts gravam nos ambientes vale só durante a execução: os YAML não mudam. No app instalado, `zeno run` usa o chaveiro pra abrir os segredos cifrados; sem chaveiro (ex.: no CI, com `npm run build && node out/main/cli.js run …`), passe-os com `--var`.
 
 ## Cofre de segredos
 
@@ -208,7 +236,6 @@ sortKey: 1
 Os próximos passos estão nas [issues abertas](https://github.com/chmenegatti/zeno/issues), entre eles:
 
 - GraphQL, gRPC, WebSocket e SSE
-- executor de coleção (rodar uma pasta inteira com os testes)
 - OAuth 2.0, cookies, proxy e mTLS
 - paleta de comandos e plugins
 

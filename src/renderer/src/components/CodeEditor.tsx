@@ -1,10 +1,82 @@
-import CodeMirror, { EditorView } from '@uiw/react-codemirror'
+import CodeMirror, { Decoration, EditorView, keymap, MatchDecorator, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
 import { xml } from '@codemirror/lang-xml'
 import { javascript } from '@codemirror/lang-javascript'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { tags as t } from '@lezer/highlight'
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
+
+/** tags {% %} dentro do editor viram badge clicável (igual ao Insomnia) */
+export interface TagSupport {
+  label: (raw: string) => { text: string; broken?: string }
+  /** abre o editor; raw vazio = tag nova. apply troca o trecho */
+  edit: (raw: string, apply: (next: string) => void) => void
+}
+
+class TagWidget extends WidgetType {
+  constructor(
+    readonly raw: string,
+    readonly tags: { current: TagSupport | undefined }
+  ) {
+    super()
+  }
+  eq(o: TagWidget): boolean {
+    return o.raw === this.raw
+  }
+  toDOM(view: EditorView): HTMLElement {
+    const el = document.createElement('span')
+    const l = this.tags.current?.label(this.raw) ?? { text: this.raw }
+    el.className = `var-pill tag${l.broken ? ' broken' : ''}`
+    el.textContent = `ƒ ${l.text}`
+    el.title = `${l.broken ? `${l.broken}\n` : ''}${this.raw}\nclique pra editar`
+    el.onmousedown = (e) => e.preventDefault()
+    el.onclick = (e) => {
+      e.preventDefault()
+      const from = view.posAtDOM(el)
+      const raw = this.raw
+      this.tags.current?.edit(raw, (next) => {
+        if (view.state.sliceDoc(from, from + raw.length) === raw) view.dispatch({ changes: { from, to: from + raw.length, insert: next } })
+      })
+    }
+    return el
+  }
+  ignoreEvent(): boolean {
+    return false
+  }
+}
+
+function tagExtension(tags: { current: TagSupport | undefined }) {
+  const matcher = new MatchDecorator({
+    regexp: /\{%.*?%\}/g,
+    decoration: (m) => Decoration.replace({ widget: new TagWidget(m[0], tags) })
+  })
+  const plugin = ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet
+      constructor(view: EditorView) {
+        this.decorations = matcher.createDeco(view)
+      }
+      update(u: ViewUpdate) {
+        this.decorations = matcher.updateDeco(u, this.decorations)
+      }
+    },
+    {
+      decorations: (v) => v.decorations,
+      provide: (p) => EditorView.atomicRanges.of((view) => view.plugin(p)?.decorations ?? Decoration.none)
+    }
+  )
+  const insert = keymap.of([
+    {
+      key: 'Ctrl-Space',
+      run: (view) => {
+        const { from, to } = view.state.selection.main
+        tags.current?.edit('', (next) => view.dispatch({ changes: { from, to, insert: next } }))
+        return true
+      }
+    }
+  ])
+  return [plugin, insert]
+}
 
 // tema escuro com a paleta TOTVS
 const theme = [
@@ -50,17 +122,22 @@ interface Props {
   readOnly?: boolean
   wrap?: boolean
   placeholder?: string
+  tags?: TagSupport
 }
 
-export function CodeEditor({ value, onChange, lang = 'text', readOnly, wrap = true, placeholder }: Props) {
+export function CodeEditor({ value, onChange, lang = 'text', readOnly, wrap = true, placeholder, tags }: Props) {
+  const tagsRef = useRef(tags)
+  tagsRef.current = tags
+  const withTags = !!tags
   const extensions = useMemo(() => {
     const ext = [...theme]
+    if (withTags) ext.push(...tagExtension(tagsRef))
     if (lang === 'json') ext.push(json())
     if (lang === 'xml') ext.push(xml())
     if (lang === 'javascript') ext.push(javascript())
     if (wrap) ext.push(EditorView.lineWrapping)
     return ext
-  }, [lang, wrap])
+  }, [lang, wrap, withTags])
   return (
     <CodeMirror
       value={value}

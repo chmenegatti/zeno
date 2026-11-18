@@ -1,5 +1,5 @@
 import type { CodeLang } from './curl'
-import type { AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
+import type { RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
 
 export interface Created {
   workspaces: Workspace[]
@@ -46,6 +46,8 @@ export interface ZenoApi {
   /** código pronto do request; resolveVars=false mantém as {{ variáveis }} */
   codeSnippet(wsId: string, req: RequestDoc, envId: string | null, lang: CodeLang, resolveVars: boolean): Promise<string>
   copyText(text: string): Promise<void>
+  /** valor que a tag {% %} daria agora (send=true envia o request de origem antes) */
+  tagPreview(raw: string, send: boolean): Promise<{ value?: string; error?: string; at?: number }>
   responses(requestId: string): Promise<ResponseRecord[]>
   clearResponses(requestId: string): Promise<void>
 
@@ -77,6 +79,15 @@ export interface ZenoApi {
   /** desfaz um pull que parou em conflito */
   gitAbort(wsId: string): Promise<GitStatus>
   gitInit(wsId: string): Promise<GitStatus>
+
+  /** roda os requests da pasta (ou do workspace) em ordem; progresso chega por onRunStep */
+  runCollection(opts: RunOptions): Promise<RunReport>
+  runCancel(): Promise<void>
+  /** escolhe CSV/JSON de dados (diálogo) */
+  runPickData(): Promise<{ name: string; rows: Record<string, unknown>[] } | null>
+  /** salva o relatório como JUnit XML (diálogo); devolve o caminho */
+  runSaveJUnit(report: RunReport): Promise<string | null>
+  onRunStep(cb: (step: RunStep, index: number, total: number) => void): () => void
 
   pickFile(): Promise<string | null>
   openDataDir(): Promise<void>
