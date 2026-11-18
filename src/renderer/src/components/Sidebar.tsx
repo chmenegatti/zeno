@@ -186,7 +186,7 @@ export function Sidebar() {
       <EnvPicker ws={ws} />
       <EnvVarList ws={ws} />
       <div className="flex items-center gap-1.5 px-2 pb-2">
-        <input className="field min-w-0 flex-1" data-hk="search" placeholder="Buscar  (Ctrl+P)" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setQuery('')} />
+        <input className="field min-w-0 flex-1" data-hk="search" placeholder="Filtrar  (Ctrl+Shift+F)" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setQuery('')} />
         <button className="btn px-2" title="Novo request (Ctrl+N)" onClick={() => createRequestIn(ws.id)}>＋</button>
         <button className="btn px-2" title="Nova pasta (Ctrl+Shift+N)" onClick={() => createFolderIn(ws.id)}>▤</button>
       </div>

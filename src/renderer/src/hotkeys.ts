@@ -70,7 +70,7 @@ const ACTIONS: Record<string, () => void> = {
   editorFontDown: () => editorFont(-1),
   sidebarToggle: () => setUi({ sidebarHidden: !ui().sidebarHidden }),
   sidebarFilter: () => showSearch(),
-  quickSwitch: () => showSearch(),
+  quickSwitch: () => useStore.getState().openModal({ kind: 'palette' }),
   focusUrl: () => focusTarget('url'),
   focusResponse: () => focusTarget('response'),
   showShortcuts: () => useStore.getState().openModal({ kind: 'shortcuts' }),
@@ -117,6 +117,11 @@ const ACTIONS: Record<string, () => void> = {
 function showSearch(): void {
   if (ui().sidebarHidden) setUi({ sidebarHidden: false })
   setTimeout(() => focusTarget('search'), 0)
+}
+
+/** executa uma ação da lista de atalhos (usado pela paleta) */
+export function runAction(id: string): void {
+  ACTIONS[id]?.()
 }
 
 /** true enquanto a tela de atalhos grava uma combinação */

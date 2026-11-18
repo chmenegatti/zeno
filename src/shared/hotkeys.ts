@@ -25,7 +25,7 @@ export const HOTKEYS: HotkeyDef[] = [
   { id: 'editorFontDown', label: 'Diminuir fonte dos editores', group: 'Interface', keys: ['Ctrl+Shift+-'], global: true },
   { id: 'sidebarToggle', label: 'Mostrar/esconder lateral', group: 'Interface', keys: ['Ctrl+\\'] },
   { id: 'sidebarFilter', label: 'Filtrar a lateral', group: 'Interface', keys: ['Ctrl+Shift+F'], notInEditor: true },
-  { id: 'quickSwitch', label: 'Busca rápida', group: 'Interface', keys: ['Ctrl+P', 'Ctrl+K'] },
+  { id: 'quickSwitch', label: 'Paleta de comandos', group: 'Interface', keys: ['Ctrl+P', 'Ctrl+K'] },
   { id: 'focusUrl', label: 'Focar a URL', group: 'Interface', keys: ['Ctrl+L'], notInEditor: true },
   { id: 'focusResponse', label: 'Focar a resposta', group: 'Interface', keys: ["Ctrl+'"] },
   { id: 'showShortcuts', label: 'Atalhos de teclado', group: 'Interface', keys: ['Ctrl+Shift+/'], global: true },
