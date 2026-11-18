@@ -49,6 +49,8 @@ function createWindow(): void {
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       sandbox: false,
+      // visualizador de PDF do Chromium na aba da resposta
+      plugins: true,
       contextIsolation: true
     }
   })
@@ -203,8 +205,49 @@ handle('cookiesSave', (wsId: string, list: CookieInfo[]) => cookies.replace(wsId
 handle('send', (wsId: string, req: RequestDoc, envId: string | null) => {
   const ws = store.list().find((w) => w.id === wsId)
   if (!ws) throw new Error('workspace não encontrado')
-  return engine.execute(ws, req, envId)
+  // body grande não atravessa o IPC: vai a versão guardada (com prévia); o resto pede responseBody
+  return engine.execute(ws, req, envId).then((r) => ({ ...r, response: r.history.find((h) => h.id === r.response.id) ?? r.response }))
 })
+
+const findResponse = (requestId: string, resId: string) => {
+  const rec = store.getResponses(requestId).find((r) => r.id === resId)
+  if (!rec) throw new Error('resposta não está mais no histórico')
+  return rec
+}
+
+/** body completo de uma resposta grande (carregar sob demanda) */
+handle('responseBody', (requestId: string, resId: string) => store.responseBody(findResponse(requestId, resId)))
+
+/** salva o body numa pasta escolhida; nome sugerido pelo Content-Disposition, URL ou tipo */
+handle('saveResponse', async (requestId: string, resId: string) => {
+  const rec = findResponse(requestId, resId)
+  const header = (n: string): string | undefined => rec.headers.find(([k]) => k.toLowerCase() === n)?.[1]
+  const disp = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(header('content-disposition') ?? '')?.[1]
+  const fromUrl = (() => {
+    try {
+      return decodeURIComponent(new URL(rec.url).pathname.split('/').pop() ?? '')
+    } catch {
+      return ''
+    }
+  })()
+  const ext = mimeExt(header('content-type'))
+  const name = disp || (fromUrl && /\.\w{1,8}$/.test(fromUrl) ? fromUrl : `${fromUrl || 'resposta'}${ext}`)
+  const r = await dialog.showSaveDialog(win!, { defaultPath: path.join(app.getPath('downloads'), name) })
+  if (r.canceled || !r.filePath) return null
+  const body = store.responseBody(rec)
+  fs.writeFileSync(r.filePath, rec.bodyEncoding === 'base64' ? Buffer.from(body, 'base64') : Buffer.from(body, 'utf8'))
+  return r.filePath
+})
+
+function mimeExt(ct: string | undefined): string {
+  const t = (ct ?? '').split(';')[0].trim().toLowerCase()
+  const map: Record<string, string> = {
+    'application/json': '.json', 'application/xml': '.xml', 'text/xml': '.xml', 'text/html': '.html', 'text/plain': '.txt', 'text/csv': '.csv',
+    'application/pdf': '.pdf', 'image/png': '.png', 'image/jpeg': '.jpg', 'image/gif': '.gif', 'image/webp': '.webp', 'image/svg+xml': '.svg',
+    'application/zip': '.zip', 'audio/mpeg': '.mp3', 'video/mp4': '.mp4', 'application/octet-stream': '.bin'
+  }
+  return map[t] ?? (t.endsWith('+json') ? '.json' : t.endsWith('+xml') ? '.xml' : '')
+}
 
 // ---------- executor de coleção ----------
 
@@ -266,7 +309,7 @@ handle('tagPreview', async (raw: string, send: boolean) => {
   const ws = ordered.find((w) => findRequestRef(w.children, t.requestId))
   const node = ws && findRequestRef(ws.children, t.requestId)
   if (!ws || node?.kind !== 'request') return { error: 'request não encontrado' }
-  let res = store.getResponses(node.id)[0]
+  let res = store.withBody(store.getResponses(node.id)[0])
   if (send) {
     const r = await engine.execute(ws, node, store.getState().activeEnv[ws.id] ?? null)
     win?.webContents.send('response:added', r.response.requestId, r.history)

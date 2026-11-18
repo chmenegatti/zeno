@@ -4,7 +4,8 @@ import { openSearchPanel } from '@codemirror/search'
 import { buildTag } from '@shared/tagdef'
 import { filterJson, formatPath, jsonPathAt } from '@shared/respfilter'
 import type { ResponseRecord } from '@shared/types'
-import { useStore } from '../state'
+import { api, useStore } from '../state'
+import { formatBytes, Segmented } from './ui'
 import { CodeEditor, langFor } from './CodeEditor'
 
 export function contentType(r: ResponseRecord): string | undefined {
@@ -149,6 +150,109 @@ export function TextBody({ res, requestId, pretty }: { res: ResponseRecord; requ
           <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { save(menu.path); setMenu(null) }}>Filtrar por este caminho</button>
         </div>
       )}
+    </div>
+  )
+}
+
+// ---------- visualizadores (#16) ----------
+
+type Kind = 'image' | 'pdf' | 'html' | 'audio' | 'video' | 'text' | 'binary'
+
+export function viewKind(r: ResponseRecord): Kind {
+  const ct = (contentType(r) ?? '').toLowerCase()
+  if (ct.startsWith('image/')) return 'image'
+  if (ct.startsWith('application/pdf')) return 'pdf'
+  if (ct.startsWith('audio/')) return 'audio'
+  if (ct.startsWith('video/')) return 'video'
+  if (ct.startsWith('text/html') || ct.startsWith('application/xhtml')) return 'html'
+  return r.bodyEncoding === 'base64' ? 'binary' : 'text'
+}
+
+/** blob URL do body (revogado ao trocar/desmontar) */
+function useBlobUrl(body: string | null, encoding: 'utf8' | 'base64', type: string): string | null {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    if (body === null) return setUrl(null)
+    const bytes = encoding === 'base64' ? Uint8Array.from(atob(body), (c) => c.charCodeAt(0)) : new TextEncoder().encode(body)
+    const u = URL.createObjectURL(new Blob([bytes], { type }))
+    setUrl(u)
+    return () => URL.revokeObjectURL(u)
+  }, [body, encoding, type])
+  return url
+}
+
+/** body da resposta conforme o tipo: visual (imagem, PDF, HTML, mídia) ou texto; grande carrega sob demanda */
+export function ResponseView({ res, requestId, pretty }: { res: ResponseRecord; requestId: string; pretty: boolean }) {
+  const kind = viewKind(res)
+  const visualKinds: Kind[] = ['image', 'pdf', 'html', 'audio', 'video']
+  const canVisual = visualKinds.includes(kind)
+  const canText = res.bodyEncoding === 'utf8'
+  const [mode, setMode] = useState<'visual' | 'text'>(canVisual ? 'visual' : 'text')
+  const [full, setFull] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  useEffect(() => {
+    setFull(null)
+    setMode(canVisual ? 'visual' : 'text')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [res.id])
+
+  const load = async (): Promise<void> => {
+    setLoading(true)
+    const b = await useStore.getState().run(api.responseBody(requestId, res.id))
+    setLoading(false)
+    if (b !== undefined) setFull(b)
+  }
+  const save = async (): Promise<void> => {
+    const f = await useStore.getState().run(api.saveResponse(requestId, res.id))
+    if (f) useStore.getState().notify(`Salvo em ${f}`)
+  }
+  // body disponível: o que veio no registro, ou o completo carregado sob demanda
+  const body = res.bodyFile ? full : res.body
+  const ct = (contentType(res) ?? '').split(';')[0] || 'application/octet-stream'
+  const url = useBlobUrl(mode === 'visual' && canVisual ? body : null, res.bodyEncoding, ct)
+
+  const bar = (
+    <div className="flex items-center gap-2 border-b border-line/60 px-2 py-1 text-[11.5px]">
+      {canVisual && canText ? (
+        <Segmented value={mode} onChange={setMode} options={[{ id: 'visual', label: 'Visual' }, { id: 'text', label: 'Texto' }]} />
+      ) : (
+        <span className="px-1 text-faint">{ct}</span>
+      )}
+      <div className="flex-1" />
+      {res.bodyFile && !full && <span className="text-torange">{formatBytes(res.size)}: {canText ? 'mostrando os primeiros 256 KB' : 'não carregado'}</span>}
+      {res.bodyFile && !full && (
+        <button className="btn btn-ghost px-1.5 py-0.5 text-[11.5px]" disabled={loading} onClick={load}>{loading ? 'carregando…' : 'carregar tudo'}</button>
+      )}
+      <button className="btn btn-ghost px-1.5 py-0.5 text-[11.5px]" title="Salvar o body num arquivo" onClick={save}>salvar em arquivo</button>
+    </div>
+  )
+
+  if (mode === 'text' && canText) {
+    const shown = full !== null ? { ...res, body: full, bodyFile: false } : res
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        {bar}
+        <div className="min-h-0 flex-1">
+          <TextBody res={shown} requestId={requestId} pretty={pretty && !res.bodyFile} />
+        </div>
+      </div>
+    )
+  }
+
+  let content: React.ReactNode
+  if (!canVisual) content = <p className="p-4 text-faint">Binário de {formatBytes(res.size)} ({ct}). Use <b>salvar em arquivo</b>.</p>
+  else if (!url) content = <p className="p-4 text-faint">{res.bodyFile ? `Resposta grande (${formatBytes(res.size)}): clique em carregar tudo pra visualizar.` : 'carregando…'}</p>
+  else if (kind === 'image') content = <div className="flex h-full items-center justify-center overflow-auto bg-[repeating-conic-gradient(#0b3347_0_25%,transparent_0_50%)] bg-[length:16px_16px] p-3"><img src={url} alt="resposta" className="max-h-full max-w-full object-contain" /></div>
+  else if (kind === 'pdf') content = <iframe title="PDF" src={url} className="h-full w-full border-0 bg-white" />
+  else if (kind === 'audio') content = <div className="p-4"><audio controls src={url} className="w-full" /></div>
+  else if (kind === 'video') content = <div className="flex h-full items-center justify-center p-3"><video controls src={url} className="max-h-full max-w-full" /></div>
+  // HTML isolado: sem scripts, sem acesso ao app (sandbox vazio)
+  else content = <iframe title="HTML" sandbox="" srcDoc={body ?? ''} className="h-full w-full border-0 bg-white" />
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      {bar}
+      <div className="min-h-0 flex-1 overflow-hidden">{content}</div>
     </div>
   )
 }

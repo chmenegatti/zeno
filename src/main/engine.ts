@@ -151,7 +151,7 @@ export class Engine {
                   return asked.get(key)!
                 }
               : undefined,
-            latest: (id) => store.getResponses(id)[0],
+            latest: (id) => store.withBody(store.getResponses(id)[0]),
             sendById: async (id) => {
               const dep = store.list().find((w) => findNode(w, id)?.node.kind === 'request')
               const node = dep && findNode(dep, id)?.node

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { ResponseRecord } from '@shared/types'
 import { activeRequest, api, useStore } from '../state'
-import { contentType, TextBody } from './ResponseBody'
+import { ResponseView } from './ResponseBody'
 import { Count, formatBytes, Segmented } from './ui'
 import { ScriptResults } from './Scripts'
 
@@ -100,12 +100,7 @@ export function ResponsePane({ width }: { width: number }) {
                 )}
               </div>
               <div className={`min-h-0 flex-1 ${section === 'body' ? 'overflow-hidden' : 'overflow-auto'}`}>
-                {section === 'body' &&
-                  (res.bodyEncoding === 'base64' ? (
-                    <p className="p-3 text-faint">[binário: {formatBytes(res.size)} · {contentType(res) ?? 'sem content-type'}]</p>
-                  ) : (
-                    <TextBody res={res} requestId={id!} pretty={pretty} />
-                  ))}
+                {section === 'body' && <ResponseView res={res} requestId={id!} pretty={pretty} />}
                 {section === 'headers' && (
                   <table className="w-full font-mono text-[12px]">
                     <tbody>

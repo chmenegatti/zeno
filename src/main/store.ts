@@ -31,6 +31,9 @@ const WS_FILE = 'workspace.yaml'
 const FOLDER_FILE = 'folder.yaml'
 const ENV_DIR = '_env'
 const MAX_RESPONSES = 20
+/** acima disso o body vai pra um arquivo próprio e o histórico guarda só a prévia */
+export const LARGE_BODY = 5 * 1024 * 1024
+const PREVIEW_CHARS = 256 * 1024
 
 type Kind = 'workspace' | 'folder' | 'request' | 'env'
 interface IndexEntry {
@@ -510,15 +513,45 @@ export class Store {
     }
   }
 
-  addResponse(rec: ResponseRecord): ResponseRecord[] {
-    const list = [rec, ...this.getResponses(rec.requestId)].slice(0, MAX_RESPONSES)
+  private bodyPath(resId: string): string {
+    return path.join(this.dir, '.responses', 'bodies', resId.replace(/[^\w-]/g, '_'))
+  }
+
+  /** guarda a resposta; body grande vai pra arquivo e o registro fica só com a prévia */
+  addResponse(full: ResponseRecord): ResponseRecord[] {
+    let rec = full
+    if (full.body.length > LARGE_BODY) {
+      const bp = this.bodyPath(full.id)
+      fs.mkdirSync(path.dirname(bp), { recursive: true })
+      fs.writeFileSync(bp, full.body)
+      rec = { ...full, body: full.bodyEncoding === 'utf8' ? full.body.slice(0, PREVIEW_CHARS) : '', bodyFile: true }
+    }
+    const all = [rec, ...this.getResponses(rec.requestId)]
+    const list = all.slice(0, MAX_RESPONSES)
+    for (const old of all.slice(MAX_RESPONSES)) if (old.bodyFile) fs.rmSync(this.bodyPath(old.id), { force: true })
     const file = this.responsesFile(rec.requestId)
     fs.mkdirSync(path.dirname(file), { recursive: true })
     fs.writeFileSync(file, JSON.stringify(list))
     return list
   }
 
+  /** body completo (lê do arquivo quando foi guardado à parte) */
+  responseBody(rec: ResponseRecord): string {
+    if (!rec.bodyFile) return rec.body
+    try {
+      return fs.readFileSync(this.bodyPath(rec.id), 'utf8')
+    } catch {
+      return rec.body
+    }
+  }
+
+  /** registro com o body completo (tags {% response %}, salvar em arquivo) */
+  withBody(rec: ResponseRecord | undefined): ResponseRecord | undefined {
+    return rec?.bodyFile ? { ...rec, body: this.responseBody(rec), bodyFile: false } : rec
+  }
+
   clearResponses(requestId: string): void {
+    for (const r of this.getResponses(requestId)) if (r.bodyFile) fs.rmSync(this.bodyPath(r.id), { force: true })
     fs.rmSync(this.responsesFile(requestId), { force: true })
   }
 
