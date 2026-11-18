@@ -9,7 +9,8 @@ import { resolveTags } from './tags'
 import { electronProtector, Vault } from './vault'
 import { getAt, literalSecrets, scanSecrets, setAt, type SecretSpot } from '../shared/protect'
 import { SECRET_RE } from '../shared/secret'
-import { convert, insomniaSkipsTLS, INSOMNIA_DIR, readExportJson, readNedbDir } from './import-insomnia'
+import { convert, insomniaSkipsTLS, INSOMNIA_DIR, readNedbDir, type ParseResult } from './import-insomnia'
+import { fetchSource, parseSources } from './import-sources'
 import { prepare } from '../shared/prepare'
 import { generate, type CodeLang } from '../shared/curl'
 import { countTree, findNode } from '../shared/tree'
@@ -211,21 +212,26 @@ handle('copyText', (text: string) => clipboard.writeText(text))
 handle('responses', (id: string) => store.getResponses(id))
 handle('clearResponses', (id: string) => store.clearResponses(id))
 
-handle('importPreview', async (source: 'insomnia' | 'file'): Promise<ImportPreview | null> => {
-  let docs
+handle('importPreview', async (source: 'insomnia' | 'file' | { url: string }): Promise<ImportPreview | null> => {
+  let result: ParseResult
   let label: string
-  let insecureTLS = false
   if (source === 'insomnia') {
-    docs = readNedbDir()
+    result = convert(readNedbDir(), { insecureTLS: insomniaSkipsTLS() })
     label = INSOMNIA_DIR
-    insecureTLS = insomniaSkipsTLS()
+  } else if (source === 'file') {
+    const r = await dialog.showOpenDialog(win!, {
+      title: 'Importar (Insomnia, OpenAPI/Swagger, Postman)',
+      filters: [{ name: 'JSON ou YAML', extensions: ['json', 'yaml', 'yml'] }, { name: 'Todos', extensions: ['*'] }],
+      properties: ['openFile', 'multiSelections']
+    })
+    if (r.canceled || !r.filePaths.length) return null
+    result = parseSources(r.filePaths.map((f) => ({ name: path.basename(f), text: fs.readFileSync(f, 'utf8') })))
+    label = r.filePaths.join(', ')
   } else {
-    const r = await dialog.showOpenDialog(win!, { title: 'Export do Insomnia (JSON)', filters: [{ name: 'JSON', extensions: ['json'] }], properties: ['openFile'] })
-    if (r.canceled || !r.filePaths[0]) return null
-    docs = readExportJson(r.filePaths[0])
-    label = r.filePaths[0]
+    result = parseSources([await fetchSource(source.url)])
+    label = source.url
   }
-  const { workspaces, warnings } = convert(docs, { insecureTLS })
+  const { workspaces, warnings } = result
   pendingImport = workspaces
   const existing = new Set(store.list().map((w) => w.id))
   return {

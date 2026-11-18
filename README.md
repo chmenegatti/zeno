@@ -39,7 +39,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 | **Encadeamento** | `{% response %}` usa o body, header ou URL de outro request, reenviando só quando o valor expira |
 | **Cofre de segredos** | AES-256-GCM com a chave protegida pelo chaveiro do sistema (gnome-keyring, KWallet) |
 | **cURL e código** | Cole um `curl` na URL e o request é montado; copie como cURL ou gere Go, JavaScript e Python |
-| **Import do Insomnia** | Lê `~/.config/Insomnia` ou export JSON v4, com prévia e lista do que não foi convertido |
+| **Importação** | Insomnia (pasta, export v4 e v5), OpenAPI 3 e Swagger 2 (arquivo ou URL) e Postman v2.1 com ambientes, com prévia e lista do que não foi convertido |
 | **Organização** | Pastas aninhadas, arrastar pra mover/reordenar, duplicar, renomear, busca com `Ctrl+K` |
 | **Resposta** | JSON formatado com destaque de sintaxe, headers, tempos e histórico das últimas 20 respostas |
 | **Git integrado** | Workspace dentro do repo do projeto, com status, diff por request, commit, pull, push e branches |
@@ -77,7 +77,9 @@ npm run dev
 
 ## Primeiros passos
 
-1. **Importe do Insomnia** (opcional): menu do workspace → *Importar do Insomnia…*. Escolha os workspaces na prévia e deixe marcada a opção de criptografar senhas e tokens.
+1. **Importe** (opcional): menu do workspace → *Importar…*. Lê o Insomnia instalado, arquivos (export do Insomnia, OpenAPI/Swagger, coleção e ambientes do Postman) ou a URL de um spec. Escolha os workspaces na prévia e deixe marcada a opção de criptografar senhas e tokens.
+
+   Do OpenAPI sai uma pasta por tag, um request por operação, `{{ base_url }}` com o primeiro servidor, parâmetros de path como `{{ id }}` e body de exemplo montado do schema.
 2. **Ou crie do zero**: *Novo workspace*, depois `Ctrl+N` para um request.
 3. **Defina variáveis**: clique no ✎ ao lado do ambiente ou em ＋ na seção *Variáveis*. Use `{{ base_url }}/recurso` na URL.
 4. **Envie** com `Ctrl+Enter`.
@@ -179,7 +181,6 @@ sortKey: 1
 
 Os próximos passos estão nas [issues abertas](https://github.com/chmenegatti/zeno/issues), entre eles:
 
-- importar OpenAPI e Postman
 - GraphQL, gRPC, WebSocket e SSE
 - scripts pré-request e pós-resposta, testes e executor de coleção
 - OAuth 2.0, cookies, proxy e mTLS

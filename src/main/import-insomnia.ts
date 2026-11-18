@@ -1,4 +1,4 @@
-// Importa dados do Insomnia: diretório NeDB (~/.config/Insomnia/*.db) ou export JSON v4.
+// Importa dados do Insomnia: diretório NeDB (~/.config/Insomnia/*.db), export JSON v4 ou export YAML v5.
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -6,7 +6,7 @@ import type { Auth, Body, BodyField, Environment, Folder, KV, RequestDoc, TreeNo
 import { sortNodes } from '../shared/tree'
 
 /** registro bruto do Insomnia (campos que usamos) */
-interface InsDoc {
+export interface InsDoc {
   _id: string
   type: string
   parentId?: string | null
@@ -84,11 +84,76 @@ export function insomniaSkipsTLS(dir = INSOMNIA_DIR): boolean {
 }
 
 export function readExportJson(file: string): InsDoc[] {
-  const raw = JSON.parse(fs.readFileSync(file, 'utf8'))
+  return fromExportV4(JSON.parse(fs.readFileSync(file, 'utf8')))
+}
+
+export function isInsomniaV4(raw: unknown): boolean {
+  return !!raw && typeof raw === 'object' && (raw as { _type?: string })._type === 'export' && Array.isArray((raw as { resources?: unknown }).resources)
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function fromExportV4(raw: any): InsDoc[] {
   if (!Array.isArray(raw?.resources)) throw new Error('arquivo não é export JSON do Insomnia (v4)')
   return raw.resources
     .filter((r: { _type?: string }) => r._type && TYPE_FROM_EXPORT[r._type])
     .map((r: { _type: string }) => ({ ...r, type: TYPE_FROM_EXPORT[r._type] }))
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type V5 = any
+
+export function isInsomniaV5(raw: V5): boolean {
+  return !!raw && typeof raw === 'object' && /^(collection|spec)\.insomnia\.rest\/5\./.test(String(raw.type ?? ''))
+}
+
+/**
+ * export v5 (YAML, um workspace por arquivo) -> mesmos registros do NeDB, pra reaproveitar convert().
+ * collection: árvore de pastas (children) e requests; environments: base com subEnvironments.
+ */
+export function fromExportV5(raw: V5): InsDoc[] {
+  if (!isInsomniaV5(raw)) throw new Error('arquivo não é export do Insomnia v5')
+  const docs: InsDoc[] = []
+  const wsId = String(raw.meta?.id ?? `wrk_v5_${String(raw.name ?? 'insomnia').replace(/\W+/g, '_')}`)
+  docs.push({ _id: wsId, type: 'Workspace', name: raw.name, description: raw.meta?.description })
+  let n = 0
+  const meta = (x: V5, prefix: string): { _id: string; metaSortKey: number; description?: string } => ({
+    _id: String(x.meta?.id ?? `${prefix}_v5_${n++}`),
+    metaSortKey: Number(x.meta?.sortKey ?? n++),
+    description: x.meta?.description || x.description || undefined
+  })
+  const walk = (list: V5[], parentId: string): void => {
+    for (const x of list ?? []) {
+      if (Array.isArray(x.children)) {
+        const m = meta(x, 'fld')
+        docs.push({ ...m, type: 'RequestGroup', parentId, name: x.name, headers: x.headers, authentication: x.authentication, environment: x.environment })
+        walk(x.children, m._id)
+      } else {
+        const m = meta(x, 'req')
+        docs.push({
+          ...m,
+          type: 'Request',
+          parentId,
+          name: x.name,
+          method: x.method,
+          url: x.url,
+          parameters: x.parameters,
+          headers: x.headers,
+          body: x.body,
+          authentication: x.authentication,
+          preRequestScript: x.scripts?.preRequest,
+          afterResponseScript: x.scripts?.afterResponse
+        })
+      }
+    }
+  }
+  walk(raw.collection ?? [], wsId)
+  const env = raw.environments
+  if (env) {
+    const base = meta(env, 'env')
+    docs.push({ ...base, type: 'Environment', parentId: wsId, name: env.name ?? 'Base', data: env.data ?? {} })
+    for (const sub of env.subEnvironments ?? []) docs.push({ ...meta(sub, 'env'), type: 'Environment', parentId: base._id, name: sub.name, data: sub.data ?? {}, color: sub.color })
+  }
+  return docs
 }
 
 function kv(list: InsKV[] | undefined): KV[] {
