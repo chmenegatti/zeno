@@ -1,65 +1,204 @@
+<div align="center">
+
+<img src="docs/logo.png" width="112" alt="Logo do Zeno" />
+
 # Zeno
 
-## Ideia
-Cliente de API desktop (Electron) com tela única: lateral com coleções, request no meio, resposta à direita. Sem abas. Dados em arquivos YAML legíveis, e importa direto do Insomnia.
+**Cliente de API desktop focado: uma tela, sem abas, coleções em YAML e segredos criptografados.**
 
-## Problema
-O Insomnia 12 passou a abrir abas e não tem opção pra desligar. Alternativas como o Yaak não agradaram. Preciso de algo simples que leia minhas coleções do Insomnia sem conversão manual.
+[![Release](https://img.shields.io/github/v/release/chmenegatti/zeno?color=00dbff&label=release)](https://github.com/chmenegatti/zeno/releases/latest)
+[![CI](https://github.com/chmenegatti/zeno/actions/workflows/ci.yml/badge.svg)](https://github.com/chmenegatti/zeno/actions/workflows/ci.yml)
+[![Licença MIT](https://img.shields.io/github/license/chmenegatti/zeno?color=a44dff)](LICENSE)
+![Plataforma](https://img.shields.io/badge/plataforma-Linux-002233)
+[![Contribuições bem-vindas](https://img.shields.io/badge/PRs-bem--vindos-00ffd4)](CONTRIBUTING.md)
 
-## Status
-em-andamento
+[Instalação](#instalação) · [Recursos](#recursos) · [Primeiros passos](#primeiros-passos) · [Cofre de segredos](#cofre-de-segredos) · [Roadmap](#roadmap) · [Contribuir](CONTRIBUTING.md)
 
-## Notas
+<img src="docs/screenshot.png" alt="Tela do Zeno: coleções à esquerda, request no meio e resposta à direita" width="100%" />
 
-### Rodar
+</div>
+
+## Por que o Zeno?
+
+Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez mais cheias. O Zeno vai no sentido oposto:
+
+- **Uma tela só.** Lateral com as coleções, request no meio, resposta à direita. Clicar num request troca o conteúdo; nada se empilha.
+- **Seus dados são arquivos.** Cada request é um arquivo YAML legível, numa pasta sua. Dá pra versionar no git, revisar em PR e editar no seu editor favorito.
+- **Segredos não vazam.** Senhas e tokens ficam criptografados no próprio YAML, com a chave guardada no chaveiro do sistema.
+- **Migração sem dor.** Importa as coleções do Insomnia direto da pasta dele, incluindo ambientes e encadeamento de tokens.
+- **Local primeiro.** Sem conta, sem telemetria, sem sincronização obrigatória.
+
+## Recursos
+
+| | |
+|---|---|
+| **HTTP completo** | Todos os métodos, params, headers, body JSON/XML/texto/form/multipart com arquivo, redirects, timeout e cancelamento |
+| **Autenticação** | Basic, Bearer, API key (header ou query) e herança da pasta |
+| **Ambientes e variáveis** | `{{ var }}` e `{{ _.var }}` com herança Base → sub-ambiente → pasta, troca rápida com `Ctrl+E` |
+| **Badges de variáveis** | Variáveis aparecem como badges na URL e na lateral; clique pra ver, editar, criar ou mover |
+| **Encadeamento** | `{% response %}` usa o body, header ou URL de outro request, reenviando só quando o valor expira |
+| **Cofre de segredos** | AES-256-GCM com a chave protegida pelo chaveiro do sistema (gnome-keyring, KWallet) |
+| **Import do Insomnia** | Lê `~/.config/Insomnia` ou export JSON v4, com prévia e lista do que não foi convertido |
+| **Organização** | Pastas aninhadas, arrastar pra mover/reordenar, duplicar, renomear, busca com `Ctrl+K` |
+| **Resposta** | JSON formatado com destaque de sintaxe, headers, tempos e histórico das últimas 20 respostas |
+| **Arquivos vivos** | Editou o YAML por fora? O app recarrega na hora |
+
+## Instalação
+
+Baixe o pacote na [página de releases](https://github.com/chmenegatti/zeno/releases/latest).
+
+**Debian/Ubuntu (.deb)**
+
 ```bash
+sudo apt install ./zeno_*_amd64.deb
+```
+
+**Qualquer distribuição (AppImage)**
+
+```bash
+chmod +x Zeno-*.AppImage
+./Zeno-*.AppImage
+```
+
+> Por enquanto há pacotes só para Linux x64. O código roda em macOS e Windows com `npm run dev`; ajuda para empacotar nessas plataformas é bem-vinda.
+
+### A partir do código
+
+Requer Node.js 22 ou mais novo.
+
+```bash
+git clone https://github.com/chmenegatti/zeno.git
+cd zeno
 npm install
-npm run dev        # desenvolvimento (com --noSandbox)
-npm test           # vitest
-npm run dist       # gera .deb e AppImage em dist/
+npm run dev
 ```
 
-### Commits e releases
-- Commits seguem [Conventional Commits](https://www.conventionalcommits.org/pt-br/): `feat:`, `fix:`, `perf:`, `security:` entram no changelog; `docs:`, `chore:`, `test:`, `ci:`, `refactor:` não.
-- `npm run release` calcula a próxima versão pelos commits, atualiza `CHANGELOG.md` e `package.json`, faz o commit `chore(release): vX.Y.Z` e cria a tag. `npm run release:dry` mostra o que faria.
-- `git push --follow-tags` envia a tag; o workflow `.github/workflows/release.yml` testa, gera `.deb` e AppImage e publica a release no GitHub com as notas do changelog.
+## Primeiros passos
 
-### Onde ficam os dados
-`~/.local/share/zeno/` (ou `$ZENO_DATA_DIR`). Fora deste repo de propósito: os ambientes importados do Insomnia têm senhas e tokens em texto puro.
+1. **Importe do Insomnia** (opcional): menu do workspace → *Importar do Insomnia…*. Escolha os workspaces na prévia e deixe marcada a opção de criptografar senhas e tokens.
+2. **Ou crie do zero**: *Novo workspace*, depois `Ctrl+N` para um request.
+3. **Defina variáveis**: clique no ✎ ao lado do ambiente ou em ＋ na seção *Variáveis*. Use `{{ base_url }}/recurso` na URL.
+4. **Envie** com `Ctrl+Enter`.
 
-```
+### Atalhos
+
+| Atalho | Ação |
+|---|---|
+| `Ctrl+Enter` | Enviar request |
+| `Ctrl+N` | Novo request na pasta atual |
+| `Ctrl+K` | Buscar requests |
+| `Ctrl+E` | Trocar ambiente |
+| `Ctrl+S` | Salvar agora (o salvamento já é automático) |
+| Duplo clique | Renomear item na lateral |
+| Botão direito | Menu de contexto (novo, duplicar, excluir, configurar pasta) |
+
+## Variáveis e ambientes
+
+Cada workspace tem um ambiente **Base** e quantos sub-ambientes quiser (Desenvolvimento, Produção…). Pastas também podem ter variáveis. Na hora de enviar, vale a definição mais específica: **pasta > sub-ambiente ativo > Base**.
+
+<img src="docs/variaveis.png" alt="Popover de edição de variável" width="640" />
+
+Clique em qualquer badge para ver de onde vem o valor, mudar, mover para outro nível ou marcar como secreto. Badge laranja indica variável que não existe no ambiente ativo; clicar nela já cria.
+
+### Tags de template
+
+| Tag | O que faz |
+|---|---|
+| `{% response 'body', 'req_id', '$.token', 'when-expired', 3600 %}` | Valor da resposta de outro request (JSONPath ou caminho XML). Gatilhos: `never`, `no-history`, `when-expired`, `always` |
+| `{% response 'header', 'req_id', 'X-Session' %}` | Header da resposta de outro request |
+| `{% uuid 'v4' %}` | UUID aleatório |
+| `{% now %}` | Data e hora atual (ISO 8601) |
+
+A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem ajuste.
+
+## Cofre de segredos
+
+- Valores marcados como secretos ficam no YAML como `$zeno$v1$…` (AES-256-GCM). **Esses arquivos podem ir para o git.**
+- A chave mestra (256 bits, aleatória) fica em `.vault/key`, cifrada pelo chaveiro do sistema via `safeStorage` do Electron. Sem um chaveiro de verdade, o Zeno se recusa a criar o cofre.
+- Só o processo principal decifra, e só na hora de enviar ou quando você clica em *mostrar*. A interface exibe `••••••`.
+- Em *Configurações do workspace → Cofre de segredos*, o Zeno encontra e cifra de uma vez senhas, tokens, headers `Authorization` e valores repetidos de segredos.
+- Em outro computador, sem a chave, o Zeno avisa e pede para redefinir o valor.
+
+Detalhes e limitações em [SECURITY.md](SECURITY.md).
+
+## Onde ficam os dados
+
+Por padrão em `~/.local/share/zeno/` (ou na pasta indicada por `ZENO_DATA_DIR`):
+
+```text
 <workspace>/workspace.yaml
-<workspace>/_env/<ambiente>.yaml        # base (parentId: null) e sub-ambientes
+<workspace>/_env/<ambiente>.yaml        # Base (parentId: null) e sub-ambientes
 <workspace>/<pasta>/folder.yaml         # headers, auth e variáveis herdadas
 <workspace>/<pasta>/<request>.yaml
-.responses/<requestId>.json             # últimas 20 respostas
-state.json                              # workspace/request/ambiente ativos
+.vault/key                              # chave do cofre, protegida pelo chaveiro
+.responses/<requestId>.json             # últimas 20 respostas (não versionar)
+state.json                              # workspace, request e ambiente ativos
 ```
-Dá pra editar os YAML com o app aberto: ele recarrega sozinho.
 
-### Cofre de segredos
-- Valor marcado como secreto vai pro YAML como `$zeno$v1$<chave>$<iv>$<dados>` (AES-256-GCM). Dá pra subir no git.
-- A chave mestra (aleatória, 256 bits) fica em `.vault/key`, cifrada pelo chaveiro do sistema (`safeStorage` do Electron: gnome-keyring/kwallet no Linux). Sem chaveiro de verdade (`basic_text`), o app recusa criar o cofre.
-- Só o processo principal decifra, e só na hora de enviar ou quando você clica em "mostrar".
-- Onde marcar: no popover da variável (caixa "secreta"), no cadeado dos campos de auth e em **Workspace → Cofre de segredos**, que acha e cifra de uma vez senhas, tokens, headers `Authorization` e valores repetidos de segredos.
-- O import do Insomnia já cifra tudo isso (opção ligada por padrão).
-- Outro computador sem a chave: o app avisa que o segredo foi cifrado com outra chave; redefina o valor.
-- Senha escrita no meio de URL ou body não é cifrada automaticamente: aparece como aviso pra virar variável.
+Exemplo de request:
 
-### O que já faz
-- HTTP: métodos, params, headers, body (JSON, XML, texto, form, multipart com arquivo), redirect, timeout, cancelar, TLS inválido opcional por workspace.
-- Auth: basic, bearer, API key (header/query), herdar da pasta.
-- Variáveis `{{ nome }}` e `{{ _.nome }}`, com herança base → sub-ambiente → pastas.
-- Tags do Insomnia: `{% response %}` (body com JSONPath/caminho XML, header, url; gatilhos never/no-history/when-expired/always), `{% uuid %}`, `{% now %}`.
-- Import do Insomnia: lê `~/.config/Insomnia` (NeDB) ou export JSON v4, com prévia e lista de avisos.
-- Variáveis como badges (na URL, na barra do request e na lateral): clique pra ver, editar, criar ou remover, escolhendo onde salvar (ambiente ativo, Base ou pasta).
-- Visual com a paleta TOTVS (marca.totvs.com): Azul Escuro `#002233`, Azul `#00DBFF`, Roxo `#A44DFF` e terciárias nos métodos e status.
-- Árvore com ícones de pasta, busca, arrastar pra reordenar ou mover, renomear, duplicar e excluir.
-- Atalhos: Ctrl+Enter enviar, Ctrl+N novo request, Ctrl+K buscar, Ctrl+E ambiente.
+```yaml
+id: req_produtos
+name: Listar produtos
+method: GET
+url: "{{ base_url }}/produtos"
+params:
+  - { name: limit, value: "{{ page_size }}", enabled: true }
+headers:
+  - { name: X-Tenant, value: "{{ tenant }}", enabled: true }
+auth:
+  type: bearer
+  token: "{% response 'body', 'req_login', '$.token', 'when-expired', 3600 %}"
+sortKey: 1
+```
 
-### Ainda não faz
-GraphQL (importado como texto), gRPC, WebSocket, scripts pre/pós-request, OAuth2, cookies, export v5 (YAML) do Insomnia, tag `{% faker %}`.
+## Roadmap
 
-### Verificação manual
-`ZENO_DATA_DIR=/tmp/x ZENO_SCREENSHOT=/tmp/x.png npx electron . --no-sandbox` abre, tira print da janela e fecha. `ZENO_SCRIPT` roda JS na página antes do print.
-`ZENO_REAL=1 npx vitest run test/real-import.test.ts` importa o Insomnia real pra uma pasta temporária e confere as contagens.
+Os próximos passos estão nas [issues abertas](https://github.com/chmenegatti/zeno/issues), entre eles:
+
+- importar e exportar cURL, OpenAPI e Postman
+- GraphQL, gRPC, WebSocket e SSE
+- scripts pré-request e pós-resposta, testes e executor de coleção
+- OAuth 2.0, cookies, proxy e mTLS
+- paleta de comandos, Git integrado e plugins
+
+Quer ajudar em algum? Comente na issue antes de começar.
+
+## Desenvolvimento
+
+| Comando | O que faz |
+|---|---|
+| `npm run dev` | App em modo desenvolvimento com recarga |
+| `npm test` | Testes (Vitest) |
+| `npm run typecheck` | Checagem de tipos do main e do renderer |
+| `npm run build` | Build de produção em `out/` |
+| `npm run dist` | Gera `.deb` e AppImage em `dist/` |
+| `npm run release` | Nova versão: changelog, tag e commit de release |
+
+Stack: Electron, React, TypeScript, Vite (electron-vite), Tailwind CSS, CodeMirror 6, Zustand e undici.
+
+```text
+src/main/       processo principal: armazenamento YAML, HTTP, cofre, import, tags
+src/preload/    ponte segura entre main e interface (contextBridge)
+src/renderer/   interface React
+src/shared/     tipos e lógica pura usada pelos dois lados (variáveis, templates)
+test/           testes Vitest
+```
+
+Para verificar a interface sem abrir a janela manualmente:
+
+```bash
+ZENO_DATA_DIR=/tmp/zeno-teste ZENO_SCREENSHOT=/tmp/tela.png npx electron . --no-sandbox
+```
+
+`ZENO_SCRIPT` executa JavaScript na página antes da captura. Mais detalhes em [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Contribuindo
+
+Contribuições são muito bem-vindas: correções, recursos, documentação e traduções. Leia o [guia de contribuição](CONTRIBUTING.md) e o [código de conduta](CODE_OF_CONDUCT.md).
+
+## Licença
+
+[MIT](LICENSE) © Cesar Menegatti
+
+O Zeno é um projeto independente, inspirado no fluxo de trabalho do [Insomnia](https://insomnia.rest) e do [Yaak](https://yaak.app), sem afiliação com eles. A paleta de cores segue a identidade visual da [TOTVS](https://marca.totvs.com).
