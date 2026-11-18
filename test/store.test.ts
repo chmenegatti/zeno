@@ -26,6 +26,16 @@ describe('Store', () => {
     expect(fs.existsSync(path.join(dir, 'loja', 'itens', 'listar-v2.yaml'))).toBe(true)
   })
 
+  it('opções de cookie do request sobrevivem a reabrir; .gitignore na raiz cobre o jar', () => {
+    const [ws] = store.createWorkspace('Cookies')
+    const { id } = store.createRequest(ws.id, 'Login')
+    const req = findNode(store.load()[0], id)!.node as RequestDoc
+    store.saveRequest({ ...req, sendCookies: false, storeCookies: false })
+    const again = findNode(new Store(dir).load()[0], id)!.node as RequestDoc
+    expect([again.sendCookies, again.storeCookies]).toEqual([false, false])
+    expect(fs.readFileSync(path.join(dir, '.gitignore'), 'utf8')).toContain('.cookies/')
+  })
+
   it('cria, renomeia, move, duplica e apaga', () => {
     const [ws] = store.createWorkspace('Meu WS')
     const { id: fid } = store.createFolder(ws.id, 'Pasta A')

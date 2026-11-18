@@ -72,6 +72,9 @@ function normRequest(raw: Partial<RequestDoc>, fallbackName: string): RequestDoc
     auth: raw.auth && typeof raw.auth === 'object' && 'type' in raw.auth ? raw.auth : { type: 'inherit' },
     scripts: normScripts(raw.scripts),
     assertions: normAssertions(raw.assertions),
+    // só o "desligado" é gravado; ausente = ligado
+    sendCookies: raw.sendCookies === false ? false : undefined,
+    storeCookies: raw.storeCookies === false ? false : undefined,
     sortKey: Number(raw.sortKey ?? 0)
   }
 }
@@ -132,6 +135,8 @@ export class Store {
   constructor(dir = defaultDataDir()) {
     this.dir = dir
     fs.mkdirSync(dir, { recursive: true })
+    // respostas, cookies e estado nunca vão pro git, mesmo com a pasta de dados dentro de um repo
+    writeGitignore(dir)
     try {
       const raw = JSON.parse(fs.readFileSync(this.linksFile, 'utf8'))
       if (Array.isArray(raw)) this.links = raw.filter((x) => typeof x === 'string')
