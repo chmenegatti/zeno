@@ -2,6 +2,12 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [0.4.1](https://github.com/chmenegatti/zeno/compare/v0.4.0...v0.4.1) (2026-11-18)
+
+### Novidades
+
+* **tags:** tags `{% response %}` como badge clicável também no JSON dos ambientes e nas variáveis da pasta; digitar `respon…`, `uuid` ou `now` sugere a tag, e o editor abre por cima do modal ([#31](https://github.com/chmenegatti/zeno/pull/31)) ([356a45c](https://github.com/chmenegatti/zeno/commit/356a45c))
+
 ## [0.4.0](https://github.com/chmenegatti/zeno/compare/v0.3.0...v0.4.0) (2026-11-18)
 
 ### Novidades
