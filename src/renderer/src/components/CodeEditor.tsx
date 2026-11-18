@@ -1,9 +1,10 @@
-import CodeMirror, { Decoration, EditorView, keymap, MatchDecorator, StateEffect, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from '@uiw/react-codemirror'
+import CodeMirror, { Decoration, EditorState, EditorView, keymap, MatchDecorator, StateEffect, ViewPlugin, WidgetType, type DecorationSet, type Extension, type ViewUpdate } from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
 import { xml } from '@codemirror/lang-xml'
 import { javascript } from '@codemirror/lang-javascript'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { tags as t } from '@lezer/highlight'
+import { search } from '@codemirror/search'
 import { autocompletion, startCompletion, type Completion, type CompletionContext } from '@codemirror/autocomplete'
 import { matchVars, openVarAt, rootName } from '@shared/vars'
 import { TAG_CHOICES } from '@shared/tagdef'
@@ -181,8 +182,33 @@ function tagExtension(tags: { current: TagSupport | undefined }) {
   return [plugin, insert, autocompletion({ override: [source], icons: false })]
 }
 
+// textos do CodeMirror em pt-BR (busca, dobra, autocomplete)
+const phrases = EditorState.phrases.of({
+  Find: 'Buscar',
+  Replace: 'Substituir',
+  next: 'próximo',
+  previous: 'anterior',
+  all: 'todos',
+  'match case': 'maiúsc./minúsc.',
+  regexp: 'regex',
+  'by word': 'palavra inteira',
+  replace: 'substituir',
+  'replace all': 'substituir todos',
+  close: 'fechar',
+  'current match': 'resultado atual',
+  'on line': 'na linha',
+  'Go to line': 'Ir para a linha',
+  go: 'ir',
+  'Folded lines': 'Linhas dobradas',
+  'Unfolded lines': 'Linhas desdobradas',
+  'Fold line': 'Dobrar linha',
+  'Unfold line': 'Desdobrar linha'
+})
+
 // tema escuro com a paleta TOTVS
 const theme = [
+  phrases,
+  search({ top: true }),
   EditorView.theme(
     {
       '&': { backgroundColor: 'transparent', color: 'var(--color-ink)' },
@@ -196,7 +222,16 @@ const theme = [
       '.cm-tooltip': { backgroundColor: 'var(--color-raised)', border: '1px solid var(--color-line)' },
       '.cm-tooltip-autocomplete > ul > li': { padding: '3px 10px' },
       '.cm-tooltip-autocomplete > ul > li[aria-selected]': { backgroundColor: 'rgba(164,77,255,0.35)', color: 'var(--color-ink)' },
-      '.cm-completionDetail': { color: 'var(--color-faint)', fontStyle: 'normal', marginLeft: '10px' }
+      '.cm-completionDetail': { color: 'var(--color-faint)', fontStyle: 'normal', marginLeft: '10px' },
+      // busca (Ctrl+F)
+      '.cm-panels': { backgroundColor: 'var(--color-raised)', color: 'var(--color-ink)', borderColor: 'var(--color-line)' },
+      '.cm-panels.cm-panels-top': { borderBottom: '1px solid var(--color-line)' },
+      '.cm-search': { fontSize: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px' },
+      '.cm-search input, .cm-search button, .cm-search label': { fontSize: '12px' },
+      '.cm-textfield': { backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-line)', borderRadius: '4px', color: 'var(--color-ink)', padding: '2px 6px' },
+      '.cm-button': { backgroundImage: 'none', backgroundColor: 'var(--color-panel)', border: '1px solid var(--color-line)', borderRadius: '4px', color: 'var(--color-ink)' },
+      '.cm-searchMatch': { backgroundColor: 'rgba(255,137,0,0.28)', outline: '1px solid rgba(255,137,0,0.5)' },
+      '.cm-searchMatch.cm-searchMatch-selected': { backgroundColor: 'rgba(255,137,0,0.6)' }
     },
     { dark: true }
   ),
@@ -229,9 +264,13 @@ interface Props {
   wrap?: boolean
   placeholder?: string
   tags?: TagSupport
+  /** recebe a view (busca, posição do clique…) */
+  onView?: (view: EditorView) => void
+  /** extensões extras (fixas: criadas uma vez pelo componente) */
+  extra?: Extension[]
 }
 
-export function CodeEditor({ value, onChange, lang = 'text', readOnly, wrap = true, placeholder, tags }: Props) {
+export function CodeEditor({ value, onChange, lang = 'text', readOnly, wrap = true, placeholder, tags, onView, extra }: Props) {
   const tagsRef = useRef(tags)
   tagsRef.current = tags
   const withTags = !!tags
@@ -242,17 +281,21 @@ export function CodeEditor({ value, onChange, lang = 'text', readOnly, wrap = tr
     if (lang === 'xml') ext.push(xml())
     if (lang === 'javascript') ext.push(javascript())
     if (wrap) ext.push(EditorView.lineWrapping)
+    if (extra) ext.push(...extra)
     return ext
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, wrap, withTags])
   return (
     <CodeMirror
       value={value}
       onChange={onChange}
       readOnly={readOnly}
-      editable={!readOnly}
+      // só leitura mas focável: cursor, seleção e Ctrl+F funcionam
+      editable
       theme="none"
       extensions={extensions}
       placeholder={placeholder}
+      onCreateEditor={onView}
       height="100%"
       style={{ height: '100%' }}
       basicSetup={{ foldGutter: true, highlightActiveLine: !readOnly, autocompletion: false }}

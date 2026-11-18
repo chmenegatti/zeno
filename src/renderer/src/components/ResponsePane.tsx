@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { ResponseRecord } from '@shared/types'
 import { activeRequest, api, useStore } from '../state'
-import { CodeEditor, langFor } from './CodeEditor'
+import { contentType, TextBody } from './ResponseBody'
 import { Count, formatBytes, Segmented } from './ui'
 import { ScriptResults } from './Scripts'
 
@@ -15,9 +15,6 @@ function statusColor(r: ResponseRecord): string {
   return 'bg-tpink/15 text-tpink'
 }
 
-function contentType(r: ResponseRecord): string | undefined {
-  return r.headers.find(([k]) => k.toLowerCase() === 'content-type')?.[1]
-}
 
 export function ResponsePane({ width }: { width: number }) {
   const workspaces = useStore((s) => s.workspaces)
@@ -36,19 +33,6 @@ export function ResponsePane({ width }: { width: number }) {
   // resultado dos scripts vale para o envio mais recente
   const report = id && res && res.id === history[0]?.id ? lastSend[id]?.scripts : undefined
   const failed = report ? report.tests.filter((t) => !t.ok).length + report.errors.length : 0
-
-  const body = useMemo(() => {
-    if (!res) return ''
-    if (res.bodyEncoding === 'base64') return `[binário: ${formatBytes(res.size)} · ${contentType(res) ?? 'sem content-type'}]`
-    if (pretty && langFor(contentType(res)) === 'json') {
-      try {
-        return JSON.stringify(JSON.parse(res.body), null, 2)
-      } catch {
-        return res.body
-      }
-    }
-    return res.body
-  }, [res, pretty])
 
   return (
     <section data-hk="response" className="flex shrink-0 flex-col border-l border-line bg-panel" style={{ width }}>
@@ -109,17 +93,19 @@ export function ResponsePane({ width }: { width: number }) {
                   ]}
                 />
                 <div className="flex-1" />
-                {section === 'body' && (
-                  <>
-                    <label className="mr-2 flex items-center gap-1 text-[11.5px] text-dim">
-                      <input type="checkbox" className="accent-[var(--color-accent)]" checked={pretty} onChange={(e) => setPretty(e.target.checked)} /> formatar
-                    </label>
-                    <button className="btn btn-ghost px-1.5 py-0.5 text-[11.5px]" onClick={() => navigator.clipboard.writeText(body)}>copiar</button>
-                  </>
+                {section === 'body' && res.bodyEncoding !== 'base64' && (
+                  <label className="mr-2 flex items-center gap-1 text-[11.5px] text-dim">
+                    <input type="checkbox" className="accent-[var(--color-accent)]" checked={pretty} onChange={(e) => setPretty(e.target.checked)} /> formatar
+                  </label>
                 )}
               </div>
-              <div className="min-h-0 flex-1 overflow-auto">
-                {section === 'body' && <CodeEditor value={body} readOnly lang={langFor(contentType(res))} />}
+              <div className={`min-h-0 flex-1 ${section === 'body' ? 'overflow-hidden' : 'overflow-auto'}`}>
+                {section === 'body' &&
+                  (res.bodyEncoding === 'base64' ? (
+                    <p className="p-3 text-faint">[binário: {formatBytes(res.size)} · {contentType(res) ?? 'sem content-type'}]</p>
+                  ) : (
+                    <TextBody res={res} requestId={id!} pretty={pretty} />
+                  ))}
                 {section === 'headers' && (
                   <table className="w-full font-mono text-[12px]">
                     <tbody>
