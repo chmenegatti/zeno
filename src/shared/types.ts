@@ -121,3 +121,14 @@ export interface ImportPreview {
   workspaces: { id: string; name: string; folders: number; requests: number; environments: number; exists: boolean }[]
   warnings: string[]
 }
+
+export interface VaultStatus {
+  available: boolean
+  backend: string
+  /** backend sem chaveiro de verdade (senha fixa) */
+  weak: boolean
+  hasKey: boolean
+  /** id curto da chave atual */
+  keyId?: string
+  error?: string
+}

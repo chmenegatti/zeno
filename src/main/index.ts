@@ -5,14 +5,18 @@ import { watch } from 'chokidar'
 import { Store } from './store'
 import { send, cancel } from './http'
 import { resolveTags } from './tags'
+import { electronProtector, Vault } from './vault'
+import { getAt, literalSecrets, scanSecrets, setAt, type SecretSpot } from '../shared/protect'
+import { SECRET_RE } from '../shared/secret'
 import { convert, insomniaSkipsTLS, INSOMNIA_DIR, readExportJson, readNedbDir } from './import-insomnia'
 import { prepare } from '../shared/prepare'
 import { countTree, findNode } from '../shared/tree'
-import type { ImportPreview, RequestDoc, Workspace } from '../shared/types'
+import type { Environment, Folder, ImportPreview, RequestDoc, Workspace } from '../shared/types'
 import type { SendResult } from '../shared/api'
 
 const store = new Store()
 store.load()
+const vault = new Vault(store.dir, electronProtector())
 let win: BrowserWindow | null = null
 let pendingImport: Workspace[] = []
 
@@ -57,7 +61,7 @@ function watchDataDir(): void {
   let timer: NodeJS.Timeout | null = null
   const watcher = watch(store.dir, {
     ignoreInitial: true,
-    ignored: (p) => p.includes(`${path.sep}.responses`) || p.endsWith('state.json')
+    ignored: (p) => p.includes(`${path.sep}.responses`) || p.includes(`${path.sep}.vault`) || p.endsWith('state.json')
   })
   watcher.on('all', () => {
     if (Date.now() - store.lastWrite < 1500) return
@@ -96,8 +100,11 @@ handle('saveEnvironment', (wsId: string, env) => store.saveEnvironment(wsId, env
 handle('deleteEnvironment', (id: string) => store.deleteEnvironment(id))
 
 /** prepara (resolvendo tags {% response %} que podem disparar outros requests) e envia */
-async function execute(ws: Workspace, req: RequestDoc, envId: string | null, depth = 0): Promise<SendResult> {
-  const ancestors = findNode(ws, req.id)?.ancestors ?? []
+async function execute(wsRaw: Workspace, reqRaw: RequestDoc, envId: string | null, depth = 0): Promise<SendResult> {
+  // segredos só são decifrados aqui, no main, e só para o envio
+  const ws: Workspace = { ...wsRaw, environments: await vault.decryptDeep(wsRaw.environments) }
+  const req: RequestDoc = await vault.decryptDeep(reqRaw)
+  const ancestors: Folder[] = await vault.decryptDeep(findNode(wsRaw, reqRaw.id)?.ancestors ?? [])
   let prepared = prepare(ws, req, ancestors, envId)
   const warnings: string[] = []
   if (prepared.unsupported.length) {
@@ -157,10 +164,76 @@ handle('importPreview', async (source: 'insomnia' | 'file'): Promise<ImportPrevi
     warnings
   }
 })
-handle('importRun', (ids: string[]) => {
+handle('importRun', async (ids: string[], protect: boolean) => {
   for (const ws of pendingImport.filter((w) => ids.includes(w.id))) store.writeWorkspace(ws)
   pendingImport = []
+  store.load()
+  if (protect) {
+    // conhece todos os segredos antes de cifrar, pra pegar senha repetida entre workspaces
+    const known = await knownSecrets()
+    for (const id of ids) await protectWorkspace(id, known)
+  }
   return store.load()
+})
+
+// ---------- cofre ----------
+
+/** todos os segredos conhecidos: literais (pelas regras) + já cifrados (decifrados só aqui, em memória) */
+async function knownSecrets(): Promise<Set<string>> {
+  const known = new Set<string>()
+  for (const ws of store.list()) {
+    for (const v of literalSecrets(ws)) known.add(v)
+    const tokens = JSON.stringify({ e: ws.environments, c: ws.children }).match(SECRET_RE) ?? []
+    for (const t of new Set(tokens)) {
+      try {
+        known.add(await vault.decrypt(t))
+      } catch {
+        /* chave de outra máquina: ignora */
+      }
+    }
+  }
+  return known
+}
+
+/** cifra no cofre todo segredo em texto puro do workspace */
+async function protectWorkspace(wsId: string, known?: Set<string>): Promise<number> {
+  const ws = store.list().find((w) => w.id === wsId)
+  if (!ws) throw new Error('workspace não encontrado')
+  const { spots } = scanSecrets(ws, known ?? (await knownSecrets()))
+  // uma cópia por objeto alterado; grava cada um uma vez só
+  const copies = new Map<string, { kind: SecretSpot['target']['kind']; obj: Environment | Folder | RequestDoc }>()
+  for (const s of spots) {
+    let c = copies.get(s.target.id)
+    if (!c) {
+      const src = s.target.kind === 'env' ? ws.environments.find((e) => e.id === s.target.id) : findNode(ws, s.target.id)?.node
+      if (!src) continue
+      c = { kind: s.target.kind, obj: structuredClone(src) }
+      copies.set(s.target.id, c)
+    }
+    setAt(c.obj, s.path, await vault.encrypt(String(getAt(c.obj, s.path))))
+  }
+  const list = [...copies.values()]
+  for (const c of list.filter((c) => c.kind === 'request')) store.saveRequest(c.obj as RequestDoc)
+  for (const c of list.filter((c) => c.kind === 'folder')) {
+    const { children: _c, ...doc } = c.obj as Folder
+    store.saveFolder(doc)
+  }
+  for (const c of list.filter((c) => c.kind === 'env')) store.saveEnvironment(ws.id, c.obj as Environment)
+  return spots.length
+}
+
+handle('vaultStatus', () => vault.status())
+handle('vaultEncrypt', (plain: string) => vault.encrypt(plain))
+handle('vaultReveal', (token: string) => vault.decrypt(token))
+handle('vaultScan', async (wsId: string) => {
+  const ws = store.list().find((w) => w.id === wsId)
+  if (!ws) return { plain: [], warnings: [] }
+  const r = scanSecrets(ws, await knownSecrets())
+  return { plain: r.spots.map((s) => s.label), warnings: r.warnings }
+})
+handle('vaultProtect', async (wsId: string) => {
+  const count = await protectWorkspace(wsId)
+  return { count, workspaces: store.load() }
 })
 
 handle('pickFile', async () => {

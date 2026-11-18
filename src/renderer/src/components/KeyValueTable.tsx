@@ -1,4 +1,6 @@
 import type { KV } from '@shared/types'
+import { isEncrypted } from '@shared/secret'
+import { SecretInput } from './Secret'
 
 interface Row extends KV {
   file?: string
@@ -36,7 +38,11 @@ export function KeyValueTable<T extends Row>({ rows, onChange, keyPlaceholder = 
               title="Ativo"
             />
             <input className="field min-w-0 flex-1 font-mono text-[12px]" placeholder={keyPlaceholder} value={r.name} onChange={(e) => update(i, { name: e.target.value })} />
-            {r.file !== undefined && !ghost ? (
+            {isEncrypted(r.value as unknown) && !ghost ? (
+              <div className="flex min-w-0 flex-[2]">
+                <SecretInput value={r.value} onChange={(value) => update(i, { value })} />
+              </div>
+            ) : r.file !== undefined && !ghost ? (
               <button className="field min-w-0 flex-[2] truncate text-left text-dim" onClick={async () => { const f = await onPickFile?.(); if (f) update(i, { file: f }) }}>
                 📎 {r.file || 'escolher arquivo…'}
               </button>

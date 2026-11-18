@@ -7,6 +7,8 @@ import { CodeEditor, langFor } from './CodeEditor'
 import { KeyValueTable } from './KeyValueTable'
 import { Count, METHOD_COLOR, Segmented } from './ui'
 import { RequestVars, UrlField } from './Vars'
+import { SecretInput } from './Secret'
+import { maskSecrets } from '@shared/secret'
 
 type Section = 'params' | 'headers' | 'body' | 'auth' | 'notes'
 
@@ -81,8 +83,8 @@ export function RequestPane() {
         )}
       </div>
 
-      <div className="-mt-1.5 truncate px-3 pb-1.5 font-mono text-[11px] text-faint select-text" title={preview?.input.url}>
-        → {preview?.input.url || '…'}
+      <div className="-mt-1.5 truncate px-3 pb-1.5 font-mono text-[11px] text-faint select-text" title={maskSecrets(preview?.input.url ?? '')}>
+        → {maskSecrets(preview?.input.url ?? '') || '…'}
       </div>
       <RequestVars req={req} tags={preview?.unsupported ?? []} />
       {warn && warn.warnings.length > 0 && (
@@ -190,6 +192,12 @@ export function AuthEditor({ auth, inherited, onChange, allowInherit = true }: {
       <input className="field min-w-0 flex-1 font-mono text-[12px]" type={secret ? 'password' : 'text'} value={value} onChange={(e) => set(e.target.value)} spellCheck={false} />
     </label>
   )
+  const secretRow = (label: string, value: string, set: (v: string) => void) => (
+    <div className="flex items-center gap-3">
+      <span className="w-[90px] text-dim">{label}</span>
+      <SecretInput value={value} onChange={set} />
+    </div>
+  )
   return (
     <div className="flex flex-col gap-2.5 p-3">
       <select className="field w-[200px] py-1" value={auth.type} onChange={(e) => setType(e.target.value as AuthType)}>
@@ -201,19 +209,19 @@ export function AuthEditor({ auth, inherited, onChange, allowInherit = true }: {
       {auth.type === 'basic' && (
         <>
           {row('Usuário', auth.username, (username) => onChange({ ...auth, username }))}
-          {row('Senha', auth.password, (password) => onChange({ ...auth, password }), true)}
+          {secretRow('Senha', auth.password, (password) => onChange({ ...auth, password }))}
         </>
       )}
       {auth.type === 'bearer' && (
         <>
-          {row('Token', auth.token, (token) => onChange({ ...auth, token }))}
+          {secretRow('Token', auth.token, (token) => onChange({ ...auth, token }))}
           {row('Prefixo', auth.prefix ?? '', (prefix) => onChange({ ...auth, prefix: prefix || undefined }))}
         </>
       )}
       {auth.type === 'apikey' && (
         <>
           {row('Nome', auth.key, (key) => onChange({ ...auth, key }))}
-          {row('Valor', auth.value, (value) => onChange({ ...auth, value }))}
+          {secretRow('Valor', auth.value, (value) => onChange({ ...auth, value }))}
           <label className="flex items-center gap-3">
             <span className="w-[90px] text-dim">Enviar em</span>
             <select className="field py-1" value={auth.addTo} onChange={(e) => onChange({ ...auth, addTo: e.target.value as 'header' | 'query' })}>
