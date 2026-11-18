@@ -246,3 +246,17 @@ describe('CLI', () => {
     expect(await runCli(['run', 'Loja', '--data-dir', dir], fake, capture().out, false)).toBe(0)
   })
 })
+
+describe('linha do tempo e cofre', () => {
+  it('segredo do cofre num header personalizado não fica em claro no histórico', async () => {
+    const { store, ws, engine, dir } = setup([{ name: 'me', url: '{{ base_url }}/me', headers: [{ name: 'X-Session-Token', value: '{{ sessao }}', enabled: true }] }])
+    const base = ws.environments.find((e) => e.parentId === null)!
+    store.saveEnvironment(ws.id, { ...base, data: { ...base.data, sessao: await new Vault(dir, fake).encrypt('segredo-xyz-987') } })
+    const w = store.list()[0]
+    const req = collect(w.children)[0].req
+    const r = await engine.execute(w, req, null)
+    expect(r.response.timeline!.hops[0].requestHead).toMatch(/x-session-token: •••••• \(cofre\)/i)
+    expect(JSON.stringify(store.getResponses(req.id))).not.toContain('segredo-xyz-987')
+  })
+})
+

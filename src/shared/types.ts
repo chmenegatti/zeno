@@ -176,8 +176,31 @@ export interface ResponseRecord {
   size: number
   /** body grande guardado à parte (.responses/bodies/<id>); pegar com responseBody */
   bodyFile?: boolean
+  /** o que foi enviado de fato, saltos de redirect, tempos detalhados e TLS */
+  timeline?: Timeline
   timing: { headersMs: number; totalMs: number }
   error?: string
+}
+
+export interface TimelineHop {
+  method: string
+  url: string
+  /** cabeçalho bruto enviado (linha do request + headers, como saiu no socket) */
+  requestHead?: string
+  status: number
+  statusText: string
+  headers: [string, string][]
+  /** ms desde o início do envio até os headers deste salto */
+  atMs: number
+}
+
+export interface Timeline {
+  /** body enviado (texto; truncado em 64 KB; multipart resumido) */
+  requestBody?: string
+  hops: TimelineHop[]
+  timing: { dnsMs?: number; connectMs?: number; tlsMs?: number; ttfbMs: number; downloadMs: number; totalMs: number }
+  remote?: { address: string; port: number }
+  tls?: { protocol?: string; cipher?: string; authorized: boolean; error?: string; subject?: string; issuer?: string; validFrom?: string; validTo?: string; altNames?: string; fingerprint?: string }
 }
 
 export interface ImportPreview {

@@ -153,6 +153,8 @@ A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem aju
 - **Busca**: `Ctrl+F` com o foco na resposta (ou **buscar**), com regex, maiúsculas/minúsculas e palavra inteira.
 - **Visualizadores**: imagem, PDF (com o visualizador do Chromium), HTML renderizado num iframe isolado (sem scripts), áudio e vídeo; **Visual / Texto** alterna pro texto puro. **Salvar em arquivo** grava qualquer resposta (nome sugerido pelo `Content-Disposition`, URL ou tipo).
 - **Respostas grandes**: acima de 5 MB, o body vai pra um arquivo próprio em `.responses/bodies/` e a tela mostra os primeiros 256 KB; **carregar tudo** traz o resto quando você quiser. Scripts e `{% response %}` sempre usam o body completo.
+- **Linha do tempo**: o request exatamente como saiu (linha, headers brutos com `Host`/`user-agent`, body), cada salto de redirect com o que voltou, tempos de DNS, conexão, TLS, espera e download, e o certificado TLS (emissor, validade, SHA-256). `Authorization` e `Cookie` ficam escondidos até marcar *mostrar*.
+- **Comparar**: diff de body ou de status/headers entre a resposta atual e outra do histórico.
 - **Caminho do JSON**: clique no nome de uma chave para copiar o caminho (`$.data.users[0].id`), copiar uma tag `{% response %}` pronta ou filtrar por ele.
 
 ## Cookies
@@ -276,7 +278,6 @@ Os próximos passos estão nas [issues abertas](https://github.com/chmenegatti/z
 
 - GraphQL, gRPC, WebSocket e SSE
 - OAuth 2.0, proxy e mTLS
-- linha do tempo do request
 - mock server e plugins
 
 Quer ajudar em algum? Comente na issue antes de começar.

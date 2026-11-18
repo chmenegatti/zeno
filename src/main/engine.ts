@@ -74,6 +74,11 @@ export class Engine {
     let ws: Workspace = { ...wsRaw, environments: await this.open(wsRaw.environments, locked) }
     let req: RequestDoc = await this.open(reqRaw, locked)
     let ancestors: Folder[] = await this.open(findNode(wsRaw, reqRaw.id)?.ancestors ?? [], locked)
+    // valores que estavam cifrados no cofre: nunca aparecem em claro na linha do tempo gravada
+    const secrets = new Set<string>()
+    collectSecrets(wsRaw.environments, ws.environments, secrets)
+    collectSecrets(reqRaw, req, secrets)
+    collectSecrets(findNode(wsRaw, reqRaw.id)?.ancestors ?? [], ancestors, secrets)
     if (opts.extraVars && Object.keys(opts.extraVars).length) ancestors = [...ancestors, pseudoFolder('_data', opts.extraVars)]
     const report: ScriptReport = { logs: [], tests: [], errors: [] }
 
@@ -176,10 +181,10 @@ export class Engine {
     warnings.push(...prepared.unsupported.map((t) => `tag não resolvida: ${t}`))
     for (const k of locked) if (!(opts.extraVars && k in opts.extraVars)) warnings.push(`segredo cifrado "${k}" não abriu (sem chaveiro?); passe o valor com --var`)
     const jar = this.opts.cookies
-    const response = await send(prepared.input, {
+    const response = redactTimeline(await send(prepared.input, {
       header: jar && req.sendCookies !== false ? (url) => jar.header(wsRaw.id, url) : undefined,
       store: jar && req.storeCookies !== false ? (url, set) => void jar.store(wsRaw.id, url, set) : undefined
-    })
+    }), secrets)
 
     if (state && post.length && !response.error) {
       const r = await runPhase(
@@ -277,5 +282,27 @@ export class Engine {
       changed = true
     }
     if (changed) this.hooks.onChanged?.(this.store.list())
+  }
+}
+
+/** junta os textos em claro de tudo que estava cifrado (percorre o original e o decifrado em paralelo) */
+function collectSecrets(raw: unknown, open: unknown, out: Set<string>): void {
+  if (isEncrypted(raw)) {
+    if (typeof open === 'string' && open.length >= 3) out.add(open)
+    return
+  }
+  if (Array.isArray(raw) && Array.isArray(open)) raw.forEach((x, i) => collectSecrets(x, open[i], out))
+  else if (raw && typeof raw === 'object' && open && typeof open === 'object')
+    for (const k of Object.keys(raw)) collectSecrets((raw as Record<string, unknown>)[k], (open as Record<string, unknown>)[k], out)
+}
+
+/** troca segredos do cofre por ••• no head e no body enviados (o que vai pro histórico em disco) */
+function redactTimeline(res: ResponseRecord, secrets: Set<string>): ResponseRecord {
+  if (!res.timeline || !secrets.size) return res
+  const list = [...secrets].sort((a, b) => b.length - a.length)
+  const hide = (t: string | undefined): string | undefined => (t === undefined ? t : list.reduce((acc, sec) => acc.split(sec).join('•••••• (cofre)'), t))
+  return {
+    ...res,
+    timeline: { ...res.timeline, requestBody: hide(res.timeline.requestBody), hops: res.timeline.hops.map((h) => ({ ...h, requestHead: hide(h.requestHead) })) }
   }
 }
