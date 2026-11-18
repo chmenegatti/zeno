@@ -2,10 +2,11 @@ import { useState } from 'react'
 import type { ResponseRecord } from '@shared/types'
 import { activeRequest, api, useStore } from '../state'
 import { ResponseView } from './ResponseBody'
+import { CompareView, TimelineView } from './Timeline'
 import { Count, formatBytes, Segmented } from './ui'
 import { ScriptResults } from './Scripts'
 
-type Section = 'body' | 'headers' | 'tests' | 'info'
+type Section = 'body' | 'headers' | 'tests' | 'timeline' | 'compare'
 
 function statusColor(r: ResponseRecord): string {
   if (r.error) return 'bg-tpink/15 text-tpink'
@@ -89,7 +90,8 @@ export function ResponsePane({ width }: { width: number }) {
                     ...(report
                       ? [{ id: 'tests' as const, label: <>Testes{report.tests.length ? <span className={`ml-1 text-[10.5px] ${failed ? 'text-tpink' : 'text-tgreen'}`}>{report.tests.length - report.tests.filter((t) => !t.ok).length}/{report.tests.length}</span> : failed ? <span className="ml-1 text-[10.5px] text-tpink">erro</span> : null}</> }]
                       : []),
-                    { id: 'info', label: 'Info' }
+                    { id: 'timeline', label: 'Linha do tempo' },
+                    ...(history.length > 1 ? [{ id: 'compare' as const, label: 'Comparar' }] : [])
                   ]}
                 />
                 <div className="flex-1" />
@@ -99,7 +101,7 @@ export function ResponsePane({ width }: { width: number }) {
                   </label>
                 )}
               </div>
-              <div className={`min-h-0 flex-1 ${section === 'body' ? 'overflow-hidden' : 'overflow-auto'}`}>
+              <div className={`min-h-0 flex-1 ${section === 'body' || section === 'compare' ? 'overflow-hidden' : 'overflow-auto'}`}>
                 {section === 'body' && <ResponseView res={res} requestId={id!} pretty={pretty} />}
                 {section === 'headers' && (
                   <table className="w-full font-mono text-[12px]">
@@ -114,18 +116,8 @@ export function ResponsePane({ width }: { width: number }) {
                   </table>
                 )}
                 {section === 'tests' && (report ? <ScriptResults report={report} /> : <p className="p-3 text-faint">Este envio não teve scripts nem asserções.</p>)}
-                {section === 'info' && (
-                  <dl className="grid grid-cols-[120px_1fr] gap-y-1.5 p-3 text-[12px]">
-                    <dt className="text-dim">Requisição</dt>
-                    <dd className="break-all font-mono select-text">{res.method} {res.url}</dd>
-                    <dt className="text-dim">Quando</dt>
-                    <dd>{new Date(res.at).toLocaleString('pt-BR')}</dd>
-                    <dt className="text-dim">Até headers</dt>
-                    <dd>{res.timing.headersMs} ms</dd>
-                    <dt className="text-dim">Total</dt>
-                    <dd>{res.timing.totalMs} ms</dd>
-                  </dl>
-                )}
+                {section === 'timeline' && <TimelineView res={res} />}
+                {section === 'compare' && <CompareView res={res} history={history} />}
               </div>
             </>
           )}
