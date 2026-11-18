@@ -124,7 +124,7 @@ export const recording = { on: false }
 
 function onKey(e: KeyboardEvent): void {
   if (recording.on) return
-  const hk = findHotkey(e, ui().hotkeys)
+  const hk = findHotkey({ key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey, altGraph: e.getModifierState?.('AltGraph') }, ui().hotkeys)
   if (!hk) return
   // segurar a tecla repete só zoom/fonte
   if (e.repeat && !/^(zoom|editorFont)/.test(hk.id)) return

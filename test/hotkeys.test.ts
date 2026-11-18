@@ -44,6 +44,11 @@ describe('hotkeys', () => {
     expect(conflicts({ duplicate: ['Ctrl+E'] })).toEqual({ 'Ctrl+E': ['duplicate', 'envEditor'] })
   })
 
+  it('AltGr (Ctrl+Alt no Windows) não vira atalho', () => {
+    expect(findHotkey(ev('KeyN', 'n', { ctrlKey: true, altKey: true }))?.id).toBe('newRequest')
+    expect(findHotkey(ev('KeyN', 'n', { ctrlKey: true, altKey: true, altGraph: true }))).toBeUndefined()
+  })
+
   it('comboFromEvent', () => {
     expect(comboFromEvent(ev('KeyK', 'k', { ctrlKey: true, shiftKey: true }))).toBe('Ctrl+Shift+K')
     expect(comboFromEvent(ev('ControlLeft', 'Control', ctrl))).toBeNull()

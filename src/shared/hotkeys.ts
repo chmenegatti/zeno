@@ -56,6 +56,8 @@ export interface KeyLike {
   metaKey: boolean
   shiftKey: boolean
   altKey: boolean
+  /** AltGr (no Windows chega como Ctrl+Alt): é digitação de caractere, nunca atalho */
+  altGraph?: boolean
 }
 
 // tecla pela posição (layout US, como o keyCode do Insomnia); cobre também o ABNT2 (IntlRo = "/")
@@ -88,6 +90,7 @@ export function parseCombo(combo: string): { ctrl: boolean; shift: boolean; alt:
 }
 
 export function matches(e: KeyLike, combo: string): boolean {
+  if (e.altGraph) return false
   const c = parseCombo(combo)
   if (c.ctrl !== (e.ctrlKey || e.metaKey) || c.shift !== e.shiftKey || c.alt !== e.altKey) return false
   return eventKeys(e).includes(c.key)
@@ -95,7 +98,7 @@ export function matches(e: KeyLike, combo: string): boolean {
 
 /** combinação gravada a partir de um evento (tela de atalhos); null = só modificador */
 export function comboFromEvent(e: KeyLike): string | null {
-  if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return null
+  if (['Control', 'Shift', 'Alt', 'AltGraph', 'Meta'].includes(e.key) || e.altGraph) return null
   const key = eventKeys(e)[0]
   if (!key) return null
   const mods = [e.ctrlKey || e.metaKey ? 'Ctrl' : '', e.shiftKey ? 'Shift' : '', e.altKey ? 'Alt' : ''].filter(Boolean)

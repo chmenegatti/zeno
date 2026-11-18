@@ -78,7 +78,7 @@ export function ShortcutsModal({ onClose }: { onClose: () => void }) {
       e.preventDefault()
       e.stopPropagation()
       if (e.key === 'Escape') return setRec(null)
-      const combo = comboFromEvent(e)
+      const combo = comboFromEvent({ key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey, altGraph: e.getModifierState?.('AltGraph') })
       if (!combo) return
       save(rec.id, rec.add ? [...new Set([...b[rec.id], combo])] : [combo])
       setRec(null)
