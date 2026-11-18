@@ -112,6 +112,20 @@ export interface AppState {
   activeRequestId?: string
   /** wsId -> id do sub-ambiente ativo */
   activeEnv: Record<string, string | null>
+  ui?: UiPrefs
+}
+
+/** preferências da interface (state.json) */
+export interface UiPrefs {
+  /** zoom da janela (1 = 100%) */
+  zoom?: number
+  /** px; padrão 13 */
+  fontSize?: number
+  /** px; padrão 12.5 */
+  editorFontSize?: number
+  sidebarHidden?: boolean
+  /** atalhos trocados pelo usuário: id -> combinações */
+  hotkeys?: Record<string, string[]>
 }
 
 /** request já com variáveis resolvidas, pronto pra enviar */

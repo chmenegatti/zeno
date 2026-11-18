@@ -90,16 +90,26 @@ npm run dev
 
 ### Atalhos
 
+Mesmo padrão do Insomnia. Todos podem ser trocados em **⌨ Atalhos** (`Ctrl+Shift+/`): *trocar*, *+* (outra combinação) ou *padrão*.
+
 | Atalho | Ação |
 |---|---|
-| `Ctrl+Enter` | Enviar request |
-| `Ctrl+N` | Novo request na pasta atual |
-| `Ctrl+K` | Buscar requests |
-| `Ctrl+E` | Trocar ambiente |
+| `Ctrl+=` / `Ctrl+-` / `Ctrl+0` | Zoom da janela (fica salvo) |
+| `Ctrl+Shift+=` / `Ctrl+Shift+-` | Fonte dos editores |
+| `Ctrl+\` | Mostrar/esconder a lateral |
+| `Ctrl+P` (ou `Ctrl+K`), `Ctrl+Shift+F` | Buscar requests na lateral |
+| `Ctrl+L` / `Ctrl+'` | Focar a URL / a resposta |
+| `Ctrl+,` / `Ctrl+Shift+,` | Preferências (zoom, fontes) / configurações do workspace |
+| `Ctrl+Shift+/` | Lista de atalhos |
+| `Ctrl+Enter`, `Ctrl+R`, `F5` | Enviar request |
+| `Ctrl+N` / `Ctrl+Shift+N` | Novo request / nova pasta (na pasta atual) |
+| `Ctrl+D` / `Ctrl+Shift+Backspace` | Duplicar / excluir o request |
+| `Ctrl+Shift+L` / `Ctrl+Shift+H` / `Ctrl+Shift+G` | Método HTTP / histórico de respostas / gerar código |
+| `Ctrl+E` / `Ctrl+Shift+E` | Editar ambientes / trocar ambiente |
 | `Ctrl+S` | Salvar agora (o salvamento já é automático) |
+| `F11`, `Ctrl+Alt+I`, `Ctrl+Q` | Tela cheia, DevTools, sair |
 | Duplo clique | Renomear item na lateral |
 | Botão direito | Menu de contexto (novo, duplicar, copiar como cURL, gerar código, excluir) |
-| `</>` | Gerar código do request (cURL, Go, JavaScript, Python) |
 
 ## Variáveis e ambientes
 

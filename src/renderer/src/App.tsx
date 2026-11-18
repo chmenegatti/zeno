@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { activeWorkspace, createRequestIn, useStore } from './state'
+import { useStore } from './state'
 import { Sidebar } from './components/Sidebar'
 import { RequestPane } from './components/RequestPane'
 import { ResponsePane } from './components/ResponsePane'
 import { Modals } from './components/Modals'
 import { TagEditHost } from './components/Tags'
 import { VarPopover } from './components/Vars'
-import { findNode } from '@shared/tree'
+import { applyUi, installHotkeys } from './hotkeys'
 
 const WIDTH_KEY = 'zeno:response-width'
 
@@ -20,6 +20,7 @@ function initialWidth(): number {
 
 export function App() {
   const ready = useStore((s) => s.ready)
+  const prefs = useStore((s) => s.app.ui)
   const error = useStore((s) => s.error)
   const notice = useStore((s) => s.notice)
   const [width, setWidth] = useState(initialWidth)
@@ -27,28 +28,14 @@ export function App() {
 
   useEffect(() => {
     useStore.getState().init()
+    return installHotkeys()
   }, [])
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const mod = e.ctrlKey || e.metaKey
-      if (!mod) return
-      const s = useStore.getState()
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        s.sendActive()
-      } else if (e.key.toLowerCase() === 'n' && !s.modal) {
-        e.preventDefault()
-        const ws = activeWorkspace(s)
-        if (!ws) return
-        // cria na pasta do request atual
-        const cur = s.app.activeRequestId ? findNode(ws, s.app.activeRequestId) : null
-        createRequestIn(cur?.ancestors.at(-1)?.id ?? ws.id)
-      } else if (e.key === 's') {
-        e.preventDefault()
-        s.flushSaves()
-      }
-    }
+    if (ready) applyUi(prefs)
+  }, [ready, prefs])
+
+  useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!dragging.current) return
       setWidth(Math.min(Math.max(window.innerWidth - e.clientX, 320), window.innerWidth - 640))
@@ -69,12 +56,10 @@ export function App() {
     const onUnload = () => {
       useStore.getState().flushSaves()
     }
-    window.addEventListener('keydown', onKey)
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
     window.addEventListener('beforeunload', onUnload)
     return () => {
-      window.removeEventListener('keydown', onKey)
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
       window.removeEventListener('beforeunload', onUnload)
@@ -85,7 +70,7 @@ export function App() {
 
   return (
     <div className="flex h-full">
-      <Sidebar />
+      {!prefs?.sidebarHidden && <Sidebar />}
       <RequestPane />
       <div
         className="w-1 shrink-0 cursor-col-resize hover:bg-accent/40"

@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, shell } from 'electron'
 import { watch, type FSWatcher } from 'chokidar'
 import { Store } from './store'
 import * as Git from './git'
@@ -246,6 +246,13 @@ handle('codeSnippet', async (wsId: string, reqRaw: RequestDoc, envId: string | n
   return generate(lang, prepare({ ...wsRaw, environments }, req, ancestors, envId).input)
 })
 handle('copyText', (text: string) => clipboard.writeText(text))
+// atalhos de janela: o menu padrão do Electron sai (Ctrl+R recarregava a página); o renderer cuida de tudo
+handle('windowAction', (action: 'fullscreen' | 'devtools' | 'quit') => {
+  if (action === 'quit') return app.quit()
+  if (!win) return
+  if (action === 'fullscreen') win.setFullScreen(!win.isFullScreen())
+  if (action === 'devtools') win.webContents.toggleDevTools()
+})
 handle('responses', (id: string) => store.getResponses(id))
 handle('clearResponses', (id: string) => store.clearResponses(id))
 
@@ -366,6 +373,7 @@ const cli = cliArgs()
 if (cli) {
   app.whenReady().then(async () => app.exit(await runCli(cli, electronProtector())))
 } else app.whenReady().then(() => {
+  Menu.setApplicationMenu(null)
   createWindow()
   watchDataDir()
   app.on('activate', () => BrowserWindow.getAllWindows().length === 0 && createWindow())

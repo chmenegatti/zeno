@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Folder, TreeNode, Workspace } from '@shared/types'
 import { walk } from '@shared/tree'
 import {
@@ -45,7 +45,6 @@ export function Sidebar() {
   const [menu, setMenu] = useState<Menu | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [drag, setDrag] = useState<{ id: string; over?: string; pos?: DropPos } | null>(null)
-  const searchRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     try {
@@ -65,18 +64,9 @@ export function Sidebar() {
   }, [app.activeRequestId, ws?.id])
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        searchRef.current?.focus()
-        searchRef.current?.select()
-      }
-    }
     const close = () => setMenu(null)
-    window.addEventListener('keydown', onKey)
     window.addEventListener('click', close)
     return () => {
-      window.removeEventListener('keydown', onKey)
       window.removeEventListener('click', close)
     }
   }, [])
@@ -196,9 +186,9 @@ export function Sidebar() {
       <EnvPicker ws={ws} />
       <EnvVarList ws={ws} />
       <div className="flex items-center gap-1.5 px-2 pb-2">
-        <input ref={searchRef} className="field min-w-0 flex-1" placeholder="Buscar  (Ctrl+K)" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setQuery('')} />
+        <input className="field min-w-0 flex-1" data-hk="search" placeholder="Buscar  (Ctrl+P)" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setQuery('')} />
         <button className="btn px-2" title="Novo request (Ctrl+N)" onClick={() => createRequestIn(ws.id)}>＋</button>
-        <button className="btn px-2" title="Nova pasta" onClick={() => createFolderIn(ws.id)}>▤</button>
+        <button className="btn px-2" title="Nova pasta (Ctrl+Shift+N)" onClick={() => createFolderIn(ws.id)}>▤</button>
       </div>
       <div
         className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-6"
@@ -208,6 +198,10 @@ export function Sidebar() {
         }}
       >
         {visible.length ? renderNodes(visible, ws.id, 0) : <p className="px-3 py-6 text-center text-faint">{query ? 'Nada encontrado' : 'Vazio. Crie um request ou importe do Insomnia.'}</p>}
+      </div>
+      <div className="flex items-center gap-1 border-t border-line px-2 py-1.5 text-[11.5px]">
+        <button className="btn btn-ghost px-2 py-0.5 text-dim" title="Preferências (Ctrl+,)" onClick={() => useStore.getState().openModal({ kind: 'prefs' })}>⚙ Preferências</button>
+        <button className="btn btn-ghost px-2 py-0.5 text-dim" title="Atalhos de teclado (Ctrl+Shift+/)" onClick={() => useStore.getState().openModal({ kind: 'shortcuts' })}>⌨ Atalhos</button>
       </div>
       {menu && <ContextMenu menu={menu} ws={ws} onRename={setRenaming} />}
     </aside>
@@ -301,27 +295,16 @@ function EnvPicker({ ws }: { ws: Workspace }) {
   const current = activeEnvId({ workspaces, app })
   const subs = ws.environments.filter((e) => e.parentId !== null)
   const env = subs.find((e) => e.id === current)
-  const ref = useRef<HTMLSelectElement>(null)
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e') {
-        e.preventDefault()
-        ref.current?.focus()
-        ref.current?.showPicker?.()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+
   return (
     <div className="flex items-center gap-1 px-2 pb-2">
       <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: env?.color ?? 'var(--color-faint)' }} />
       <select
-        ref={ref}
+        data-hk="env"
         className="field min-w-0 flex-1 py-1"
         value={current ?? ''}
         onChange={(e) => useStore.getState().setApp({ activeEnv: { ...app.activeEnv, [ws.id]: e.target.value || null } })}
-        title="Ambiente (Ctrl+E)"
+        title="Ambiente (Ctrl+Shift+E)"
       >
         <option value="">Só base</option>
         {subs.map((e) => (

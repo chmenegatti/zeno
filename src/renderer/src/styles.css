@@ -23,12 +23,12 @@
 }
 
 html, body, #root { height: 100%; }
-body { margin: 0; background: var(--color-bg); color: var(--color-ink); font-family: var(--font-sans); font-size: 13px; overflow: hidden; user-select: none; }
+body { margin: 0; background: var(--color-bg); color: var(--color-ink); font-family: var(--font-sans); font-size: var(--ui-font, 13px); overflow: hidden; user-select: none; }
 input, textarea, select { user-select: text; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: #12405a; border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
 ::-webkit-scrollbar-track { background: transparent; }
-.cm-editor { height: 100%; font-size: 12.5px; }
+.cm-editor { height: 100%; font-size: var(--editor-font, 12.5px); }
 .cm-editor.cm-focused { outline: none; }
 @layer components {
 .field { background: var(--color-bg); border: 1px solid var(--color-line); border-radius: 6px; padding: 5px 8px; outline: none; color: var(--color-ink); }
