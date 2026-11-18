@@ -24,5 +24,9 @@ describe('filtro da resposta', () => {
     expect(at('true', 2)).toEqual({ path: ['ok'], isKey: false })
     expect(formatPath(['data', 'users', 1, 'nome completo'])).toBe("$.data.users[1]['nome completo']")
     expect(jsonPathAt('{"a\\"b": 1}', 2)).toEqual({ path: ['a"b'], isKey: true })
+    // nomes com ' ] e \ voltam pelo mesmo parser do filtro
+    const odd = { "it's": { 'a]b': { 'c\\d': 7 } } }
+    const p = formatPath(["it's", 'a]b', 'c\\d'])
+    expect(filterJson(JSON.stringify(odd), p)).toEqual({ value: '7', count: 1 })
   })
 })

@@ -22,7 +22,7 @@ export function filterJson(text: string, path: string): { value: string; count: 
 
 /** ["data", 0, "user id"] → $.data[0]['user id'] */
 export function formatPath(keys: (string | number)[]): string {
-  return keys.reduce<string>((acc, k) => (typeof k === 'number' ? `${acc}[${k}]` : /^[A-Za-z_$][\w$]*$/.test(k) ? `${acc}.${k}` : `${acc}['${k.replace(/'/g, "\\'")}']`), '$')
+  return keys.reduce<string>((acc, k) => (typeof k === 'number' ? `${acc}[${k}]` : /^[A-Za-z_$][\w$]*$/.test(k) ? `${acc}.${k}` : `${acc}['${k.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}']`), '$')
 }
 
 /** caminho até o que está na posição `pos` do texto JSON; isKey = o cursor está no nome da chave */
