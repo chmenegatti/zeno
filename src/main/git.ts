@@ -7,17 +7,17 @@ import path from 'node:path'
 import YAML from 'yaml'
 import type { GitFile, GitStatus } from '../shared/types'
 
-const ENV = {
+const env = (): NodeJS.ProcessEnv => ({
   ...process.env,
   // sem prompt interativo: sem terminal, o git ficaria esperando senha pra sempre
   GIT_TERMINAL_PROMPT: '0',
   GIT_SSH_COMMAND: process.env.GIT_SSH_COMMAND || 'ssh -o BatchMode=yes',
   LC_ALL: 'C'
-}
+})
 
 export function git(cwd: string, args: string[]): Promise<string> {
   return new Promise((resolve, reject) =>
-    execFile('git', args, { cwd, env: ENV, maxBuffer: 32 * 1024 * 1024 }, (err, stdout, stderr) => {
+    execFile('git', args, { cwd, env: env(), maxBuffer: 32 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (err) reject(new Error((stderr || stdout || err.message).trim().replace(/^(fatal|error): /, '')))
       else resolve(stdout)
     })
