@@ -24,6 +24,7 @@ export function App() {
   const error = useStore((s) => s.error)
   const notice = useStore((s) => s.notice)
   const [width, setWidth] = useState(initialWidth)
+  const [winWidth, setWinWidth] = useState(() => window.innerWidth)
   const dragging = useRef(false)
 
   useEffect(() => {
@@ -56,10 +57,13 @@ export function App() {
     const onUnload = () => {
       useStore.getState().flushSaves()
     }
+    const onResize = () => setWinWidth(window.innerWidth)
+    window.addEventListener('resize', onResize)
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
     window.addEventListener('beforeunload', onUnload)
     return () => {
+      window.removeEventListener('resize', onResize)
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
       window.removeEventListener('beforeunload', onUnload)
@@ -79,7 +83,7 @@ export function App() {
           document.body.style.cursor = 'col-resize'
         }}
       />
-      <ResponsePane width={width} />
+      <ResponsePane width={Math.max(320, Math.min(width, winWidth - 640))} />
       <Modals />
       <TagEditHost />
       <PromptHost />
