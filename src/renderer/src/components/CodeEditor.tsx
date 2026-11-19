@@ -248,7 +248,13 @@ const theme = [
       { tag: [t.keyword, t.tagName], color: 'var(--syn-keyword, var(--color-tpink))' },
       { tag: [t.attributeName], color: 'var(--syn-attr, var(--color-tlime))' },
       { tag: [t.comment], color: 'var(--color-faint)', fontStyle: 'italic' },
-      { tag: [t.punctuation, t.bracket, t.separator], color: 'var(--color-dim)' }
+      { tag: [t.punctuation, t.bracket, t.separator], color: 'var(--color-dim)' },
+      // código gerado (Python, Go, shell…): funções, tipos, built-ins e operadores, como numa IDE
+      { tag: [t.function(t.variableName), t.function(t.propertyName), t.definition(t.variableName)], color: 'var(--syn-prop, var(--color-tblue))' },
+      { tag: [t.typeName, t.className, t.namespace], color: 'var(--syn-attr, var(--color-tlime))' },
+      { tag: [t.standard(t.variableName), t.special(t.variableName), t.self, t.meta, t.processingInstruction], color: 'var(--syn-bool, var(--color-tpurple))' },
+      { tag: [t.operator, t.operatorKeyword], color: 'var(--syn-keyword, var(--color-tpink))' },
+      { tag: [t.escape, t.regexp], color: 'var(--syn-number, var(--color-torange))' }
     ])
   )
 ]

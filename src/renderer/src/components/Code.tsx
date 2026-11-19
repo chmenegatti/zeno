@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { findNode } from '@shared/tree'
 import type { RequestDoc } from '@shared/types'
 import { activeEnvId, activeWorkspace, api, useStore } from '../state'
+import { EditorState } from '@codemirror/state'
+import { codeLang } from '../codeLangs'
 import { CodeEditor } from './CodeEditor'
 import { Modal, Segmented } from './ui'
 
@@ -153,7 +155,7 @@ export function CodeModal({ reqId, onClose }: { reqId: string; onClose: () => vo
             </button>
           </div>
           <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-line bg-bg">
-            {err ? <p className="p-3 text-tpink">{err}</p> : <CodeEditor value={code} readOnly wrap={false} lang={target?.key === 'node' || target?.key === 'javascript' ? 'javascript' : 'text'} />}
+            {err ? <p className="p-3 text-tpink">{err}</p> : <CodeEditor key={target?.key} value={code} readOnly wrap={false} extra={[...codeLang(target?.key), EditorState.tabSize.of(2)]} />}
           </div>
           <p className="text-[11px] text-faint">
             Gerado com httpsnippet (o mesmo do Insomnia). Senhas e tokens do cofre aparecem decifrados; com &quot;Resolver variáveis&quot; desligado, as <code>{'{{ variáveis }}'}</code> ficam como referência.
