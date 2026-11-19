@@ -9,7 +9,7 @@ import { AuthEditor } from './RequestPane'
 import { GitModal, MoveHint } from './Git'
 import { CodeModal } from './Code'
 import { RunModal } from './Runner'
-import { PrefsModal, ShortcutsModal } from './Prefs'
+import { PluginsModal, PrefsModal, ShortcutsModal } from './Prefs'
 import { CommandPalette } from './CommandPalette'
 import { CookiesModal } from './Cookies'
 import { editorTags } from './Tags'
@@ -53,6 +53,8 @@ export function Modals() {
       return ws ? <GitModal ws={ws} onClose={close} /> : null
     case 'prefs':
       return <PrefsModal onClose={close} />
+    case 'plugins':
+      return <PluginsModal onClose={close} />
     case 'cookies':
       return ws ? <CookiesModal ws={ws} onClose={close} /> : null
     case 'palette':

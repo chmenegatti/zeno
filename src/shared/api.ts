@@ -1,6 +1,6 @@
 import type { InsomniaKey } from './hotkeys'
 import type { CodeLang } from './curl'
-import type { CookieInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
+import type { CookieInfo, PluginInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
 
 export interface Created {
   workspaces: Workspace[]
@@ -110,6 +110,14 @@ export interface ZenoApi {
   responseBody(requestId: string, resId: string): Promise<string>
   /** salva o body num arquivo; devolve o caminho (null = cancelou) */
   saveResponse(requestId: string, resId: string): Promise<string | null>
+  pluginsList(): Promise<PluginInfo[]>
+  /** relê a pasta de plugins */
+  pluginsReload(): Promise<PluginInfo[]>
+  pluginsSetEnabled(id: string, on: boolean): Promise<PluginInfo[]>
+  /** abre (e cria) a pasta de plugins; devolve o caminho */
+  pluginsOpenDir(): Promise<string>
+  /** roda uma ação de plugin no request; devolve as mensagens (app.alert) */
+  pluginAction(pluginId: string, index: number, wsId: string, reqId: string, envId: string | null): Promise<string[]>
   /** esquece os valores lembrados dos prompts */
   promptForget(): Promise<void>
 }

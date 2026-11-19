@@ -9,7 +9,8 @@ import * as Git from './git'
 import { cancel } from './http'
 import { randomUUID } from 'node:crypto'
 import { Engine } from './engine'
-import { evalFn, extract, type PromptAsk } from './tags'
+import { evalFn, extract, parseArgs, type PromptAsk } from './tags'
+import { Plugins } from './plugins'
 import { findRequestRef, parseTag } from '../shared/tagdef'
 import { buildVars, render } from '../shared/template'
 import { parseData, runCollection, toJUnit, type RunHandle } from './runner'
@@ -171,6 +172,9 @@ handle('saveEnvironment', (wsId: string, env) => store.saveEnvironment(wsId, env
 handle('deleteEnvironment', (id: string) => store.deleteEnvironment(id))
 
 const cookies = new Cookies(store.dir)
+// plugins em <dataDir>/plugins; desligados ficam em state.json
+const plugins = new Plugins(path.join(store.dir, 'plugins'), (id) => (store.getState().disabledPlugins ?? []).includes(id))
+plugins.load()
 
 // {% prompt %}: pergunta na janela; "lembrar" guarda o valor só enquanto o app estiver aberto
 const promptMemory = new Map<string, string>()
@@ -198,7 +202,7 @@ const engine = new Engine(store, vault, {
   onChanged: (list) => win?.webContents.send('store:changed', list),
   onResponse: (id, history) => win?.webContents.send('response:added', id, history),
   prompt: askPrompt
-}, { cookies })
+}, { cookies, plugins })
 
 handle('cookiesList', (wsId: string) => cookies.list(wsId))
 handle('cookiesSave', (wsId: string, list: CookieInfo[]) => cookies.replace(wsId, list))
@@ -284,6 +288,19 @@ handle('tagPreview', async (raw: string, send: boolean) => {
       return { error: (e as Error).message }
     }
   }
+  if (t.name === 'other') {
+    // tag de plugin: prévia com as variáveis do ambiente ativo
+    const name = parseArgs(raw).name
+    if (!plugins.hasTag(name)) return { error: `tag "${name}" não suportada (nenhum plugin ativo tem)` }
+    const st = store.getState()
+    const ws = store.list().find((w) => w.id === st.activeWorkspaceId) ?? store.list()[0]
+    try {
+      const vars = ws ? await engine.previewVars(ws, st.activeEnv[ws.id] ?? null) : {}
+      return { value: await plugins.runTag(name, parseArgs(raw).args, { render: (x) => render(x, vars).value, vars }) }
+    } catch (e) {
+      return { error: (e as Error).message }
+    }
+  }
   if (t.name !== 'response') return { error: 'tag não suportada' }
   // workspace ativo primeiro, como no envio
   const activeId = store.getState().activeWorkspaceId
@@ -342,6 +359,34 @@ handle('insomniaHotkeys', () => {
   return reg
 })
 handle('responses', (id: string) => store.getResponses(id))
+
+// ---------- plugins ----------
+handle('pluginsList', () => plugins.list())
+handle('pluginsReload', () => plugins.load())
+handle('pluginsSetEnabled', (id: string, on: boolean) => {
+  const st = store.getState()
+  const off = new Set(st.disabledPlugins ?? [])
+  if (on) off.delete(id)
+  else off.add(id)
+  store.setState({ ...st, disabledPlugins: off.size ? [...off] : undefined })
+  return plugins.list()
+})
+handle('pluginsOpenDir', async () => {
+  const dir = path.join(store.dir, 'plugins')
+  fs.mkdirSync(dir, { recursive: true })
+  await shell.openPath(dir)
+  return dir
+})
+/** ação de plugin no menu do request: recebe o request já com variáveis resolvidas */
+handle('pluginAction', async (pluginId: string, index: number, wsId: string, reqId: string, envId: string | null) => {
+  const ws = store.list().find((w) => w.id === wsId)
+  const f = ws && findNode(ws, reqId)
+  if (!ws || f?.node.kind !== 'request') throw new Error('request não encontrado')
+  const p = prepare(ws, f.node, f.ancestors, envId)
+  const r = await plugins.runAction(pluginId, index, { name: f.node.name, method: p.input.method, url: p.input.url, headers: p.input.headers, body: p.input.body.kind === 'text' ? p.input.body.text : undefined })
+  if (r.clipboard !== undefined) clipboard.writeText(r.clipboard)
+  return r.messages
+})
 handle('clearResponses', (id: string) => store.clearResponses(id))
 
 handle('importPreview', async (source: 'insomnia' | 'file' | { url: string }): Promise<ImportPreview | null> => {
@@ -357,10 +402,10 @@ handle('importPreview', async (source: 'insomnia' | 'file' | { url: string }): P
       properties: ['openFile', 'multiSelections']
     })
     if (r.canceled || !r.filePaths.length) return null
-    result = parseSources(r.filePaths.map((f) => ({ name: path.basename(f), text: fs.readFileSync(f, 'utf8') })))
+    result = parseSources(r.filePaths.map((f) => ({ name: path.basename(f), text: fs.readFileSync(f, 'utf8') })), plugins.importers())
     label = r.filePaths.join(', ')
   } else {
-    result = parseSources([await fetchSource(source.url)])
+    result = parseSources([await fetchSource(source.url)], plugins.importers())
     label = source.url
   }
   const { workspaces, warnings } = result

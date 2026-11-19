@@ -32,7 +32,14 @@ function parse(src: Source): unknown {
   }
 }
 
-export function parseSources(sources: Source[]): ParseResult {
+/** importador de plugin: reconhece o texto e devolve um export do Insomnia v4 */
+export interface ExtraImporter {
+  name: string
+  detect: (text: string) => boolean
+  convert: (text: string) => unknown
+}
+
+export function parseSources(sources: Source[], extra: ExtraImporter[] = []): ParseResult {
   const workspaces = new Map<string, Workspace>()
   const warnings: string[] = []
   const add = (r: ParseResult): void => {
@@ -45,6 +52,15 @@ export function parseSources(sources: Source[]): ParseResult {
   const envs: { name: string; doc: any }[] = []
 
   for (const src of sources) {
+    // plugins primeiro: formatos que o Zeno não conhece (inclusive não-JSON/YAML)
+    const im = extra.find((x) => x.detect(src.text))
+    if (im) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const out = im.convert(src.text) as any
+      if (!isInsomniaV4(out)) throw new Error(`${src.name}: o importador "${im.name}" não devolveu um export do Insomnia v4`)
+      add(convert(fromExportV4(out)))
+      continue
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const raw = parse(src) as any
     if (isInsomniaV4(raw)) add(convert(fromExportV4(raw)))

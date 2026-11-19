@@ -1,0 +1,11 @@
+{
+  "name": "zeno-plugin-exemplo",
+  "version": "1.0.0",
+  "description": "Exemplo de plugin do Zeno: tag {% minha_funcao %}, header automático, ação no menu e importador de CSV",
+  "main": "index.js",
+  "insomnia": {
+    "name": "exemplo",
+    "displayName": "Exemplo do Zeno",
+    "description": "Tag {% minha_funcao %}, header X-Zeno-Plugin, ação \"Copiar URL final\" e importador de CSV"
+  }
+}

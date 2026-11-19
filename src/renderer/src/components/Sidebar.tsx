@@ -259,6 +259,15 @@ function ContextMenu({ menu, ws, onRename }: { menu: Menu; ws: Workspace; onRena
     items.push([pinned.includes(n.id) ? 'Desafixar' : 'Fixar no topo', () => togglePin(n.id)])
     items.push(['Copiar como cURL', () => copyAsCurl(n.id)])
     items.push(['Gerar código…', () => useStore.getState().openModal({ kind: 'code', id: n.id })])
+    // ações de plugins (requestActions)
+    for (const p of useStore.getState().plugins.filter((x) => x.enabled))
+      p.requestActions.forEach((a, i) =>
+        items.push([`${a.icon ? `${a.icon} ` : ''}${a.label}`, async () => {
+          const st = useStore.getState()
+          const msgs = await st.run(api.pluginAction(p.id, i, ws.id, n.id, activeEnvId(st)))
+          if (msgs?.length) st.notify(msgs.join(' · '))
+        }])
+      )
   }
   if (n) {
     items.push(['Renomear', () => onRename(n.id)])

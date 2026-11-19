@@ -23,6 +23,8 @@ export interface TagContext {
   render?(text: string): string
   /** pergunta ao usuário (prompt); null = cancelou */
   prompt?(p: PromptAsk): Promise<string | null>
+  /** tag de plugin ({% minha_funcao %}); undefined = nenhum plugin tem */
+  plugin?(name: string, args: string[]): Promise<string> | undefined
 }
 
 import type { PromptAsk } from '../shared/api'
@@ -141,7 +143,11 @@ export async function resolveTags(tags: string[], ctx: TagContext): Promise<{ va
         if (mustSend) res = await ctx.sendById(reqId)
         if (!res) throw new Error(`request ${reqId} ainda não tem resposta (envie ele antes)`)
         values.set(tag, extract(res, field, filter))
-      } else errors.push(`tag "${name}" não suportada`)
+      } else {
+        const p = ctx.plugin?.(name, args)
+        if (p) values.set(tag, await p)
+        else errors.push(`tag "${name}" não suportada`)
+      }
     } catch (e) {
       if (e instanceof PromptCancelled) throw e
       errors.push(`${tag.slice(0, 60)}…: ${(e as Error).message}`)

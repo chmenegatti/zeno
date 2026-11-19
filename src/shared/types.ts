@@ -118,6 +118,8 @@ export interface AppState {
   activeEnv: Record<string, string | null>
   /** requests fixados no topo da lateral (Ctrl+Shift+P) */
   pinned?: string[]
+  /** plugins desligados (id = nome da pasta) */
+  disabledPlugins?: string[]
   /** filtro do body da resposta por request (JSONPath/XPath) */
   responseFilter?: Record<string, string>
   ui?: UiPrefs
@@ -302,4 +304,38 @@ export interface RunReport {
   passed: number
   failed: number
   cancelled?: boolean
+}
+
+// ---------- plugins (formato do Insomnia) ----------
+
+export interface PluginArg {
+  displayName: string
+  type: 'string' | 'number' | 'boolean' | 'enum'
+  defaultValue?: unknown
+  placeholder?: string
+  options?: { displayName: string; value: string }[]
+}
+
+export interface PluginTagInfo {
+  name: string
+  displayName: string
+  description?: string
+  args: PluginArg[]
+}
+
+export interface PluginInfo {
+  id: string
+  name: string
+  displayName: string
+  description?: string
+  version?: string
+  dir: string
+  enabled: boolean
+  /** falhou ao carregar (fica desativado) */
+  error?: string
+  templateTags: PluginTagInfo[]
+  requestHooks: number
+  responseHooks: number
+  requestActions: { label: string; icon?: string }[]
+  importers: { name: string }[]
 }

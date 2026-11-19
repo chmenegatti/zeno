@@ -3,6 +3,7 @@
 
 import { send } from './http'
 import type { Cookies } from './cookies'
+import type { Plugins } from './plugins'
 import { PromptCancelled, resolveTags, type PromptAsk } from './tags'
 import { findRequestRef } from '../shared/tagdef'
 import { runPhase, type PhaseState } from './scripts'
@@ -38,6 +39,8 @@ export interface EngineOptions {
   softSecrets?: boolean
   /** cookie jar por workspace (sem = não usa cookies) */
   cookies?: Cookies
+  /** plugins (tags, requestHooks, responseHooks) */
+  plugins?: Plugins
 }
 
 export interface ExecOptions {
@@ -149,6 +152,7 @@ export class Engine {
           tagResult = await resolveTags(prepared.unsupported, {
             resolveRequest: (ref) => findRequestRef(ws.children, ref)?.id ?? store.list().map((w) => findRequestRef(w.children, ref)).find(Boolean)?.id,
             render: (text) => render(text, vars).value,
+            plugin: (name, args) => (this.opts.plugins?.hasTag(name) ? this.opts.plugins.runTag(name, args, { render: (t) => render(t, vars).value, vars }) : undefined),
             prompt: prompt
               ? async (p) => {
                   const key = p.key || `${p.title}|${p.label}`
@@ -181,10 +185,23 @@ export class Engine {
     warnings.push(...prepared.unsupported.map((t) => `tag não resolvida: ${t}`))
     for (const k of locked) if (!(opts.extraVars && k in opts.extraVars)) warnings.push(`segredo cifrado "${k}" não abriu (sem chaveiro?); passe o valor com --var`)
     const jar = this.opts.cookies
+    // requestHooks dos plugins: podem mudar método, URL, headers e body (texto) antes do envio
+    const plugins = this.opts.plugins
+    if (plugins) {
+      const inp = prepared.input
+      const hooked = await plugins.beforeSend(
+        { method: inp.method, url: inp.url, headers: inp.headers, body: inp.body.kind === 'text' ? inp.body.text : undefined },
+        buildVars(ws, envId, ancestors)
+      )
+      warnings.push(...hooked.warnings)
+      const h = hooked.req
+      prepared = { ...prepared, input: { ...inp, method: h.method, url: h.url, headers: h.headers, body: inp.body.kind === 'text' && h.body !== undefined ? { kind: 'text', text: h.body } : inp.body } }
+    }
     const response = redactTimeline(await send(prepared.input, {
       header: jar && req.sendCookies !== false ? (url) => jar.header(wsRaw.id, url) : undefined,
       store: jar && req.storeCookies !== false ? (url, set) => void jar.store(wsRaw.id, url, set) : undefined
     }), secrets)
+    if (plugins && !response.error) warnings.push(...(await plugins.afterResponse({ status: response.status, headers: response.headers, body: response.bodyEncoding === 'utf8' ? response.body : '' })))
 
     if (state && post.length && !response.error) {
       const r = await runPhase(

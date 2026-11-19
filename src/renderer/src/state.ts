@@ -1,12 +1,12 @@
 import { create } from 'zustand'
 import type { SendResult } from '@shared/api'
 import { findNode } from '@shared/tree'
-import type { AppState, Environment, Folder, FolderDoc, RequestDoc, ResponseRecord, TreeNode, Workspace } from '@shared/types'
+import type { AppState, Environment, PluginInfo, Folder, FolderDoc, RequestDoc, ResponseRecord, TreeNode, Workspace } from '@shared/types'
 
 const api = window.zeno
 
 interface Modal {
-  kind: 'env' | 'folder' | 'workspace' | 'import' | 'prompt' | 'confirm' | 'code' | 'git' | 'run' | 'shortcuts' | 'prefs' | 'palette' | 'cookies'
+  kind: 'env' | 'folder' | 'workspace' | 'import' | 'prompt' | 'confirm' | 'code' | 'git' | 'run' | 'shortcuts' | 'prefs' | 'palette' | 'cookies' | 'plugins'
   /** id do alvo (pasta/workspace) */
   id?: string
   /** run: pasta a rodar (sem = workspace inteiro) */
@@ -47,6 +47,9 @@ interface Store {
   showValues: boolean
   /** menu de opções de envio aberto (Ctrl+Shift+Enter) */
   sendMenu: boolean
+  /** plugins carregados (tags, ações) */
+  plugins: PluginInfo[]
+  loadPlugins(reload?: boolean): Promise<void>
   /** envio agendado por request: atrasado (uma vez) ou repetindo */
   sendTimers: Record<string, { mode: 'delay' | 'repeat'; seconds: number }>
 
@@ -136,10 +139,12 @@ export const useStore = create<Store>((set, get) => ({
   showValues: false,
   sendMenu: false,
   sendTimers: {},
+  plugins: [],
 
   async init() {
     const { workspaces, state, dataDir } = await api.load()
     set({ workspaces, app: state, dataDir, ready: true })
+    get().loadPlugins()
     api.onChanged(async (ws) => {
       await get().flushSaves()
       set({ workspaces: ws })
@@ -200,6 +205,11 @@ export const useStore = create<Store>((set, get) => ({
     } finally {
       set((st) => ({ sending: { ...st.sending, [id]: false } }))
     }
+  },
+
+  async loadPlugins(reload) {
+    const list = await get().run(reload ? api.pluginsReload() : api.pluginsList())
+    if (list) set({ plugins: list })
   },
 
   openModal(m) {
