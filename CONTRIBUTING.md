@@ -90,6 +90,11 @@ git push --follow-tags origin main
 
 O workflow de release gera `.deb` e AppImage e publica no GitHub com as notas do changelog.
 
+Toda release também atualiza:
+
+- **README.md**: recursos novos na tabela e nas seções, atalhos e capturas.
+- **Site** (`site/`, publicado no GitHub Pages pelo workflow *Site*): textos das seções, capturas em `site/img/` (WebP, 1400×843, dados de exemplo, nunca dados reais). Os links de download e a versão do selo vêm da API de releases, então não precisam de edição.
+
 ## Código de conduta
 
 Ao participar, você concorda com o [Código de Conduta](CODE_OF_CONDUCT.md).
