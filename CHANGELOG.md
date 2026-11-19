@@ -2,6 +2,17 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [0.7.1](https://github.com/chmenegatti/zeno/compare/v0.7.0...v0.7.1) (2026-11-19)
+
+### Novidades
+
+* **ui:** gerar código com realce de sintaxe de cada linguagem (como numa IDE) e indentação de 2 espaços; Go mantém tab ([#50](https://github.com/chmenegatti/zeno/pull/50)) ([a396c25](https://github.com/chmenegatti/zeno/commit/a396c25))
+
+### Correções
+
+* **vars:** `{{ _['X-API-Key'] }}` (colchetes, sintaxe do Insomnia pra nomes com hífen) agora resolve ([#51](https://github.com/chmenegatti/zeno/pull/51)) ([183ecbe](https://github.com/chmenegatti/zeno/commit/183ecbe))
+* **ui:** painel de resposta respeita a largura da janela; não espreme mais o painel do request ([#52](https://github.com/chmenegatti/zeno/pull/52)) ([8d17d18](https://github.com/chmenegatti/zeno/commit/8d17d18))
+
 ## [0.7.0](https://github.com/chmenegatti/zeno/compare/v0.6.0...v0.7.0) (2026-11-19)
 
 ### Novidades
