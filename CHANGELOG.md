@@ -2,6 +2,16 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [0.6.0](https://github.com/chmenegatti/zeno/compare/v0.5.1...v0.6.0) (2026-11-19)
+
+### Novidades
+
+* **response:** filtro do body com JSONPath (JSON) ou XPath (XML/HTML), ao vivo e salvo por request; busca `Ctrl+F`; clicar numa chave do JSON copia o caminho ou uma tag `{% response %}` pronta ([#40](https://github.com/chmenegatti/zeno/pull/40)) ([4cb4c2a](https://github.com/chmenegatti/zeno/commit/4cb4c2a)), closes [#15](https://github.com/chmenegatti/zeno/issues/15)
+* **response:** visualizadores de imagem, PDF, HTML (sem scripts), áudio e vídeo, com Visual/Texto; salvar em arquivo; respostas acima de 5 MB guardadas à parte, com prévia e carregar tudo sob demanda ([#41](https://github.com/chmenegatti/zeno/pull/41)) ([d7907b5](https://github.com/chmenegatti/zeno/commit/d7907b5)), closes [#16](https://github.com/chmenegatti/zeno/issues/16)
+* **response:** linha do tempo com o request exatamente como saiu (headers brutos, `Authorization` mascarado), saltos de redirect, tempos de DNS/conexão/TLS/espera/download e certificado TLS; aba Comparar com diff entre respostas do histórico ([#42](https://github.com/chmenegatti/zeno/pull/42)) ([ba39268](https://github.com/chmenegatti/zeno/commit/ba39268)), closes [#17](https://github.com/chmenegatti/zeno/issues/17)
+* **plugins:** plugins no formato do Insomnia (`templateTags`, `requestHooks`, `responseHooks`, `requestActions`) e importadores, em contexto isolado com `require` limitado; liga/desliga em Preferências; plugin com erro fica desativado com o motivo; [documentação](https://github.com/chmenegatti/zeno/blob/main/docs/plugins.md) e plugin de exemplo ([#43](https://github.com/chmenegatti/zeno/pull/43)) ([ed84297](https://github.com/chmenegatti/zeno/commit/ed84297)), closes [#19](https://github.com/chmenegatti/zeno/issues/19)
+* **themes:** 20 temas embutidos: TOTVS, Aura Dark, Monokai, Synthwave '84, Dracula, One Dark, Nord, Tokyo Night, Catppuccin Mocha, Gruvbox Dark, Solarized Dark, Night Owl, GitHub Dark, Rosé Pine, Material Palenight e os claros GitHub Light, Solarized Light, Catppuccin Latte, One Light e Rosé Pine Dawn ([#44](https://github.com/chmenegatti/zeno/pull/44)) ([cad904a](https://github.com/chmenegatti/zeno/commit/cad904a))
+
 ## [0.5.1](https://github.com/chmenegatti/zeno/compare/v0.5.0...v0.5.1) (2026-11-18)
 
 ### Correções
