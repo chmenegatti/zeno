@@ -1,3 +1,5 @@
+// precisa vir antes de tudo: define window.zeno fora do Electron (protótipo Go)
+import './bridge'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
