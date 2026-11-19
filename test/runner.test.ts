@@ -260,3 +260,22 @@ describe('linha do tempo e cofre', () => {
   })
 })
 
+describe('gerar código', () => {
+  it('resolve tags com a última resposta, sem reenviar', async () => {
+    const { store, engine } = setup([
+      { name: 'login', method: 'POST', url: '{{ base_url }}/login' },
+      { name: 'me', url: '{{ base_url }}/me', headers: [{ name: 'Authorization', value: "Bearer {% response 'body', 'login', '$.token', 'always' %}", enabled: true }, { name: 'X-Id', value: "{% uuid 'v4' %}", enabled: true }] }
+    ])
+    const w = store.list()[0]
+    const [login, me] = collect(w.children).map((x) => x.req)
+    await engine.execute(w, login, null)
+    const before = store.getResponses(login.id).length
+    const p = await engine.prepareOpen(store.list()[0], me.id, null)
+    const h = Object.fromEntries(p.input.headers)
+    expect(h.Authorization).toBe('Bearer tk-123')
+    expect(h['X-Id']).toMatch(/^[0-9a-f-]{36}$/)
+    // 'always' não reenviou: gerar código nunca dispara requests
+    expect(store.getResponses(login.id)).toHaveLength(before)
+  })
+})
+

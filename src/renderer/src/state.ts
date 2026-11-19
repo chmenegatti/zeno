@@ -45,6 +45,8 @@ interface Store {
   notice: string | null
   /** badges mostram o valor da variável (Alt+Shift+U) */
   showValues: boolean
+  /** lista de métodos aberta (Ctrl+Shift+L) */
+  methodMenu: boolean
   /** menu de opções de envio aberto (Ctrl+Shift+Enter) */
   sendMenu: boolean
   /** plugins carregados (tags, ações) */
@@ -138,6 +140,7 @@ export const useStore = create<Store>((set, get) => ({
   notice: null,
   showValues: false,
   sendMenu: false,
+  methodMenu: false,
   sendTimers: {},
   plugins: [],
 

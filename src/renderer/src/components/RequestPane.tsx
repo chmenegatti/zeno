@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { prepare } from '@shared/prepare'
 import { effectiveAuth } from '@shared/tree'
-import { METHODS, type Auth, type AuthType, type Body, type RequestDoc } from '@shared/types'
+import type { Auth, AuthType, Body, RequestDoc } from '@shared/types'
 import { activeEnvId, activeRequest, api, useStore } from '../state'
 import { CodeEditor, langFor } from './CodeEditor'
 import { KeyValueTable } from './KeyValueTable'
-import { Count, METHOD_COLOR, Segmented } from './ui'
+import { Count, Segmented } from './ui'
 import { RequestVars, UrlField } from './Vars'
+import { MethodPicker } from './MethodPicker'
 import { SecretInput } from './Secret'
 import { hasScripts, ScriptsEditor } from './Scripts'
 import { AssertionsEditor } from './Runner'
@@ -97,11 +98,7 @@ export function RequestPane() {
       </div>
 
       <div className="flex items-center gap-1.5 p-3">
-        <select data-hk="method" className={`field w-[96px] font-mono font-semibold ${METHOD_COLOR[req.method] ?? ''}`} value={req.method} onChange={(e) => update({ method: e.target.value })}>
-          {METHODS.map((m) => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
+        <MethodPicker value={req.method} onChange={(method) => update({ method })} />
         <div data-hk="url" className="contents">
           <UrlField value={req.url} onChange={(url) => update({ url })} onEnter={() => useStore.getState().sendActive()} onCurl={applyCurl} />
         </div>

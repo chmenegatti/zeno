@@ -6,7 +6,7 @@ export const METHOD_COLOR: Record<string, string> = {
   PUT: 'text-tblue',
   PATCH: 'text-tpurple',
   DELETE: 'text-tpink',
-  HEAD: 'text-dim',
+  HEAD: 'text-tlime',
   OPTIONS: 'text-dim'
 }
 

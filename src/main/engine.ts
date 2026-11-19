@@ -238,14 +238,34 @@ export class Engine {
   /** decifra segredos; com softSecrets, o que não abre some do objeto (e o nome vai pra `locked`) */
   /** variáveis (base + ambiente) já decifradas, pra prévia de tags; segredo que não abre fica vazio */
   /** request preparado (variáveis resolvidas) com segredos decifrados, sem enviar: ações de plugin */
-  async prepareOpen(ws: Workspace, reqId: string, envId: string | null): Promise<ReturnType<typeof prepare> & { name: string }> {
+  /**
+   * request preparado sem enviar (ações de plugin, gerar código): segredos decifrados e tags resolvidas como no
+   * Insomnia ao gerar código: {% response %} usa a última resposta (nunca reenvia) e prompt não pergunta.
+   * reqOverride = versão em edição no app (ainda não salva)
+   */
+  async prepareOpen(ws: Workspace, reqId: string, envId: string | null, reqOverride?: RequestDoc): Promise<ReturnType<typeof prepare> & { name: string }> {
     const f = findNode(ws, reqId)
     if (f?.node.kind !== 'request') throw new Error('request não encontrado')
     const locked = new Set<string>()
     const open = { ...ws, environments: await this.open(ws.environments, locked) }
-    const req = await this.open(f.node, locked)
+    const req = await this.open(reqOverride ?? f.node, locked)
     const anc = await this.open(f.ancestors, locked)
-    return { ...prepare(open, req, anc, envId), name: f.node.name }
+    let p = prepare(open, req, anc, envId)
+    if (p.unsupported.length) {
+      const vars = buildVars(open, envId, anc)
+      const { values } = await resolveTags(p.unsupported, {
+        resolveRequest: (ref) => findRequestRef(ws.children, ref)?.id ?? this.store.list().map((w) => findRequestRef(w.children, ref)).find(Boolean)?.id,
+        render: (text) => render(text, vars).value,
+        plugin: (name, args) => (this.opts.plugins?.hasTag(name) ? this.opts.plugins.runTag(name, args, { render: (t) => render(t, vars).value, vars }) : undefined),
+        latest: (id) => this.store.withBody(this.store.getResponses(id)[0]),
+        noSend: true,
+        sendById: async () => {
+          throw new Error('gerar código não reenvia requests')
+        }
+      }).catch(() => ({ values: new Map<string, string>() }))
+      p = prepare(open, req, anc, envId, values)
+    }
+    return { ...p, name: f.node.name }
   }
 
   async previewVars(ws: Workspace, envId: string | null): Promise<Record<string, unknown>> {

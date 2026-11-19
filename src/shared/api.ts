@@ -53,7 +53,9 @@ export interface ZenoApi {
   send(wsId: string, req: RequestDoc, envId: string | null): Promise<SendResult>
   cancel(requestId: string): Promise<void>
   /** código pronto do request; resolveVars=false mantém as {{ variáveis }} */
-  codeSnippet(wsId: string, req: RequestDoc, envId: string | null, lang: CodeLang, resolveVars: boolean): Promise<string>
+  /** target 'curl'/'go'/… sem client = gerador próprio; com client = httpsnippet (ex.: 'shell','curl' · 'python','requests') */
+  codeSnippet(wsId: string, req: RequestDoc, envId: string | null, target: string, resolveVars: boolean, client?: string): Promise<string>
+  codeTargets(): Promise<{ key: string; title: string; clients: { key: string; title: string; link?: string }[] }[]>
   copyText(text: string): Promise<void>
   /** valor que a tag {% %} daria agora (send=true envia o request de origem antes) */
   tagPreview(raw: string, send: boolean): Promise<{ value?: string; error?: string; at?: number }>
