@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { render, buildVars } from '../src/shared/template'
+import { render, buildVars, varPath } from '../src/shared/template'
 import type { Workspace } from '../src/shared/types'
 
 describe('render', () => {
@@ -75,5 +75,21 @@ describe('vars', () => {
       body: { mime: 'application/json', text: '{"a":"{{ b }}"}' }, auth: { type: 'bearer', token: '{{ tok }}' }
     })
     expect(refs).toEqual(['host', 'id', 'k', 'b', 'tok'])
+  })
+})
+
+describe('variável com colchetes (sintaxe do Insomnia)', () => {
+  const vars = { 'X-API-Key': 'k1', a: { 'b.c': 2, list: [10, 20] }, token: 'Bearer x' }
+  it('resolve _[\'nome-com-hífen\'], aspas duplas, ponto dentro da chave e índice', () => {
+    expect(render("{{ _['X-API-Key'] }}", vars).value).toBe('k1')
+    expect(render('{{ _["X-API-Key"] }}', vars).value).toBe('k1')
+    expect(render("{{ _.a['b.c'] }}", vars).value).toBe('2')
+    expect(render('{{ a.list[1] }}', vars).value).toBe('20')
+    expect(render('{{ _.token }} {{ token }}', vars).value).toBe('Bearer x Bearer x')
+  })
+  it('caminho em partes', () => {
+    expect(varPath("_['X-API-Key']")).toEqual(['X-API-Key'])
+    expect(varPath('_.a.b')).toEqual(['a', 'b'])
+    expect(varPath('_')).toEqual(['_'])
   })
 })
