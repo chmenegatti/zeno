@@ -28,6 +28,7 @@ function useCommands(): Command[] {
     const { openModal, setApp } = useStore.getState()
     const out: Command[] = HOTKEYS.filter((h) => !SKIP.has(h.id)).map((h) => ({ id: h.id, label: h.label, keys: b[h.id], run: () => runAction(h.id) }))
     out.push({ id: 'import', label: 'Importar (Insomnia, OpenAPI, Postman)', run: () => openModal({ kind: 'import' }) })
+    out.push({ id: 'plugins', label: 'Plugins', hint: 'ligar, desligar, recarregar', run: () => openModal({ kind: 'plugins' }) })
     if (ws) {
       out.push({ id: 'run', label: 'Rodar workspace', run: () => openModal({ kind: 'run', id: ws.id }) })
       out.push({ id: 'git', label: 'Git', run: () => openModal({ kind: 'git', id: ws.id }) })

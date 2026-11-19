@@ -43,6 +43,7 @@ export function PrefsModal({ onClose }: { onClose: () => void }) {
         </label>
         <div className="flex items-center gap-2">
           <button className="btn" onClick={() => useStore.getState().openModal({ kind: 'shortcuts' })}>Atalhos de teclado…</button>
+          <button className="btn" onClick={() => useStore.getState().openModal({ kind: 'plugins' })}>Plugins…</button>
           <div className="flex-1" />
           <button className="btn" onClick={() => setUi({ zoom: 1, fontSize: undefined, editorFontSize: undefined })}>Restaurar padrão</button>
           <button className="btn btn-accent" onClick={onClose}>Fechar</button>
@@ -154,6 +155,65 @@ export function ShortcutsModal({ onClose }: { onClose: () => void }) {
           <p className="flex-1 text-[11.5px] text-faint">Padrão igual ao do Insomnia. Em vermelho: combinação usada por mais de uma ação.</p>
           <button className="btn" title="Lê os atalhos que você mudou no Insomnia (~/.config/Insomnia)" onClick={importInsomnia}>Importar do Insomnia</button>
           {Object.keys(overrides).length > 0 && <button className="btn" onClick={() => setUi({ hotkeys: undefined })}>Restaurar todos</button>}
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+// ---------- plugins ----------
+
+export function PluginsModal({ onClose }: { onClose: () => void }) {
+  const plugins = useStore((s) => s.plugins)
+  const { run, loadPlugins, notify } = useStore.getState()
+  const toggle = async (id: string, on: boolean): Promise<void> => {
+    const list = await run(api.pluginsSetEnabled(id, on))
+    if (list) useStore.setState({ plugins: list })
+  }
+  return (
+    <Modal title="Plugins" onClose={onClose} wide>
+      <div className="flex flex-col gap-3">
+        <p className="text-[12px] text-dim">
+          Plugins no formato do Insomnia (<code>templateTags</code>, <code>requestHooks</code>, <code>responseHooks</code>, <code>requestActions</code>) e importadores. Cada um fica numa pasta dentro de <b>plugins</b>, na pasta de dados. Plugins rodam código no seu computador: instale só os que você confia.
+        </p>
+        <div className="flex items-center gap-2">
+          <button className="btn" onClick={async () => notify(`Pasta de plugins: ${await api.pluginsOpenDir()}`)}>Abrir pasta de plugins</button>
+          <button className="btn" onClick={async () => { await loadPlugins(true); notify('Plugins recarregados') }}>Recarregar</button>
+          <div className="flex-1" />
+          <a className="text-[12px] text-accent hover:underline" href="https://github.com/chmenegatti/zeno/blob/main/docs/plugins.md" target="_blank" rel="noreferrer">Como criar um plugin</a>
+        </div>
+        {!plugins.length ? (
+          <p className="py-6 text-center text-faint">Nenhum plugin instalado. Copie a pasta do plugin para a pasta de plugins e clique em Recarregar.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {plugins.map((p) => (
+              <div key={p.id} className={`flex items-start gap-3 rounded-lg border p-3 ${p.error ? 'border-tpink/40 bg-tpink/5' : 'border-line'}`}>
+                <input type="checkbox" className="mt-1" disabled={!!p.error} checked={p.enabled} onChange={(e) => toggle(p.id, e.target.checked)} title={p.error ? 'com erro: corrija e recarregue' : 'ligar/desligar'} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-semibold">{p.displayName}</span>
+                    {p.version && <span className="text-[11px] text-faint">v{p.version}</span>}
+                    <span className="truncate font-mono text-[11px] text-faint">{p.id}</span>
+                  </div>
+                  {p.description && <div className="text-[12px] text-dim">{p.description}</div>}
+                  {p.error ? (
+                    <div className="mt-1 whitespace-pre-wrap font-mono text-[11.5px] text-tpink">desativado: {p.error}</div>
+                  ) : (
+                    <div className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
+                      {p.templateTags.map((t) => <span key={t.name} className="rounded bg-tpurple/15 px-1.5 py-0.5 font-mono text-[#c99bff]">{`{% ${t.name} %}`}</span>)}
+                      {p.requestHooks > 0 && <span className="rounded bg-line px-1.5 py-0.5 text-dim">{p.requestHooks} request hook{p.requestHooks > 1 ? 's' : ''}</span>}
+                      {p.responseHooks > 0 && <span className="rounded bg-line px-1.5 py-0.5 text-dim">{p.responseHooks} response hook{p.responseHooks > 1 ? 's' : ''}</span>}
+                      {p.requestActions.map((a) => <span key={a.label} className="rounded bg-line px-1.5 py-0.5 text-dim">ação: {a.label}</span>)}
+                      {p.importers.map((im) => <span key={im.name} className="rounded bg-line px-1.5 py-0.5 text-dim">importador: {im.name}</span>)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex justify-end">
+          <button className="btn btn-accent" onClick={onClose}>Fechar</button>
         </div>
       </div>
     </Modal>

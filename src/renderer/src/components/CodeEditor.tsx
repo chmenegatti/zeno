@@ -17,7 +17,11 @@ export interface TagSupport {
   edit: (raw: string, apply: (next: string) => void, cancel?: () => void) => void
   /** {{ variáveis }} como badge + autocomplete */
   vars?: VarSupport
+  /** sugestões de tag (padrão + plugins); sem = só as padrão */
+  choices?: () => TagChoice[]
 }
+
+export type TagChoice = (typeof TAG_CHOICES)[number]
 
 export interface VarSupport {
   list: () => { name: string; detail: string; source: string }[]
@@ -124,8 +128,8 @@ function tagExtension(tags: { current: TagSupport | undefined }) {
   // Ctrl+Espaço (padrão do Insomnia): lista variáveis e tags
   const insert = keymap.of([{ key: 'Ctrl-Space', run: startCompletion }])
   // digitar "respon…", "uuid", "now" sugere a tag; escolher já vira badge (e a de resposta abre o editor)
-  const choices = TAG_CHOICES
-  const tagOption = (c: (typeof choices)[number]): Completion => ({
+  const choicesNow = (): TagChoice[] => tags.current?.choices?.() ?? TAG_CHOICES
+  const tagOption = (c: TagChoice): Completion => ({
     label: c.label,
     detail: c.detail,
     type: 'function',
@@ -171,12 +175,12 @@ function tagExtension(tags: { current: TagSupport | undefined }) {
       const q = word?.text ?? ''
       const from = word?.from ?? ctx.pos
       const vs = vars ? matchVars(vars.list(), q).map(varOption) : []
-      const ts = choices.filter((c) => !q || c.keys.some((k) => k.startsWith(q.toLowerCase()))).map(tagOption)
+      const ts = choicesNow().filter((c) => !q || c.keys.some((k) => k.startsWith(q.toLowerCase()))).map(tagOption)
       return { from, options: [...vs, ...ts, otherTag], filter: false }
     }
     if (!word || word.to - word.from < 3) return null
     const q = word.text.toLowerCase()
-    const options = choices.filter((c) => c.keys.some((k) => k.startsWith(q))).map(tagOption)
+    const options = choicesNow().filter((c) => c.keys.some((k) => k.startsWith(q))).map(tagOption)
     return options.length ? { from: word.from, options, filter: false } : null
   }
   return [plugin, insert, autocompletion({ override: [source], icons: false })]

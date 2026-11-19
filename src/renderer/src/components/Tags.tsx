@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { buildTag, FIELDS, findRequestRef, FN_NAMES, FN_SPECS, parseTag, TAG_CHOICES, TRIGGERS, type FnName, type ResponseTag, type TagDef } from '@shared/tagdef'
+import { buildTag, FIELDS, findRequestRef, FN_NAMES, FN_SPECS, parseArgs, parseTag, TAG_CHOICES, TRIGGERS, type FnName, type ResponseTag, type TagDef } from '@shared/tagdef'
 import { findNode, sortNodes } from '@shared/tree'
 import { matchVars, openVarAt, tokenize } from '@shared/vars'
-import type { TreeNode, Workspace } from '@shared/types'
+import type { PluginArg, PluginInfo, PluginTagInfo, TreeNode, Workspace } from '@shared/types'
 import type { PromptAsk } from '@shared/api'
 import { activeWorkspace, api, useStore } from '../state'
 import { MethodBadge, Modal } from './ui'
@@ -17,7 +17,14 @@ export function tagLabel(raw: string, workspaces: Workspace[]): { text: string; 
   const t = parseTag(raw)
   if (t.name === 'uuid') return { text: 'UUID' }
   if (t.name === 'now') return { text: 'Agora' }
-  if (t.name === 'other') return { text: t.tag, broken: `tag "${t.tag}" não suportada` }
+  if (t.name === 'other') {
+    const pt = pluginTag(t.tag)
+    if (pt) {
+      const args = parseArgs(raw).args.filter((a) => a !== '')
+      return { text: `${pt.tag.displayName}${args.length ? ` · ${args.join(', ').slice(0, 24)}` : ''}` }
+    }
+    return { text: t.tag, broken: `tag "${t.tag}" não suportada (nenhum plugin ativo tem)` }
+  }
   if (t.name === 'fn') return { text: FN_SPECS[t.tag].badge(t.args) }
   // id ou nome ("Pasta / Nome"): workspace ativo primeiro
   const cur = activeWorkspace(useStore.getState())
@@ -51,10 +58,54 @@ export function openTagEditor(raw: string, onOk: (next: string) => void, onCance
   useStore.setState({ tagEdit: { value: raw, onOk, onCancel } })
 }
 
+// ---------- tags de plugin ----------
+
+/** tag de algum plugin ativo */
+export function pluginTag(name: string): { plugin: PluginInfo; tag: PluginTagInfo } | null {
+  for (const p of useStore.getState().plugins) {
+    if (!p.enabled) continue
+    const tag = p.templateTags.find((t) => t.name === name)
+    if (tag) return { plugin: p, tag }
+  }
+  return null
+}
+
+const argDefault = (a: PluginArg): string => (a.defaultValue === undefined ? (a.type === 'enum' ? (a.options?.[0]?.value ?? '') : a.type === 'boolean' ? 'false' : '') : String(a.defaultValue))
+
+/** {% nome 'texto', 12, true %}: texto entre aspas; número e booleano sem, como no Insomnia */
+export function buildPluginTag(name: string, spec: PluginArg[], args: string[]): string {
+  const q = (s: string): string => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+  const out = spec.map((a, i) => {
+    const v = args[i] ?? argDefault(a)
+    if (a.type === 'boolean') return v === 'true' ? 'true' : 'false'
+    if (a.type === 'number' && /^-?\d+(\.\d+)?$/.test(v)) return v
+    return q(v)
+  })
+  return `{% ${name}${out.length ? ` ${out.join(', ')}` : ''} %}`
+}
+
+/** sugestões de tag: as padrão + as dos plugins ativos */
+export function allTagChoices(): typeof TAG_CHOICES {
+  const extra = useStore
+    .getState()
+    .plugins.filter((p) => p.enabled)
+    .flatMap((p) =>
+      p.templateTags.map((t) => ({
+        label: t.displayName,
+        detail: `plugin ${p.displayName}`,
+        keys: [t.name.toLowerCase(), ...t.displayName.toLowerCase().split(/\s+/), 'plugin'],
+        raw: buildPluginTag(t.name, t.args, []),
+        edit: t.args.length > 0
+      }))
+    )
+  return [...TAG_CHOICES, ...extra]
+}
+
 /** badges + autocomplete de tags nos editores de código (body, ambientes, variáveis da pasta) */
 export const editorTags: TagSupport = {
   label: (raw) => tagLabel(raw, useStore.getState().workspaces),
   edit: (raw, apply, cancel) => openTagEditor(raw, apply, cancel),
+  choices: () => allTagChoices(),
   // getter: Vars importa este arquivo (ciclo); só lê na hora do uso
   get vars() {
     return editorVars
@@ -86,7 +137,7 @@ function useVarAutocomplete(value: string, onChange: (v: string) => void, ref: R
     const vars: AcItem[] = matchVars(varOptions(sources), st.query).map((v) => ({ kind: 'var', ...v }))
     if (!st.explicit) return vars
     const q = st.query.toLowerCase()
-    const tags: AcItem[] = TAG_CHOICES.filter((c) => !q || c.keys.some((k) => k.startsWith(q))).map((c) => ({ kind: 'tag', ...c }))
+    const tags: AcItem[] = allTagChoices().filter((c) => !q || c.keys.some((k) => k.startsWith(q))).map((c) => ({ kind: 'tag', ...c }))
     return [...vars, ...tags, { kind: 'other' }]
   }, [st, sources])
 
@@ -304,6 +355,39 @@ const KINDS: { id: string; label: string }[] = [
 
 const kindOf = (t: TagDef): string => (t.name === 'fn' ? `fn:${t.tag}` : t.name)
 
+/** formulário dos argumentos que o plugin declarou (string, número, booleano, lista) */
+function PluginTagForm({ info, args, onChange }: { info: PluginTagInfo; args: string[]; onChange: (a: string[]) => void }) {
+  const get = (i: number): string => args[i] ?? argDefault(info.args[i])
+  const set = (i: number, v: string): void => onChange(info.args.map((_, j) => (j === i ? v : get(j))))
+  return (
+    <>
+      {info.description && <span className="text-[11.5px] text-dim">{info.description}</span>}
+      {info.args.map((a, i) => (
+        <label key={i} className={a.type === 'boolean' ? 'flex items-center gap-2' : 'flex flex-col gap-1'}>
+          {a.type === 'boolean' ? (
+            <>
+              <input type="checkbox" checked={get(i) === 'true'} onChange={(e) => set(i, e.target.checked ? 'true' : 'false')} />
+              <span>{a.displayName}</span>
+            </>
+          ) : (
+            <>
+              <span className="text-[11px] text-faint">{a.displayName}</span>
+              {a.type === 'enum' ? (
+                <select className="field py-1" value={get(i)} onChange={(e) => set(i, e.target.value)}>
+                  {(a.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.displayName}</option>)}
+                </select>
+              ) : (
+                <input className="field py-1 font-mono text-[12px]" type={a.type === 'number' ? 'number' : 'text'} placeholder={a.placeholder} value={get(i)} onChange={(e) => set(i, e.target.value)} spellCheck={false} />
+              )}
+            </>
+          )}
+        </label>
+      ))}
+      {!info.args.length && <span className="text-[11.5px] text-faint">Sem argumentos.</span>}
+    </>
+  )
+}
+
 /** argumentos de uma função ({% hash %}, {% faker %}…) */
 function FnForm({ tag, onChange }: { tag: Extract<TagDef, { name: 'fn' }>; onChange: (args: string[]) => void }) {
   const spec = FN_SPECS[tag.tag]
@@ -340,12 +424,19 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
   const ws = activeWorkspace({ workspaces, app })
   const start = useMemo<TagDef>(() => (initial ? parseTag(initial) : { name: 'response', field: 'body', requestId: '', filter: '', trigger: 'never' }), [initial])
   const [tag, setTag] = useState<TagDef>(start)
+  const plugins = useStore((s) => s.plugins)
+  // tag de plugin: nome + argumentos (o formulário vem do que o plugin declara)
+  const [ptag, setPtag] = useState<{ name: string; args: string[] } | null>(() => {
+    if (start.name !== 'other' || !pluginTag(start.tag)) return null
+    return { name: start.tag, args: parseArgs(initial).args }
+  })
+  const pinfo = ptag ? pluginTag(ptag.name) : null
   const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<{ value?: string; error?: string; at?: number; loading?: boolean }>({})
   const options = useMemo(() => requestOptions(workspaces, ws), [workspaces, ws])
-  const r = tag.name === 'response' ? tag : null
+  const r = tag.name === 'response' && !ptag ? tag : null
   const set = (patch: Partial<ResponseTag>) => r && setTag({ ...r, ...patch })
-  const raw = buildTag(tag)
+  const raw = ptag && pinfo ? buildPluginTag(ptag.name, pinfo.tag.args, ptag.args) : buildTag(tag)
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -354,7 +445,7 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
 
   // prévia com a última resposta (sem reenviar)
   useEffect(() => {
-    if (tag.name === 'other') return setPreview({})
+    if (tag.name === 'other' && !ptag) return setPreview({})
     if (r && !r.requestId) return setPreview({ error: 'escolha o request' })
     let alive = true
     const t = setTimeout(() => api.tagPreview(raw, false).then((p) => alive && setPreview(p)), 200)
@@ -387,10 +478,15 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
           <span className="text-[11px] text-faint">Função</span>
           <select
             className="field py-1"
-            value={kindOf(tag)}
-            disabled={tag.name === 'other'}
+            value={ptag ? `plugin:${ptag.name}` : kindOf(tag)}
+            disabled={tag.name === 'other' && !ptag}
             onChange={(e) => {
               const n = e.target.value
+              if (n.startsWith('plugin:')) {
+                const info = pluginTag(n.slice(7))
+                return setPtag({ name: n.slice(7), args: (info?.tag.args ?? []).map(argDefault) })
+              }
+              setPtag(null)
               if (n.startsWith('fn:')) {
                 const f = n.slice(3) as FnName
                 return setTag({ name: 'fn', tag: f, args: FN_SPECS[f].args.map((a) => a.def) })
@@ -399,11 +495,13 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
             }}
           >
             {KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
-            {tag.name === 'other' && <option value="other">{tag.tag} (não suportada)</option>}
+            {plugins.filter((p) => p.enabled).flatMap((p) => p.templateTags.map((t) => <option key={`${p.id}:${t.name}`} value={`plugin:${t.name}`}>{t.displayName} (plugin {p.displayName})</option>))}
+            {tag.name === 'other' && !ptag && <option value="other">{tag.tag} (não suportada)</option>}
           </select>
         </label>
 
-        {tag.name === 'fn' && <FnForm tag={tag} onChange={(args) => setTag({ ...tag, args })} />}
+        {!ptag && tag.name === 'fn' && <FnForm tag={tag} onChange={(args) => setTag({ ...tag, args })} />}
+        {ptag && pinfo && <PluginTagForm info={pinfo.tag} args={ptag.args} onChange={(args) => setPtag({ ...ptag, args })} />}
 
         {r && (
           <>

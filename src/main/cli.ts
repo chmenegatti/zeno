@@ -2,6 +2,7 @@
 // Funciona no app instalado (usa o chaveiro pra decifrar segredos) e com `node out/main/cli.js` (sem cofre).
 
 import { Cookies } from './cookies'
+import { Plugins } from './plugins'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -206,7 +207,7 @@ export async function runCli(argv: string[], protector: KeyProtector, out: Out =
     const data = args.data ? parseData(fs.readFileSync(args.data, 'utf8'), args.data) : undefined
 
     // variáveis gravadas por scripts valem só durante a execução: a CLI não altera os YAML
-    const engine = new Engine(store, vault, {}, { persist: false, softSecrets: true, cookies: new Cookies(null) })
+    const engine = new Engine(store, vault, {}, { persist: false, softSecrets: true, cookies: new Cookies(null), plugins: cliPlugins(isDir ? (args.dataDir ?? defaultDataDir()) : store.dir) })
     const report = await runCollection(
       engine,
       store,
@@ -245,4 +246,17 @@ export async function runCli(argv: string[], protector: KeyProtector, out: Out =
   } finally {
     if (tmp) fs.rmSync(tmp, { recursive: true, force: true })
   }
+}
+
+/** plugins da pasta de dados (os desligados no app continuam desligados) */
+function cliPlugins(dir: string): Plugins {
+  let off: string[] = []
+  try {
+    off = JSON.parse(fs.readFileSync(path.join(dir, 'state.json'), 'utf8')).disabledPlugins ?? []
+  } catch {
+    /* sem estado */
+  }
+  const p = new Plugins(path.join(dir, 'plugins'), (id) => off.includes(id))
+  p.load()
+  return p
 }

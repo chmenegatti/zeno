@@ -157,6 +157,10 @@ A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem aju
 - **Comparar**: diff de body ou de status/headers entre a resposta atual e outra do histórico.
 - **Caminho do JSON**: clique no nome de uma chave para copiar o caminho (`$.data.users[0].id`), copiar uma tag `{% response %}` pronta ou filtrar por ele.
 
+## Plugins
+
+Plugins no formato do Insomnia (`templateTags`, `requestHooks`, `responseHooks`, `requestActions`) e importadores ficam em `plugins/` na pasta de dados. Em **Preferências › Plugins…** dá pra ligar, desligar e recarregar. Plugin com erro aparece desativado, com o motivo, sem derrubar o app. Veja [docs/plugins.md](docs/plugins.md) e o [plugin de exemplo](examples/plugins/zeno-plugin-exemplo).
+
 ## Cookies
 
 Cada workspace tem um jar de cookies, como no Insomnia: o `Set-Cookie` das respostas (inclusive nos redirects, como no login que devolve 302) fica guardado e vai automaticamente nos requests seguintes, respeitando domínio, caminho, `Secure` e expiração. Cookies expirados são descartados. `Ctrl+K` (ou **Cookies** no rodapé da lateral) abre a tela para ver, editar, apagar e limpar. Na aba **Headers** de cada request dá para desligar *Enviar cookies* ou *Guardar cookies da resposta*. O jar fica em `<pasta de dados>/.cookies/`, fora dos YAML e do git.
@@ -278,7 +282,7 @@ Os próximos passos estão nas [issues abertas](https://github.com/chmenegatti/z
 
 - GraphQL, gRPC, WebSocket e SSE
 - OAuth 2.0, proxy e mTLS
-- mock server e plugins
+- mock server
 
 Quer ajudar em algum? Comente na issue antes de começar.
 
