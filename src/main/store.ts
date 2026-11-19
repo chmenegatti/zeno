@@ -572,7 +572,7 @@ export class Store {
 /** o que fica na máquina nunca vai pro git (hoje já mora fora do workspace; isto protege se alguém juntar as pastas) */
 export function writeGitignore(dir: string): void {
   const file = path.join(dir, '.gitignore')
-  const need = ['.responses/', '.vault/', '.cookies/', 'state.json', 'links.json']
+  const need = ['.responses/', '.vault/', '.cookies/', '.github.json', 'state.json', 'links.json']
   if (!fs.existsSync(file)) {
     fs.writeFileSync(file, `# gerado pelo Zeno: respostas, cookies, estado da interface e chave do cofre ficam só na máquina\n${need.join('\n')}\n`)
     return

@@ -341,3 +341,13 @@ export interface PluginInfo {
   requestActions: { label: string; icon?: string }[]
   importers: { name: string }[]
 }
+
+/** conta do GitHub conectada (salvar coleções) */
+export interface GitHubAccount {
+  login: string
+  name?: string
+  avatar?: string
+  /** repositório privado onde os workspaces ficam */
+  repo: string
+  via: 'gh' | 'token' | 'device'
+}

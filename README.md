@@ -59,6 +59,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 | **Resposta** | JSON formatado com destaque de sintaxe, filtro JSONPath/XPath salvo por request, busca (`Ctrl+F`), clique na chave pra copiar o caminho ou a tag `{% response %}`, headers, tempos e histórico das últimas 20 respostas |
 | **Cookies** | Jar por workspace, inclusive em redirects, com tela pra ver e editar (`Ctrl+K`) |
 | **Plugins** | Formato do Insomnia (`templateTags`, hooks, ações) e importadores, isolados e com liga/desliga |
+| **Salvar no GitHub** | Entre com o GitHub CLI ou um token e envie os workspaces pra um repositório privado (um commit por envio); baixe em outra máquina |
 | **Git integrado** | Workspace dentro do repo do projeto, com status, diff por request, commit, pull, push e branches |
 | **Temas** | 20 temas embutidos: TOTVS (padrão), Aura Dark, Monokai, Synthwave '84, Dracula, One Dark, Nord, Tokyo Night, Catppuccin, Gruvbox, Solarized, Night Owl, GitHub, Rosé Pine e Palenight, com 5 claros. Em Preferências ou `Ctrl+P` › *Tema* |
 | **Arquivos vivos** | Editou o YAML por fora ou deu `pull`? O app recarrega na hora |
@@ -176,6 +177,16 @@ A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem aju
 ## Plugins
 
 Plugins no formato do Insomnia (`templateTags`, `requestHooks`, `responseHooks`, `requestActions`) e importadores ficam em `plugins/` na pasta de dados. Em **Preferências › Plugins…** dá pra ligar, desligar e recarregar. Plugin com erro aparece desativado, com o motivo, sem derrubar o app. Veja [docs/plugins.md](docs/plugins.md) e o [plugin de exemplo](examples/plugins/zeno-plugin-exemplo).
+
+## Salvar no GitHub
+
+Menu do workspace › **Salvar no GitHub…** (ou `Ctrl+P` › *GitHub*):
+
+1. **Entre**: com a sessão do GitHub CLI (`gh auth login` feito antes) ou colando um token com acesso a repositórios. O token fica cifrado no cofre, com a chave no chaveiro do sistema. Com um OAuth App configurado em `ZENO_GITHUB_CLIENT_ID`, aparece também o login pelo navegador (device flow).
+2. **Envie**: escolha os workspaces. Eles vão pra um repositório **privado** (`zeno-collections`, criado na primeira vez; dá pra trocar o nome), cada um numa pasta, num commit só. Arquivos apagados no app saem do repositório, e envio sem mudança não cria commit.
+3. **Baixe em outra máquina**: a lista mostra o que está no repositório; *baixar* cria o workspace, *atualizar daqui* troca a versão local.
+
+Segredos do cofre vão cifrados. Em outra máquina, use o mesmo chaveiro ou informe os valores de novo. Não precisa ter `git` instalado: tudo passa pela API do GitHub.
 
 ## Cookies
 

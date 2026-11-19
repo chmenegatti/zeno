@@ -12,6 +12,7 @@ import { RunModal } from './Runner'
 import { PluginsModal, PrefsModal, ShortcutsModal } from './Prefs'
 import { CommandPalette } from './CommandPalette'
 import { CookiesModal } from './Cookies'
+import { GitHubModal } from './GitHub'
 import { editorTags } from './Tags'
 import { ScriptsEditor } from './Scripts'
 import { LockIcon, useVaultStatus } from './Secret'
@@ -53,6 +54,8 @@ export function Modals() {
       return ws ? <GitModal ws={ws} onClose={close} /> : null
     case 'prefs':
       return <PrefsModal onClose={close} />
+    case 'github':
+      return <GitHubModal onClose={close} />
     case 'plugins':
       return <PluginsModal onClose={close} />
     case 'cookies':
