@@ -1,0 +1,30 @@
+{
+  "name": "zeno-gtkx",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Protótipo do Zeno com interface nativa GTK4/Adwaita (GTKX)",
+  "type": "module",
+  "scripts": {
+    "dev": "gtkx dev",
+    "build": "gtkx build",
+    "codegen": "gtkx codegen",
+    "typecheck": "gtkx codegen && tsc",
+    "start": "node dist/bundle.mjs"
+  },
+  "allowScripts": { "@swc/core": true, "esbuild": true },
+  "dependencies": {
+    "@gtkx/components": "1.6.1",
+    "@gtkx/css": "1.6.1",
+    "@gtkx/react": "1.6.1",
+    "@gtkx/runtime": "1.6.1",
+    "react": "^19.3.1"
+  },
+  "devDependencies": {
+    "@gtkx/cli": "1.6.1",
+    "@gtkx/config": "1.6.1",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  }
+}
