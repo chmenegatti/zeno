@@ -11,9 +11,9 @@
 [![Licença MIT](https://img.shields.io/github/license/chmenegatti/zeno?color=a44dff)](LICENSE)
 ![Plataforma](https://img.shields.io/badge/plataforma-Linux-002233)
 [![Contribuições bem-vindas](https://img.shields.io/badge/PRs-bem--vindos-00ffd4)](CONTRIBUTING.md)
-[![Site](https://img.shields.io/badge/site-chmenegatti.github.io%2Fzeno-a44dff)](https://chmenegatti.github.io/zeno/)
+[![Site](https://img.shields.io/badge/site-cesarmenegatti.com%2Fzeno-a44dff)](https://www.cesarmenegatti.com/zeno/)
 
-**[Site](https://chmenegatti.github.io/zeno/)** · [Instalação](#instalação) · [Recursos](#recursos) · [Primeiros passos](#primeiros-passos) · [Cofre de segredos](#cofre-de-segredos) · [Scripts](#scripts-e-testes) · [Git](#git-e-trabalho-em-equipe) · [Roadmap](#roadmap) · [Contribuir](CONTRIBUTING.md)
+**[Site](https://www.cesarmenegatti.com/zeno/)** · [Instalação](#instalação) · [Recursos](#recursos) · [Primeiros passos](#primeiros-passos) · [Cofre de segredos](#cofre-de-segredos) · [Scripts](#scripts-e-testes) · [Git](#git-e-trabalho-em-equipe) · [Roadmap](#roadmap) · [Contribuir](CONTRIBUTING.md)
 
 <img src="docs/screenshot.png" alt="Tela do Zeno: coleções à esquerda, request no meio e resposta à direita" width="100%" />
 
