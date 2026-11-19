@@ -3,6 +3,7 @@
 import { EditorView } from '@uiw/react-codemirror'
 import { beautifyJson } from '@shared/format'
 import { findHotkeys, type HotkeyDef } from '@shared/hotkeys'
+import { getTheme, themeVars } from '@shared/themes'
 import { findNode } from '@shared/tree'
 import type { UiPrefs } from '@shared/types'
 import { activeWorkspace, api, createFolderIn, createRequestIn, deleteNode, duplicateNode, useStore } from './state'
@@ -23,6 +24,23 @@ export function applyUi(p: UiPrefs = ui()): void {
   const root = document.documentElement.style
   root.setProperty('--ui-font', `${p.fontSize ?? UI_FONT.def}px`)
   root.setProperty('--editor-font', `${p.editorFontSize ?? EDITOR_FONT.def}px`)
+  applyTheme(p.theme)
+}
+
+/** troca as variáveis de cor; color-scheme acompanha (selects, barras de rolagem, datas) */
+export const THEME_CACHE = 'zeno:theme'
+
+export function applyTheme(id: string | undefined): void {
+  const th = getTheme(id)
+  try {
+    localStorage.setItem(THEME_CACHE, th.id)
+  } catch {
+    /* sem storage */
+  }
+  const root = document.documentElement
+  for (const [k, v] of Object.entries(themeVars(th))) root.style.setProperty(k, v)
+  root.style.colorScheme = th.dark ? 'dark' : 'light'
+  root.dataset.theme = th.id
 }
 
 export function setUi(patch: Partial<UiPrefs>): void {

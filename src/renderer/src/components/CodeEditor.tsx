@@ -209,7 +209,7 @@ const phrases = EditorState.phrases.of({
   'Unfold line': 'Desdobrar linha'
 })
 
-// tema escuro com a paleta TOTVS
+// cores vêm das variáveis do tema ativo (src/shared/themes.ts)
 const theme = [
   phrases,
   search({ top: true }),
@@ -217,15 +217,15 @@ const theme = [
     {
       '&': { backgroundColor: 'transparent', color: 'var(--color-ink)' },
       '.cm-gutters': { backgroundColor: 'transparent', borderRight: '1px solid var(--color-line)', color: 'var(--color-faint)' },
-      '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'rgba(0,219,255,0.04)' },
+      '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'color-mix(in srgb, var(--color-accent) 5%, transparent)' },
       '.cm-content': { fontFamily: 'var(--font-mono)', caretColor: 'var(--color-tblue)' },
       '.cm-cursor': { borderLeftColor: 'var(--color-tblue)' },
-      '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': { backgroundColor: 'rgba(0,219,255,0.18) !important' },
-      '.cm-matchingBracket': { backgroundColor: 'rgba(164,77,255,0.25)', outline: 'none' },
+      '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': { backgroundColor: 'color-mix(in srgb, var(--color-accent) 22%, transparent) !important' },
+      '.cm-matchingBracket': { backgroundColor: 'color-mix(in srgb, var(--color-tpurple) 28%, transparent)', outline: 'none' },
       '.cm-foldPlaceholder': { backgroundColor: 'var(--color-raised)', border: 'none', color: 'var(--color-dim)' },
       '.cm-tooltip': { backgroundColor: 'var(--color-raised)', border: '1px solid var(--color-line)' },
       '.cm-tooltip-autocomplete > ul > li': { padding: '3px 10px' },
-      '.cm-tooltip-autocomplete > ul > li[aria-selected]': { backgroundColor: 'rgba(164,77,255,0.35)', color: 'var(--color-ink)' },
+      '.cm-tooltip-autocomplete > ul > li[aria-selected]': { backgroundColor: 'color-mix(in srgb, var(--color-tpurple) 35%, transparent)', color: 'var(--color-ink)' },
       '.cm-completionDetail': { color: 'var(--color-faint)', fontStyle: 'normal', marginLeft: '10px' },
       // busca (Ctrl+F)
       '.cm-panels': { backgroundColor: 'var(--color-raised)', color: 'var(--color-ink)', borderColor: 'var(--color-line)' },
@@ -234,21 +234,21 @@ const theme = [
       '.cm-search input, .cm-search button, .cm-search label': { fontSize: '12px' },
       '.cm-textfield': { backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-line)', borderRadius: '4px', color: 'var(--color-ink)', padding: '2px 6px' },
       '.cm-button': { backgroundImage: 'none', backgroundColor: 'var(--color-panel)', border: '1px solid var(--color-line)', borderRadius: '4px', color: 'var(--color-ink)' },
-      '.cm-searchMatch': { backgroundColor: 'rgba(255,137,0,0.28)', outline: '1px solid rgba(255,137,0,0.5)' },
-      '.cm-searchMatch.cm-searchMatch-selected': { backgroundColor: 'rgba(255,137,0,0.6)' }
+      '.cm-searchMatch': { backgroundColor: 'color-mix(in srgb, var(--color-torange) 28%, transparent)', outline: '1px solid color-mix(in srgb, var(--color-torange) 50%, transparent)' },
+      '.cm-searchMatch.cm-searchMatch-selected': { backgroundColor: 'color-mix(in srgb, var(--color-torange) 60%, transparent)' }
     },
     { dark: true }
   ),
   syntaxHighlighting(
     HighlightStyle.define([
-      { tag: t.propertyName, color: '#00dbff' },
-      { tag: [t.string, t.special(t.string)], color: '#00ffd4' },
-      { tag: [t.number, t.integer, t.float], color: '#ff8900' },
-      { tag: [t.bool, t.null, t.atom], color: '#a44dff' },
-      { tag: [t.keyword, t.tagName], color: '#ff009e' },
-      { tag: [t.attributeName], color: '#d9ff65' },
-      { tag: [t.comment], color: '#577787', fontStyle: 'italic' },
-      { tag: [t.punctuation, t.bracket, t.separator], color: '#8eaab8' }
+      { tag: t.propertyName, color: 'var(--syn-prop, var(--color-tblue))' },
+      { tag: [t.string, t.special(t.string)], color: 'var(--syn-string, var(--color-tgreen))' },
+      { tag: [t.number, t.integer, t.float], color: 'var(--syn-number, var(--color-torange))' },
+      { tag: [t.bool, t.null, t.atom], color: 'var(--syn-bool, var(--color-tpurple))' },
+      { tag: [t.keyword, t.tagName], color: 'var(--syn-keyword, var(--color-tpink))' },
+      { tag: [t.attributeName], color: 'var(--syn-attr, var(--color-tlime))' },
+      { tag: [t.comment], color: 'var(--color-faint)', fontStyle: 'italic' },
+      { tag: [t.punctuation, t.bracket, t.separator], color: 'var(--color-dim)' }
     ])
   )
 ]

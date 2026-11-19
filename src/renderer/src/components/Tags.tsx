@@ -215,11 +215,11 @@ function useVarAutocomplete(value: string, onChange: (v: string) => void, ref: R
               </>
             ) : it.kind === 'tag' ? (
               <>
-                <span className="text-[#c99bff]">ƒ {it.label}</span>
+                <span className="text-tag">ƒ {it.label}</span>
                 <span className="text-[11px] text-faint">{it.detail}</span>
               </>
             ) : (
-              <span className="text-[#c99bff]">ƒ Outra tag… <span className="text-[11px] text-faint">abre o editor</span></span>
+              <span className="text-tag">ƒ Outra tag… <span className="text-[11px] text-faint">abre o editor</span></span>
             )}
           </div>
         ))}

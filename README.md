@@ -45,6 +45,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 | **Organização** | Pastas aninhadas, arrastar pra mover/reordenar, duplicar, renomear, fixar; paleta de comandos com `Ctrl+P` |
 | **Resposta** | JSON formatado com destaque de sintaxe, filtro JSONPath/XPath salvo por request, busca (`Ctrl+F`), clique na chave pra copiar o caminho ou a tag `{% response %}`, headers, tempos e histórico das últimas 20 respostas |
 | **Git integrado** | Workspace dentro do repo do projeto, com status, diff por request, commit, pull, push e branches |
+| **Temas** | 20 temas embutidos: TOTVS (padrão), Aura Dark, Monokai, Synthwave '84, Dracula, One Dark, Nord, Tokyo Night, Catppuccin, Gruvbox, Solarized, Night Owl, GitHub, Rosé Pine e Palenight, com 5 claros. Em Preferências ou `Ctrl+P` › *Tema* |
 | **Arquivos vivos** | Editou o YAML por fora ou deu `pull`? O app recarrega na hora |
 
 ## Instalação

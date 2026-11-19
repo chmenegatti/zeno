@@ -90,7 +90,7 @@ export function App() {
         </div>
       )}
       {error && (
-        <div className="fixed bottom-4 left-1/2 z-50 max-w-[70vw] -translate-x-1/2 rounded-lg border border-tpink/40 bg-[#2a0a20] px-4 py-2 text-tpink shadow-xl" onClick={() => useStore.setState({ error: null })}>
+        <div className="fixed bottom-4 left-1/2 z-50 max-w-[70vw] -translate-x-1/2 rounded-lg border border-tpink/40 bg-panel px-4 py-2 text-tpink shadow-xl" onClick={() => useStore.setState({ error: null })}>
           {error}
         </div>
       )}

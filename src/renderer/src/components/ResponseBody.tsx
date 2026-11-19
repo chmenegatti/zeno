@@ -242,7 +242,7 @@ export function ResponseView({ res, requestId, pretty }: { res: ResponseRecord; 
   let content: React.ReactNode
   if (!canVisual) content = <p className="p-4 text-faint">Binário de {formatBytes(res.size)} ({ct}). Use <b>salvar em arquivo</b>.</p>
   else if (!url) content = <p className="p-4 text-faint">{res.bodyFile ? `Resposta grande (${formatBytes(res.size)}): clique em carregar tudo pra visualizar.` : 'carregando…'}</p>
-  else if (kind === 'image') content = <div className="flex h-full items-center justify-center overflow-auto bg-[repeating-conic-gradient(#0b3347_0_25%,transparent_0_50%)] bg-[length:16px_16px] p-3"><img src={url} alt="resposta" className="max-h-full max-w-full object-contain" /></div>
+  else if (kind === 'image') content = <div className="flex h-full items-center justify-center overflow-auto bg-[repeating-conic-gradient(var(--color-line)_0_25%,transparent_0_50%)] bg-[length:16px_16px] p-3"><img src={url} alt="resposta" className="max-h-full max-w-full object-contain" /></div>
   else if (kind === 'pdf') content = <iframe title="PDF" src={url} className="h-full w-full border-0 bg-white" />
   else if (kind === 'audio') content = <div className="p-4"><audio controls src={url} className="w-full" /></div>
   else if (kind === 'video') content = <div className="flex h-full items-center justify-center p-3"><video controls src={url} className="max-h-full max-w-full" /></div>
