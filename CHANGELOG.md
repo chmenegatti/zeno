@@ -2,6 +2,15 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [0.7.0](https://github.com/chmenegatti/zeno/compare/v0.6.0...v0.7.0) (2026-11-19)
+
+### Novidades
+
+* **github:** salvar coleções no GitHub: **Entrar com GitHub** pelo navegador (ou sessão do GitHub CLI, ou token, cifrado no cofre), enviar workspaces pra um repositório privado num commit só (só os YAML do Zeno) e baixar em outra máquina ([#48](https://github.com/chmenegatti/zeno/pull/48)) ([#49](https://github.com/chmenegatti/zeno/pull/49)) ([0860c30](https://github.com/chmenegatti/zeno/commit/0860c30)) ([215af20](https://github.com/chmenegatti/zeno/commit/215af20))
+* **ui:** menu de método colorido (descrição, teclado, método personalizado) e gerar código em 20 linguagens e 37 bibliotecas com o httpsnippet, com variáveis e tags resolvidas ([#45](https://github.com/chmenegatti/zeno/pull/45)) ([28182a5](https://github.com/chmenegatti/zeno/commit/28182a5))
+* **body:** botão **Formatar JSON** no rodapé do body, mantendo `{{ variáveis }}` e `{% tags %}` ([#46](https://github.com/chmenegatti/zeno/pull/46)) ([511bd74](https://github.com/chmenegatti/zeno/commit/511bd74))
+* **site:** [site do Zeno](https://www.cesarmenegatti.com/zeno/) com tema claro/escuro, publicado no GitHub Pages; README revisto ([#47](https://github.com/chmenegatti/zeno/pull/47)) ([db68cfd](https://github.com/chmenegatti/zeno/commit/db68cfd))
+
 ## [0.6.0](https://github.com/chmenegatti/zeno/compare/v0.5.1...v0.6.0) (2026-11-19)
 
 ### Novidades
