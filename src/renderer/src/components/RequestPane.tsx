@@ -15,6 +15,7 @@ import { editorTags, TemplateInput } from './Tags'
 import { maskSecrets } from '@shared/secret'
 import { askSchedule, stopSend } from '../sendSchedule'
 import { parseCurl } from '@shared/curl'
+import { beautifyJson } from '@shared/format'
 
 type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'assertions' | 'notes'
 
@@ -212,8 +213,32 @@ function BodyEditor({ body, onChange }: { body: Body; onChange: (b: Body) => voi
         </div>
       )}
       {body.mime !== null && !isForm && (
-        <div className="min-h-0 flex-1 border-t border-line">
-          <CodeEditor value={body.text ?? ''} lang={langFor(body.mime)} onChange={(text) => onChange({ ...body, text })} tags={editorTags} />
+        <div className="flex min-h-0 flex-1 flex-col border-t border-line">
+          <div className="min-h-0 flex-1">
+            <CodeEditor value={body.text ?? ''} lang={langFor(body.mime)} onChange={(text) => onChange({ ...body, text })} tags={editorTags} />
+          </div>
+          {langFor(body.mime) === 'json' && (
+            <div className="flex items-center gap-2 border-t border-line px-2 py-1">
+              <button
+                className="btn btn-ghost px-2 py-0.5 text-[11.5px]"
+                title="Organiza o JSON com indentação (Ctrl+Shift+F no editor); mantém {{ variáveis }} e {% tags %}"
+                onClick={() => {
+                  const text = body.text ?? ''
+                  if (!text.trim()) return
+                  try {
+                    const out = beautifyJson(text)
+                    if (out !== text) onChange({ ...body, text: out })
+                  } catch {
+                    useStore.getState().notify('Só dá pra formatar JSON válido')
+                  }
+                }}
+              >
+                {'{ }'} Formatar JSON
+              </button>
+              <div className="flex-1" />
+              <span className="text-[11px] text-faint">{(body.text ?? '').length} caracteres</span>
+            </div>
+          )}
         </div>
       )}
     </div>
