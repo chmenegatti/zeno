@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { bindings, HOTKEYS } from '@shared/hotkeys'
 import { indexRequests, norm, scoreFields, searchRequests } from '@shared/palette'
 import { activeWorkspace, useStore } from '../state'
-import { runAction } from '../hotkeys'
+import { runAction, setUi } from '../hotkeys'
+import { DEFAULT_THEME, THEMES } from '@shared/themes'
 import { Kbd } from './Prefs'
 import { MethodBadge } from './ui'
 
@@ -28,6 +29,9 @@ function useCommands(): Command[] {
     const { openModal, setApp } = useStore.getState()
     const out: Command[] = HOTKEYS.filter((h) => !SKIP.has(h.id)).map((h) => ({ id: h.id, label: h.label, keys: b[h.id], run: () => runAction(h.id) }))
     out.push({ id: 'import', label: 'Importar (Insomnia, OpenAPI, Postman)', run: () => openModal({ kind: 'import' }) })
+    for (const th of THEMES)
+      if (th.id !== (app.ui?.theme ?? DEFAULT_THEME))
+        out.push({ id: `theme:${th.id}`, label: `Tema: ${th.name}`, hint: th.dark ? 'escuro' : 'claro', run: () => setUi({ theme: th.id === DEFAULT_THEME ? undefined : th.id }) })
     out.push({ id: 'plugins', label: 'Plugins', hint: 'ligar, desligar, recarregar', run: () => openModal({ kind: 'plugins' }) })
     if (ws) {
       out.push({ id: 'run', label: 'Rodar workspace', run: () => openModal({ kind: 'run', id: ws.id }) })

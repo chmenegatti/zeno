@@ -32,7 +32,7 @@ export function Modals() {
           <p className="mb-4">{modal.message}</p>
           <div className="flex justify-end gap-2">
             <button className="btn" onClick={close}>Cancelar</button>
-            <button autoFocus className="btn bg-tpink text-white" onClick={() => { close(); modal.onOk?.('') }}>{modal.value || 'Excluir'}</button>
+            <button autoFocus className="btn bg-tpink text-bg" onClick={() => { close(); modal.onOk?.('') }}>{modal.value || 'Excluir'}</button>
           </div>
         </Modal>
       )

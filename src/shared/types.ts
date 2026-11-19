@@ -129,6 +129,8 @@ export interface AppState {
 export interface UiPrefs {
   /** zoom da janela (1 = 100%) */
   zoom?: number
+  /** id do tema (src/shared/themes.ts); sem = TOTVS */
+  theme?: string
   /** px; padrão 13 */
   fontSize?: number
   /** px; padrão 12.5 */

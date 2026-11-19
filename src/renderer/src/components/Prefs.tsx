@@ -3,6 +3,7 @@ import { bindings, canon, comboFromEvent, conflicts, fromInsomnia, HOTKEYS, type
 import { api, useStore } from '../state'
 import { EDITOR_FONT, recording, setUi, UI_FONT, ZOOM_STEPS } from '../hotkeys'
 import { Modal } from './ui'
+import { DEFAULT_THEME, THEMES, type Theme } from '@shared/themes'
 
 const GROUPS: HotkeyGroup[] = ['Interface', 'Request', 'Ambientes']
 
@@ -20,8 +21,9 @@ export function PrefsModal({ onClose }: { onClose: () => void }) {
     return Number.isFinite(n) && n > 0 ? Math.min(lim.max, Math.max(lim.min, n)) : lim.def
   }
   return (
-    <Modal title="Preferências" onClose={onClose}>
+    <Modal title="Preferências" onClose={onClose} wide>
       <div className="flex flex-col gap-4">
+        <ThemePicker current={p.theme} />
         <label className="flex items-center gap-3">
           <span className="w-[170px] text-dim">Zoom</span>
           <select className="field flex-1" value={String(zoom)} onChange={(e) => setUi({ zoom: Number(e.target.value) })}>
@@ -200,7 +202,7 @@ export function PluginsModal({ onClose }: { onClose: () => void }) {
                     <div className="mt-1 whitespace-pre-wrap font-mono text-[11.5px] text-tpink">desativado: {p.error}</div>
                   ) : (
                     <div className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
-                      {p.templateTags.map((t) => <span key={t.name} className="rounded bg-tpurple/15 px-1.5 py-0.5 font-mono text-[#c99bff]">{`{% ${t.name} %}`}</span>)}
+                      {p.templateTags.map((t) => <span key={t.name} className="rounded bg-tpurple/15 px-1.5 py-0.5 font-mono text-tag">{`{% ${t.name} %}`}</span>)}
                       {p.requestHooks > 0 && <span className="rounded bg-line px-1.5 py-0.5 text-dim">{p.requestHooks} request hook{p.requestHooks > 1 ? 's' : ''}</span>}
                       {p.responseHooks > 0 && <span className="rounded bg-line px-1.5 py-0.5 text-dim">{p.responseHooks} response hook{p.responseHooks > 1 ? 's' : ''}</span>}
                       {p.requestActions.map((a) => <span key={a.label} className="rounded bg-line px-1.5 py-0.5 text-dim">ação: {a.label}</span>)}
@@ -217,5 +219,62 @@ export function PluginsModal({ onClose }: { onClose: () => void }) {
         </div>
       </div>
     </Modal>
+  )
+}
+
+// ---------- temas ----------
+
+function Swatch({ th, active, onPick }: { th: Theme; active: boolean; onPick: () => void }) {
+  const c = th.colors
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      className={`flex flex-col overflow-hidden rounded-lg border text-left transition ${active ? 'border-accent ring-2 ring-accent/50' : 'border-line hover:border-dim'}`}
+      title={th.name}
+    >
+      {/* miniatura: lateral, painel, botão e trecho de JSON nas cores do tema */}
+      <div className="flex h-[58px]" style={{ background: c.bg }}>
+        <div className="w-[26%]" style={{ background: c.panel, borderRight: `1px solid ${c.line}` }}>
+          <div className="mx-1.5 mt-2 h-1.5 rounded" style={{ background: c.raised }} />
+          <div className="mx-1.5 mt-1 h-1 w-2/3 rounded" style={{ background: c.green }} />
+          <div className="mx-1.5 mt-1 h-1 w-1/2 rounded" style={{ background: c.orange }} />
+        </div>
+        <div className="flex flex-1 flex-col gap-1 p-1.5 font-mono text-[8px] leading-none">
+          <div className="flex gap-1">
+            <span className="h-2.5 flex-1 rounded-sm" style={{ background: c.raised, border: `1px solid ${c.line}` }} />
+            <span className="h-2.5 w-5 rounded-sm" style={{ background: c.accent }} />
+          </div>
+          <span style={{ color: th.syntax.prop }}>"id"<span style={{ color: c.dim }}>: </span><span style={{ color: th.syntax.number }}>7</span></span>
+          <span style={{ color: th.syntax.prop }}>"ok"<span style={{ color: c.dim }}>: </span><span style={{ color: th.syntax.bool }}>true</span></span>
+          <span style={{ color: th.syntax.string }}>"Olá"</span>
+        </div>
+      </div>
+      <div className="flex items-center justify-between px-2 py-1 text-[11.5px]" style={{ background: c.panel, color: c.ink, borderTop: `1px solid ${c.line}` }}>
+        <span className="truncate">{th.name}</span>
+        {active && <span style={{ color: c.accent }}>●</span>}
+      </div>
+    </button>
+  )
+}
+
+/** grade de temas: clicar aplica na hora e salva */
+export function ThemePicker({ current }: { current?: string }) {
+  const id = current ?? DEFAULT_THEME
+  const group = (dark: boolean) => THEMES.filter((t) => t.dark === dark)
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-dim">Tema</span>
+      {[true, false].map((dark) => (
+        <div key={String(dark)} className="flex flex-col gap-1.5">
+          <span className="text-[11px] uppercase tracking-wide text-faint">{dark ? 'Escuros' : 'Claros'}</span>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
+            {group(dark).map((th) => (
+              <Swatch key={th.id} th={th} active={th.id === id} onPick={() => setUi({ theme: th.id === DEFAULT_THEME ? undefined : th.id })} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
