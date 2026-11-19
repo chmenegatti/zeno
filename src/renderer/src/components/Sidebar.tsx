@@ -326,6 +326,7 @@ function WorkspaceBar() {
             setApp({ activeWorkspaceId: r.id, activeRequestId: undefined })
           }}>Abrir workspace de uma pasta…</button>
           <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); openModal({ kind: 'import' }) }}>⇣ Importar (Insomnia, OpenAPI, Postman)…</button>
+          <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); openModal({ kind: 'github' }) }}>☁ Salvar no GitHub…</button>
           <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); api.openDataDir() }}>Abrir pasta de dados</button>
         </div>
       )}

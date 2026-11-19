@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto'
 import { Engine } from './engine'
 import { evalFn, extract, parseArgs, type PromptAsk } from './tags'
 import { Plugins } from './plugins'
+import { DEFAULT_REPO, deviceClientId, devicePoll, deviceStart, ghCliToken, GitHubApi, GitHubSync, type GitHubAccount } from './github'
 import { codeTargets, snippet } from './codegen'
 import { findRequestRef, parseTag } from '../shared/tagdef'
 import { buildVars, render } from '../shared/template'
@@ -366,6 +367,88 @@ handle('insomniaHotkeys', () => {
   return reg
 })
 handle('responses', (id: string) => store.getResponses(id))
+
+// ---------- GitHub: salvar coleções num repositório privado ----------
+const ghFile = path.join(store.dir, '.github.json')
+interface GhSaved extends GitHubAccount {
+  /** token cifrado no cofre */
+  token: string
+}
+const ghRead = (): GhSaved | null => {
+  try {
+    return JSON.parse(fs.readFileSync(ghFile, 'utf8'))
+  } catch {
+    return null
+  }
+}
+const ghPublic = (g: GhSaved | null): GitHubAccount | null => (g ? { login: g.login, name: g.name, avatar: g.avatar, repo: g.repo, via: g.via } : null)
+async function ghSync(): Promise<GitHubSync> {
+  const g = ghRead()
+  if (!g) throw new Error('entre no GitHub primeiro')
+  return new GitHubSync(new GitHubApi(await vault.decrypt(g.token)), g.login, g.repo)
+}
+/** valida o token (GET /user) e guarda cifrado */
+async function ghLogin(token: string, via: GitHubAccount['via']): Promise<GitHubAccount> {
+  const u = await new GitHubApi(token).user()
+  if (!u?.login) throw new Error('não deu pra ler a conta com esse token')
+  const g: GhSaved = { login: u.login, name: u.name ?? undefined, avatar: u.avatar_url, repo: ghRead()?.repo ?? DEFAULT_REPO, via, token: await vault.encrypt(token) }
+  fs.writeFileSync(ghFile, JSON.stringify(g, null, 2), { mode: 0o600 })
+  return ghPublic(g)!
+}
+let deviceFlow: { code: string; interval: number; expires: number } | null = null
+handle('githubStatus', () => ({ account: ghPublic(ghRead()), deviceAvailable: !!deviceClientId() }))
+handle('githubLoginGh', async () => {
+  const t = await ghCliToken()
+  if (!t) throw new Error('GitHub CLI sem sessão: rode "gh auth login" no terminal ou cole um token')
+  return ghLogin(t, 'gh')
+})
+handle('githubLoginToken', (token: string) => ghLogin(token.trim(), 'token'))
+handle('githubDeviceStart', async () => {
+  const id = deviceClientId()
+  if (!id) throw new Error('login pelo navegador precisa de um OAuth App (ZENO_GITHUB_CLIENT_ID)')
+  const d = await deviceStart(id)
+  deviceFlow = { code: d.device_code, interval: d.interval, expires: d.expires_in }
+  await shell.openExternal(d.verification_uri)
+  return { userCode: d.user_code, url: d.verification_uri }
+})
+handle('githubDevicePoll', async () => {
+  const id = deviceClientId()
+  if (!id || !deviceFlow) throw new Error('comece o login de novo')
+  const token = await devicePoll(id, deviceFlow.code, deviceFlow.interval, deviceFlow.expires)
+  deviceFlow = null
+  return ghLogin(token, 'device')
+})
+handle('githubLogout', () => fs.rmSync(ghFile, { force: true }))
+handle('githubSetRepo', (repo: string) => {
+  const g = ghRead()
+  if (!g) throw new Error('entre no GitHub primeiro')
+  const name = repo.trim()
+  if (!/^[\w.-]{1,100}$/.test(name)) throw new Error('nome de repositório inválido')
+  fs.writeFileSync(ghFile, JSON.stringify({ ...g, repo: name }, null, 2), { mode: 0o600 })
+  return ghPublic({ ...g, repo: name })
+})
+handle('githubList', async () => (await ghSync()).list())
+handle('githubPush', async (wsIds: string[]) => {
+  const sync = await ghSync()
+  const list = store.list().filter((w) => wsIds.includes(w.id) && w.location)
+  if (!list.length) throw new Error('nenhum workspace escolhido')
+  const when = new Date().toLocaleString('pt-BR')
+  return sync.push(
+    list.map((w) => ({ dir: path.basename(w.location!.dir), name: w.name, localDir: w.location!.dir })),
+    `Zeno: ${list.map((w) => w.name).join(', ')} (${when})`
+  )
+})
+/** baixa um workspace: se já existe aqui (mesmo id), atualiza no lugar; senão cria na pasta de dados */
+handle('githubPull', async (dir: string, remoteId?: string) => {
+  const sync = await ghSync()
+  const local = store.list().find((w) => remoteId && w.id === remoteId)
+  let target = local?.location?.dir ?? path.join(store.dir, dir)
+  if (!local && fs.existsSync(target)) target = path.join(store.dir, `${dir}-github`)
+  const n = await sync.pull(dir, target)
+  const workspaces = store.load()
+  win?.webContents.send('store:changed', workspaces)
+  return { files: n, workspaces }
+})
 
 // ---------- plugins ----------
 handle('pluginsList', () => plugins.list())

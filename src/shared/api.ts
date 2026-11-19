@@ -1,6 +1,6 @@
 import type { InsomniaKey } from './hotkeys'
 import type { CodeLang } from './curl'
-import type { CookieInfo, PluginInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
+import type { CookieInfo, GitHubAccount, PluginInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
 
 export interface Created {
   workspaces: Workspace[]
@@ -120,6 +120,19 @@ export interface ZenoApi {
   pluginsOpenDir(): Promise<string>
   /** roda uma ação de plugin no request; devolve as mensagens (app.alert) */
   pluginAction(pluginId: string, index: number, wsId: string, reqId: string, envId: string | null): Promise<string[]>
+  githubStatus(): Promise<{ account: GitHubAccount | null; deviceAvailable: boolean }>
+  /** usa a sessão do GitHub CLI (gh auth token) */
+  githubLoginGh(): Promise<GitHubAccount>
+  githubLoginToken(token: string): Promise<GitHubAccount>
+  /** device flow: abre o navegador e devolve o código pra digitar */
+  githubDeviceStart(): Promise<{ userCode: string; url: string }>
+  githubDevicePoll(): Promise<GitHubAccount>
+  githubLogout(): Promise<void>
+  githubSetRepo(repo: string): Promise<GitHubAccount>
+  githubList(): Promise<{ dir: string; id?: string; name: string; files: number }[]>
+  /** envia num commit só; null = nada mudou */
+  githubPush(wsIds: string[]): Promise<{ commit: string; files: number; url: string } | null>
+  githubPull(dir: string, remoteId?: string): Promise<{ files: number; workspaces: Workspace[] }>
   /** esquece os valores lembrados dos prompts */
   promptForget(): Promise<void>
 }

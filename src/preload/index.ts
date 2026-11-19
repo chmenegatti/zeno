@@ -16,7 +16,7 @@ const channels = [
   'vaultStatus', 'vaultEncrypt', 'vaultReveal', 'vaultScan', 'vaultProtect',
   'linkWorkspace', 'moveWorkspace',
   'gitStatus', 'gitDiff', 'gitCommit', 'gitPull', 'gitPush', 'gitSwitch', 'gitAbort', 'gitInit',
-  'codeSnippet', 'copyText', 'tagPreview', 'windowAction', 'insomniaHotkeys', 'cookiesList', 'cookiesSave', 'promptReply', 'promptForget', 'responseBody', 'saveResponse', 'pluginsList', 'pluginsReload', 'pluginsSetEnabled', 'pluginsOpenDir', 'pluginAction', 'codeTargets',
+  'codeSnippet', 'copyText', 'tagPreview', 'windowAction', 'insomniaHotkeys', 'cookiesList', 'cookiesSave', 'promptReply', 'promptForget', 'responseBody', 'saveResponse', 'pluginsList', 'pluginsReload', 'pluginsSetEnabled', 'pluginsOpenDir', 'pluginAction', 'codeTargets', 'githubStatus', 'githubLoginGh', 'githubLoginToken', 'githubDeviceStart', 'githubDevicePoll', 'githubLogout', 'githubSetRepo', 'githubList', 'githubPush', 'githubPull',
   'runCollection', 'runCancel', 'runPickData', 'runSaveJUnit'
 ] as const
 

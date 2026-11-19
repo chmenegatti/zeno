@@ -32,6 +32,7 @@ function useCommands(): Command[] {
     for (const th of THEMES)
       if (th.id !== (app.ui?.theme ?? DEFAULT_THEME))
         out.push({ id: `theme:${th.id}`, label: `Tema: ${th.name}`, hint: th.dark ? 'escuro' : 'claro', run: () => setUi({ theme: th.id === DEFAULT_THEME ? undefined : th.id }) })
+    out.push({ id: 'github', label: 'GitHub: salvar ou baixar coleções', hint: 'repositório privado', run: () => openModal({ kind: 'github' }) })
     out.push({ id: 'plugins', label: 'Plugins', hint: 'ligar, desligar, recarregar', run: () => openModal({ kind: 'plugins' }) })
     if (ws) {
       out.push({ id: 'run', label: 'Rodar workspace', run: () => openModal({ kind: 'run', id: ws.id }) })
