@@ -1,6 +1,7 @@
 // Origem das variáveis (de onde vem cada valor) e referências usadas num request.
 
 import type { Environment, Folder, RequestDoc, Workspace } from './types'
+import { varPath } from './template'
 
 export type VarSource =
   | { kind: 'env'; envId: string; label: string }
@@ -40,7 +41,7 @@ const TOKEN_RE = /\{\{\s*([A-Za-z0-9_$.\-[\]'"]+)\s*\}\}|\{%\s*(\w+).*?%\}/g
 
 /** nome de topo da variável: `_.a.b` -> `a` */
 export function rootName(path: string): string {
-  return path.replace(/^_\./, '').split(/[.[]/)[0]
+  return varPath(path)[0] ?? path
 }
 
 export function tokenize(s: string): Token[] {

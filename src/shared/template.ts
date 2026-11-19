@@ -14,10 +14,16 @@ export interface RenderResult {
   unsupported: string[]
 }
 
+/** caminho da variável em partes: nome, _.nome, _['X-API-Key'], a.b, a[0], a["x.y"] (o _ inicial é o ambiente) */
+export function varPath(path: string): string[] {
+  const parts: string[] = []
+  for (const m of path.matchAll(/\[\s*(['"])(.*?)\1\s*\]|\[\s*([^\]]*?)\s*\]|([^.[\]]+)/g)) parts.push(m[2] ?? m[3] ?? m[4])
+  return parts[0] === '_' && parts.length > 1 ? parts.slice(1) : parts
+}
+
 function lookup(vars: Vars, path: string): unknown {
-  const clean = path.replace(/^_\./, '').replace(/\[['"]?([^\]'"]+)['"]?\]/g, '.$1')
   let cur: unknown = vars
-  for (const part of clean.split('.')) {
+  for (const part of varPath(path)) {
     if (cur == null || typeof cur !== 'object' || !(part in (cur as object))) return undefined
     cur = (cur as Record<string, unknown>)[part]
   }
