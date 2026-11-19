@@ -11,8 +11,9 @@
 [![Licença MIT](https://img.shields.io/github/license/chmenegatti/zeno?color=a44dff)](LICENSE)
 ![Plataforma](https://img.shields.io/badge/plataforma-Linux-002233)
 [![Contribuições bem-vindas](https://img.shields.io/badge/PRs-bem--vindos-00ffd4)](CONTRIBUTING.md)
+[![Site](https://img.shields.io/badge/site-cesarmenegatti.com%2Fzeno-a44dff)](https://www.cesarmenegatti.com/zeno/)
 
-[Instalação](#instalação) · [Recursos](#recursos) · [Primeiros passos](#primeiros-passos) · [Cofre de segredos](#cofre-de-segredos) · [Scripts](#scripts-e-testes) · [Git](#git-e-trabalho-em-equipe) · [Roadmap](#roadmap) · [Contribuir](CONTRIBUTING.md)
+**[Site](https://www.cesarmenegatti.com/zeno/)** · [Instalação](#instalação) · [Recursos](#recursos) · [Primeiros passos](#primeiros-passos) · [Cofre de segredos](#cofre-de-segredos) · [Scripts](#scripts-e-testes) · [Git](#git-e-trabalho-em-equipe) · [Roadmap](#roadmap) · [Contribuir](CONTRIBUTING.md)
 
 <img src="docs/screenshot.png" alt="Tela do Zeno: coleções à esquerda, request no meio e resposta à direita" width="100%" />
 
@@ -27,6 +28,18 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 - **Segredos não vazam.** Senhas e tokens ficam criptografados no próprio YAML, com a chave guardada no chaveiro do sistema.
 - **Migração sem dor.** Importa as coleções do Insomnia direto da pasta dele, incluindo ambientes e encadeamento de tokens.
 - **Local primeiro.** Sem conta, sem telemetria, sem sincronização obrigatória.
+- **Do seu jeito.** 20 temas, atalhos iguais aos do Insomnia (e editáveis), paleta de comandos e plugins no formato do Insomnia.
+
+<table>
+  <tr>
+    <td width="50%"><img src="site/img/timeline.webp" alt="Linha do tempo com redirect" /><br /><sub><b>Linha do tempo</b>: o request como saiu, redirects, tempos e TLS</sub></td>
+    <td width="50%"><img src="site/img/code.webp" alt="Gerar código" /><br /><sub><b>Gerar código</b> em 20 linguagens, com tags resolvidas</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="site/img/restag.webp" alt="Editor da tag de resposta" /><br /><sub><b>Encadeamento</b> com <code>{% response %}</code> e prévia do valor</sub></td>
+    <td width="50%"><img src="site/img/themes.webp" alt="Temas" /><br /><sub><b>20 temas</b>, escuros e claros</sub></td>
+  </tr>
+</table>
 
 ## Recursos
 
@@ -34,16 +47,18 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 |---|---|
 | **HTTP completo** | Todos os métodos, params, headers, body JSON/XML/texto/form/multipart com arquivo, redirects, timeout e cancelamento |
 | **Autenticação** | Basic, Bearer, API key (header ou query) e herança da pasta |
-| **Ambientes e variáveis** | `{{ var }}` e `{{ _.var }}` com herança Base → sub-ambiente → pasta, troca rápida com `Ctrl+E` |
+| **Ambientes e variáveis** | `{{ var }}` e `{{ _.var }}` com herança Base → sub-ambiente → pasta; editor com `Ctrl+E`, troca com `Ctrl+Shift+E` |
 | **Badges de variáveis** | Variáveis aparecem como badges em todos os campos e editores, com autocomplete ao digitar `{{`; clique pra ver, editar, criar ou mover |
 | **Scripts e testes** | JavaScript antes do envio e depois da resposta (por request ou pasta), com `zeno.test`/`zeno.expect`; scripts do Insomnia e do Postman rodam sem mudança |
 | **Asserções e executor** | Checagens de status, header, JSONPath, body e tempo sem programar; rode uma pasta inteira com iterações, dados CSV/JSON e relatório JUnit, no app ou com `zeno run` no CI |
-| **Encadeamento** | `{% response %}` usa o body, header ou URL de outro request, reenviando só quando o valor expira |
+| **Encadeamento e funções** | `{% response %}` usa o body, header ou URL de outro request, reenviando só quando o valor expira; `uuid`, `timestamp`, `faker`, `hash`, `base64`, `file`, `prompt` e `jsonpath` |
 | **Cofre de segredos** | AES-256-GCM com a chave protegida pelo chaveiro do sistema (gnome-keyring, KWallet) |
 | **cURL e código** | Cole um `curl` na URL e o request é montado; copie como cURL ou gere código em 20 linguagens e 37 bibliotecas (Shell, JavaScript, Node, Python, Go, Java, C#, PHP, Ruby, Kotlin, Swift, Rust, PowerShell…), com variáveis e tags já resolvidas (`Ctrl+Shift+G`) |
 | **Importação** | Insomnia (pasta, export v4 e v5), OpenAPI 3 e Swagger 2 (arquivo ou URL) e Postman v2.1 com ambientes, com prévia e lista do que não foi convertido |
 | **Organização** | Pastas aninhadas, arrastar pra mover/reordenar, duplicar, renomear, fixar; paleta de comandos com `Ctrl+P` |
 | **Resposta** | JSON formatado com destaque de sintaxe, filtro JSONPath/XPath salvo por request, busca (`Ctrl+F`), clique na chave pra copiar o caminho ou a tag `{% response %}`, headers, tempos e histórico das últimas 20 respostas |
+| **Cookies** | Jar por workspace, inclusive em redirects, com tela pra ver e editar (`Ctrl+K`) |
+| **Plugins** | Formato do Insomnia (`templateTags`, hooks, ações) e importadores, isolados e com liga/desliga |
 | **Git integrado** | Workspace dentro do repo do projeto, com status, diff por request, commit, pull, push e branches |
 | **Temas** | 20 temas embutidos: TOTVS (padrão), Aura Dark, Monokai, Synthwave '84, Dracula, One Dark, Nord, Tokyo Night, Catppuccin, Gruvbox, Solarized, Night Owl, GitHub, Rosé Pine e Palenight, com 5 claros. Em Preferências ou `Ctrl+P` › *Tema* |
 | **Arquivos vivos** | Editou o YAML por fora ou deu `pull`? O app recarrega na hora |
@@ -284,6 +299,7 @@ Os próximos passos estão nas [issues abertas](https://github.com/chmenegatti/z
 - GraphQL, gRPC, WebSocket e SSE
 - OAuth 2.0, proxy e mTLS
 - mock server
+- pacotes para macOS e Windows
 
 Quer ajudar em algum? Comente na issue antes de começar.
 
