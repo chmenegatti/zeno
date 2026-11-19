@@ -9,7 +9,7 @@ describe('gerar código (httpsnippet)', () => {
   it('HAR a partir do envio', () => {
     expect(toHar(json).postData).toEqual({ mimeType: 'application/json', text: '{"nome":"Ana"}' })
     expect(toHar(base({ kind: 'form', fields: [['a', '1']] })).postData).toEqual({ mimeType: 'application/x-www-form-urlencoded', params: [{ name: 'a', value: '1' }], text: 'a=1' })
-    expect(toHar(base({ kind: 'multipart', fields: [{ name: 'f', value: '', file: '/tmp/x/foto.png' }, { name: 'n', value: 'v' }] })).postData?.params).toEqual([{ name: 'f', fileName: 'foto.png' }, { name: 'n', value: 'v' }])
+    expect(toHar(base({ kind: 'multipart', fields: [{ name: 'f', value: '', file: '/tmp/x/foto.png' }, { name: 'n', value: 'v' }] })).postData?.params).toEqual([{ name: 'f', fileName: '/tmp/x/foto.png' }, { name: 'n', value: 'v' }])
   })
   it('curl e python no formato esperado', () => {
     expect(snippet('shell', 'curl', json)).toContain("curl --request POST \\\n  --url 'https://api.exemplo.com/v1/itens?ativo=true'")

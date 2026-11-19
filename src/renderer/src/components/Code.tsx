@@ -80,17 +80,23 @@ export function CodeModal({ reqId, onClose }: { reqId: string; onClose: () => vo
 
   useEffect(() => {
     if (!c || !target || !client) return
+    // só vale a resposta da escolha atual (trocar rápido não deixa código velho na tela)
+    let alive = true
     api.codeSnippet(c.wsId, c.req, c.envId, target.key, resolve, client.key).then(
       (t) => {
+        if (!alive) return
         setCode(t)
         setErr('')
       },
-      (e) => setErr(String(e).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''))
+      (e) => alive && setErr(String(e).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''))
     )
     try {
       localStorage.setItem(PICK_KEY, JSON.stringify({ target: target.key, client: client.key }))
     } catch {
       /* sem storage */
+    }
+    return () => {
+      alive = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target?.key, client?.key, resolve, req, workspaces])

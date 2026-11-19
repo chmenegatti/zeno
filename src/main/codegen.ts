@@ -1,6 +1,5 @@
 // "Gerar código" com o httpsnippet (o mesmo gerador do Insomnia): 21 linguagens, várias bibliotecas cada.
 
-import path from 'node:path'
 import { availableTargets, HTTPSnippet, type HarRequest } from 'httpsnippet'
 import type { SendInput } from '../shared/types'
 
@@ -44,11 +43,12 @@ export function toHar(input: SendInput): HarRequest {
   // text também: alguns geradores (PowerShell) leem só o texto
   else if (b.kind === 'form')
     har.postData = { mimeType: 'application/x-www-form-urlencoded', params: b.fields.map(([name, value]) => ({ name, value })), text: new URLSearchParams(b.fields).toString() }
+  // arquivo com o caminho completo: o código gerado lê o mesmo arquivo do request
   else if (b.kind === 'multipart') {
     const boundary = '---011000010111000001101001'
     const text =
-      b.fields.map((f) => `--${boundary}\r\nContent-Disposition: form-data; name="${f.name}"${f.file ? `; filename="${path.basename(f.file)}"` : ''}\r\n\r\n${f.file ? '' : f.value}\r\n`).join('') + `--${boundary}--\r\n`
-    har.postData = { mimeType: 'multipart/form-data', params: b.fields.map((f) => (f.file ? { name: f.name, fileName: path.basename(f.file) } : { name: f.name, value: f.value })), text }
+      b.fields.map((f) => `--${boundary}\r\nContent-Disposition: form-data; name="${f.name}"${f.file ? `; filename="${f.file}"` : ''}\r\n\r\n${f.file ? '' : f.value}\r\n`).join('') + `--${boundary}--\r\n`
+    har.postData = { mimeType: 'multipart/form-data', params: b.fields.map((f) => (f.file ? { name: f.name, fileName: f.file } : { name: f.name, value: f.value })), text }
   }
   // com body, alguns geradores (PowerShell) exigem o Content-Type
   if (har.postData && b.kind !== 'multipart' && !header('content-type')) har.headers.push({ name: 'Content-Type', value: har.postData.mimeType })
