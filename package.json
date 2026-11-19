@@ -78,6 +78,7 @@
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.4",
     "chokidar": "^6.0.0",
+    "httpsnippet": "^3.0.10",
     "tough-cookie": "^6.0.2",
     "undici": "^8.12.4",
     "yaml": "^2.9.1"

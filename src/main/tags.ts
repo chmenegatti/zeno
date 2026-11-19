@@ -23,6 +23,8 @@ export interface TagContext {
   render?(text: string): string
   /** pergunta ao usuário (prompt); null = cancelou */
   prompt?(p: PromptAsk): Promise<string | null>
+  /** true = nunca reenvia ({% response %} usa a última resposta, qualquer gatilho): gerar código */
+  noSend?: boolean
   /** tag de plugin ({% minha_funcao %}); undefined = nenhum plugin tem */
   plugin?(name: string, args: string[]): Promise<string> | undefined
 }
@@ -140,7 +142,7 @@ export async function resolveTags(tags: string[], ctx: TagContext): Promise<{ va
         let res = ctx.latest(reqId)
         const stale = !res || (maxAge && Date.now() - res.at > Number(maxAge) * 1000)
         const mustSend = trigger === 'always' || (trigger === 'no-history' && !res) || (trigger === 'when-expired' && stale)
-        if (mustSend) res = await ctx.sendById(reqId)
+        if (mustSend && !ctx.noSend) res = await ctx.sendById(reqId)
         if (!res) throw new Error(`request ${reqId} ainda não tem resposta (envie ele antes)`)
         values.set(tag, extract(res, field, filter))
       } else {

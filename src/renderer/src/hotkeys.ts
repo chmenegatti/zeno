@@ -121,7 +121,9 @@ const ACTIONS: Record<string, () => void> = {
     const { found } = current()
     if (found) deleteNode(found.node)
   },
-  methodMenu: () => focusTarget('method', true),
+  methodMenu: () => {
+    if (current().found?.node.kind === 'request') useStore.setState({ methodMenu: true })
+  },
   history: () => focusTarget('history', true),
   generateCode: () => {
     const { s, found } = current()

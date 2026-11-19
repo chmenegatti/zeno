@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto'
 import { Engine } from './engine'
 import { evalFn, extract, parseArgs, type PromptAsk } from './tags'
 import { Plugins } from './plugins'
+import { codeTargets, snippet } from './codegen'
 import { findRequestRef, parseTag } from '../shared/tagdef'
 import { buildVars, render } from '../shared/template'
 import { parseData, runCollection, toJUnit, type RunHandle } from './runner'
@@ -323,18 +324,24 @@ handle('tagPreview', async (raw: string, send: boolean) => {
 })
 
 /** código do request (cURL, Go…). resolveVars=false mantém {{ var }}; segredos literais são decifrados (pedido explícito) */
-handle('codeSnippet', async (wsId: string, reqRaw: RequestDoc, envId: string | null, lang: CodeLang, resolveVars: boolean) => {
+/** target 'curl' = gerador próprio (Copiar como cURL); demais = httpsnippet (target/client) */
+handle('codeSnippet', async (wsId: string, reqRaw: RequestDoc, envId: string | null, target: string, resolveVars: boolean, client?: string) => {
   const wsRaw = store.list().find((w) => w.id === wsId)
   if (!wsRaw) throw new Error('workspace não encontrado')
-  const req: RequestDoc = await vault.decryptDeep(reqRaw)
-  let ancestors: Folder[] = await vault.decryptDeep(findNode(wsRaw, reqRaw.id)?.ancestors ?? [])
-  let environments = await vault.decryptDeep(wsRaw.environments)
-  if (!resolveVars) {
-    environments = []
-    ancestors = ancestors.map((a) => ({ ...a, vars: {} }))
+  let input
+  if (resolveVars) {
+    // variáveis, segredos e tags resolvidos (como no envio, sem reenviar dependências)
+    input = (await engine.prepareOpen(wsRaw, reqRaw.id, envId, reqRaw)).input
+  } else {
+    // {{ variáveis }} ficam como referência; segredos literais do request são decifrados (pedido explícito)
+    const req: RequestDoc = await vault.decryptDeep(reqRaw)
+    const ancestors: Folder[] = (await vault.decryptDeep(findNode(wsRaw, reqRaw.id)?.ancestors ?? [])).map((a) => ({ ...a, vars: {} }))
+    input = prepare({ ...wsRaw, environments: [] }, req, ancestors, envId).input
   }
-  return generate(lang, prepare({ ...wsRaw, environments }, req, ancestors, envId).input)
+  if (!client) return generate(target as CodeLang, input)
+  return snippet(target, client, input)
 })
+handle('codeTargets', () => codeTargets())
 handle('copyText', (text: string) => clipboard.writeText(text))
 // atalhos de janela: o menu padrão do Electron sai (Ctrl+R recarregava a página); o renderer cuida de tudo
 handle('windowAction', (action: 'fullscreen' | 'devtools' | 'quit') => {
