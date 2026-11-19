@@ -55,8 +55,9 @@ export function toHar(input: SendInput): HarRequest {
   return har
 }
 
+/** indentação de 2 espaços (Go fica com tab, padrão do gofmt; o editor mostra tab com largura 2) */
 export function snippet(target: string, client: string, input: SendInput): string {
-  const out = new HTTPSnippet(toHar(input)).convert(target as never, client)
+  const out = new HTTPSnippet(toHar(input)).convert(target as never, client, { indent: '  ' })
   if (typeof out !== 'string') throw new Error(`não há gerador para ${target}/${client}`)
   return out
 }

@@ -77,6 +77,8 @@
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.4",
+    "@codemirror/lang-php": "^6.0.2",
+    "@codemirror/legacy-modes": "^6.5.5",
     "chokidar": "^6.0.0",
     "httpsnippet": "^3.0.10",
     "tough-cookie": "^6.0.2",

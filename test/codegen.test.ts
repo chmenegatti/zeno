@@ -15,6 +15,11 @@ describe('gerar código (httpsnippet)', () => {
     expect(snippet('shell', 'curl', json)).toContain("curl --request POST \\\n  --url 'https://api.exemplo.com/v1/itens?ativo=true'")
     expect(snippet('python', 'requests', json)).toMatch(/requests\.post\(url, json=payload, headers=headers(, params=querystring)?\)/)
   })
+  it('indenta com 2 espaços (Go mantém tab)', () => {
+    expect(snippet('python', 'requests', json)).toMatch(/\n  "Authorization": "Bearer tk"/)
+    expect(snippet('java', 'okhttp', json)).toMatch(/\n  \.url\(/)
+    expect(snippet('go', 'native', json)).toContain('\n\treq, _ :=')
+  })
   it('todas as linguagens e bibliotecas geram código (JSON, form, multipart, GET)', () => {
     const inputs = [json, base({ kind: 'form', fields: [['a', '1']] }), base({ kind: 'multipart', fields: [{ name: 'n', value: 'v' }] }), { ...json, method: 'GET', body: { kind: 'none' as const } }]
     const targets = codeTargets()
