@@ -68,6 +68,14 @@ describe('plugins', () => {
     await expect(p.runTag('lento', [], { render, vars })).rejects.toThrow(/plugin lento/)
   }, 20000)
 
+  it('argumentos number/boolean chegam com o tipo declarado', async () => {
+    const p = setup({
+      tipos: "module.exports.templateTags = [{ name: 'soma', args: [{ type: 'number' }, { type: 'number' }, { type: 'boolean' }], run: (c, a, b, neg) => (neg ? -(a + b) : a + b) + ':' + typeof a + ':' + typeof neg }]"
+    })
+    expect(await p.runTag('soma', ['2', '3', 'false'], { render, vars })).toBe('5:number:boolean')
+    expect(await p.runTag('soma', ['2', '3', 'true'], { render, vars })).toBe('-5:number:boolean')
+  })
+
   it('desligado não roda', async () => {
     const p = setup({}, ['exemplo'])
     expect(p.list()[0].enabled).toBe(false)

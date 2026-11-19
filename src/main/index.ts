@@ -380,10 +380,10 @@ handle('pluginsOpenDir', async () => {
 /** ação de plugin no menu do request: recebe o request já com variáveis resolvidas */
 handle('pluginAction', async (pluginId: string, index: number, wsId: string, reqId: string, envId: string | null) => {
   const ws = store.list().find((w) => w.id === wsId)
-  const f = ws && findNode(ws, reqId)
-  if (!ws || f?.node.kind !== 'request') throw new Error('request não encontrado')
-  const p = prepare(ws, f.node, f.ancestors, envId)
-  const r = await plugins.runAction(pluginId, index, { name: f.node.name, method: p.input.method, url: p.input.url, headers: p.input.headers, body: p.input.body.kind === 'text' ? p.input.body.text : undefined })
+  if (!ws) throw new Error('workspace não encontrado')
+  // como no envio: variáveis resolvidas e segredos do cofre decifrados
+  const p = await engine.prepareOpen(ws, reqId, envId)
+  const r = await plugins.runAction(pluginId, index, { name: p.name, method: p.input.method, url: p.input.url, headers: p.input.headers, body: p.input.body.kind === 'text' ? p.input.body.text : undefined })
   if (r.clipboard !== undefined) clipboard.writeText(r.clipboard)
   return r.messages
 })

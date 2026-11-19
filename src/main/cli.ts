@@ -207,7 +207,7 @@ export async function runCli(argv: string[], protector: KeyProtector, out: Out =
     const data = args.data ? parseData(fs.readFileSync(args.data, 'utf8'), args.data) : undefined
 
     // variáveis gravadas por scripts valem só durante a execução: a CLI não altera os YAML
-    const engine = new Engine(store, vault, {}, { persist: false, softSecrets: true, cookies: new Cookies(null), plugins: cliPlugins(store.dir) })
+    const engine = new Engine(store, vault, {}, { persist: false, softSecrets: true, cookies: new Cookies(null), plugins: cliPlugins(isDir ? (args.dataDir ?? defaultDataDir()) : store.dir) })
     const report = await runCollection(
       engine,
       store,

@@ -135,6 +135,7 @@ module.exports.importers = [
   - cada chamada: até 5 s;
   - laço infinito estoura o tempo e vira erro.
 - **Plugin com erro:** sintaxe inválida, módulo proibido, nada exportado ou tempo esgotado. O plugin fica **desativado**, o motivo aparece na tela de plugins e o resto do app segue normal.
+- **Limite do tempo máximo:** ele vale para a parte síncrona de cada chamada. Se um plugin `async` entrar num laço infinito *depois* de um `await`, o app trava até ser fechado. É um bug do plugin e não dá para interromper de fora sem rodar plugins num processo separado (fica para uma próxima versão).
 - **Erro durante o envio:** um erro num hook vira aviso no envio, sem impedir o request.
 
 > Isso evita acidentes, mas **não é uma sandbox de segurança**. Um plugin é código rodando no seu computador: instale só plugins em que você confia.

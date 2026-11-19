@@ -195,7 +195,7 @@ export class Engine {
       )
       warnings.push(...hooked.warnings)
       const h = hooked.req
-      prepared = { ...prepared, input: { ...inp, method: h.method, url: h.url, headers: h.headers, body: inp.body.kind === 'text' && h.body !== undefined ? { kind: 'text', text: h.body } : inp.body } }
+      prepared = { ...prepared, input: { ...inp, method: h.method, url: h.url, headers: h.headers, body: h.body !== undefined && (inp.body.kind === 'text' || (inp.body.kind === 'none' && h.body !== '')) ? { kind: 'text', text: h.body } : inp.body } }
     }
     const response = redactTimeline(await send(prepared.input, {
       header: jar && req.sendCookies !== false ? (url) => jar.header(wsRaw.id, url) : undefined,
@@ -237,6 +237,17 @@ export class Engine {
 
   /** decifra segredos; com softSecrets, o que não abre some do objeto (e o nome vai pra `locked`) */
   /** variáveis (base + ambiente) já decifradas, pra prévia de tags; segredo que não abre fica vazio */
+  /** request preparado (variáveis resolvidas) com segredos decifrados, sem enviar: ações de plugin */
+  async prepareOpen(ws: Workspace, reqId: string, envId: string | null): Promise<ReturnType<typeof prepare> & { name: string }> {
+    const f = findNode(ws, reqId)
+    if (f?.node.kind !== 'request') throw new Error('request não encontrado')
+    const locked = new Set<string>()
+    const open = { ...ws, environments: await this.open(ws.environments, locked) }
+    const req = await this.open(f.node, locked)
+    const anc = await this.open(f.ancestors, locked)
+    return { ...prepare(open, req, anc, envId), name: f.node.name }
+  }
+
   async previewVars(ws: Workspace, envId: string | null): Promise<Record<string, unknown>> {
     const environments = await this.open(ws.environments, new Set<string>())
     return buildVars({ ...ws, environments }, envId, [])

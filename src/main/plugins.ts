@@ -163,7 +163,10 @@ export class Plugins {
     const l = this.active().find((x) => x.tags.has(name))
     if (!l) throw new Error(`tag "${name}" não suportada`)
     const context = { util: { render: async (s: string) => ctx.render(String(s)) }, context: structuredClone(ctx.vars), renderPurpose: 'send' }
-    const v = await this.call(l, l.tags.get(name)!, [context, ...args.map((a) => (typeof a === 'string' ? ctx.render(a) : a))], `{% ${name} %}`)
+    // converte pelo tipo declarado (number → Number, boolean → true/false), como o Insomnia
+    const spec = l.info.templateTags.find((t) => t.name === name)?.args ?? []
+    const typed = args.map((a, i) => coerce(typeof a === 'string' ? ctx.render(a) : a, spec[i]?.type))
+    const v = await this.call(l, l.tags.get(name)!, [context, ...typed], `{% ${name} %}`)
     return v === undefined || v === null ? '' : typeof v === 'string' ? v : JSON.stringify(v)
   }
 
@@ -233,6 +236,12 @@ export class Plugins {
       }))
     )
   }
+}
+
+function coerce(v: unknown, type: PluginArg['type'] | undefined): unknown {
+  if (type === 'number' && typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v))) return Number(v)
+  if (type === 'boolean' && typeof v === 'string') return v === 'true' ? true : v === 'false' ? false : v
+  return v
 }
 
 function syncCall(l: Loaded, fn: Fn, args: unknown[]): unknown {
