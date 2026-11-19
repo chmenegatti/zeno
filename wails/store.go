@@ -423,7 +423,6 @@ func replaceNode(children any, node Doc) bool {
 	return false
 }
 
-
 // ---------- estado e respostas ----------
 
 func (s *Store) GetState() Doc {
