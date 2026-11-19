@@ -61,7 +61,10 @@ export class GitHubApi {
   }
 }
 
-/** arquivos de um workspace (caminhos relativos, só texto do Zeno; sem .git e afins) */
+/** arquivo que o Zeno gerencia: só YAML (workspace, pastas, requests, ambientes); o resto da pasta não é dele */
+export const isManaged = (rel: string): boolean => /\.ya?ml$/i.test(rel) && !rel.split('/').some((p) => p.startsWith('.'))
+
+/** arquivos de um workspace (caminhos relativos, só os YAML do Zeno; sem .git, README, package.json…) */
 export function workspaceFiles(dir: string): { rel: string; text: string }[] {
   const out: { rel: string; text: string }[] = []
   const walk = (d: string): void => {
@@ -69,7 +72,7 @@ export function workspaceFiles(dir: string): { rel: string; text: string }[] {
       if (e.name.startsWith('.')) continue
       const p = path.join(d, e.name)
       if (e.isDirectory()) walk(p)
-      else if (/\.(ya?ml|json|md)$/i.test(e.name)) out.push({ rel: path.relative(dir, p).split(path.sep).join('/'), text: fs.readFileSync(p, 'utf8') })
+      else if (/\.ya?ml$/i.test(e.name)) out.push({ rel: path.relative(dir, p).split(path.sep).join('/'), text: fs.readFileSync(p, 'utf8') })
     }
   }
   walk(dir)
@@ -143,7 +146,8 @@ export class GitHubSync {
       const keep = new Set(local.map((f) => `${w.dir}/${f.rel}`))
       for (const f of local) entries.push({ path: `${w.dir}/${f.rel}`, mode: '100644', type: 'blob', content: f.text })
       // arquivos que só existem no repo saem (request apagado ou renomeado no app)
-      for (const t of h?.tree ?? []) if (t.type === 'blob' && t.path.startsWith(`${w.dir}/`) && !keep.has(t.path)) entries.push({ path: t.path, mode: '100644', type: 'blob', sha: null })
+      // (só YAML do Zeno: .gitignore, imagens e afins no repo ficam como estão)
+      for (const t of h?.tree ?? []) if (t.type === 'blob' && t.path.startsWith(`${w.dir}/`) && isManaged(t.path.slice(w.dir.length + 1)) && !keep.has(t.path)) entries.push({ path: t.path, mode: '100644', type: 'blob', sha: null })
     }
     const base = h ? (await this.api.req<{ tree: { sha: string } }>('GET', `/repos/${this.owner}/${this.repo}/git/commits/${h.commit}`))?.tree.sha : undefined
     const tree = await this.api.req<{ sha: string }>('POST', `/repos/${this.owner}/${this.repo}/git/trees`, { base_tree: base, tree: entries })
@@ -159,7 +163,7 @@ export class GitHubSync {
   async pull(dir: string, target: string): Promise<number> {
     const branch = await this.ensureRepo()
     const h = await this.head(branch)
-    const blobs = (h?.tree ?? []).filter((t) => t.type === 'blob' && t.path.startsWith(`${dir}/`))
+    const blobs = (h?.tree ?? []).filter((t) => t.type === 'blob' && t.path.startsWith(`${dir}/`) && isManaged(t.path.slice(dir.length + 1)))
     if (!blobs.length) throw new Error(`"${dir}" não está no repositório`)
     const files: { rel: string; data: Buffer }[] = []
     for (const b of blobs) {
@@ -187,9 +191,12 @@ export function ghCliToken(): Promise<string | null> {
   })
 }
 
-// ---------- device flow (precisa de um OAuth App: ZENO_GITHUB_CLIENT_ID) ----------
+// ---------- device flow (OAuth App do Zeno; ZENO_GITHUB_CLIENT_ID troca por outro) ----------
 
-export const deviceClientId = (): string | undefined => process.env.ZENO_GITHUB_CLIENT_ID || undefined
+/** Client ID do OAuth App "zeno" (público: o device flow não usa segredo) */
+export const ZENO_CLIENT_ID = 'Ov23liQibBJHrwEBxzCU'
+
+export const deviceClientId = (): string | undefined => process.env.ZENO_GITHUB_CLIENT_ID || ZENO_CLIENT_ID
 
 export async function deviceStart(clientId: string, f: Fetch = fetch): Promise<{ device_code: string; user_code: string; verification_uri: string; interval: number; expires_in: number }> {
   const res = await f('https://github.com/login/device/code', {

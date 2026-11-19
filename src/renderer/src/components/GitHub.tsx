@@ -66,12 +66,36 @@ export function GitHubModal({ onClose }: { onClose: () => void }) {
           <p className="text-dim">
             Conecte sua conta pra guardar os workspaces num repositório <b>privado</b> do GitHub (padrão <code>zeno-collections</code>) e baixar em outra máquina. O token fica criptografado no cofre, com a chave no chaveiro do sistema.
           </p>
+          {device && (
+            <div className="flex flex-col gap-2 rounded-lg border border-accent/50 bg-accent/5 p-3">
+              <span className="font-semibold">Entrar com GitHub</span>
+              <span className="text-[12px] text-dim">Abre o navegador; você digita um código e autoriza o Zeno a criar e usar seus repositórios.</span>
+              {code ? (
+                <span className="text-dim">
+                  Digite <b className="font-mono text-[15px] text-accent">{code.userCode}</b> em <a className="text-accent hover:underline" href={code.url} target="_blank" rel="noreferrer">{code.url}</a> e autorize. Esta janela atualiza sozinha.
+                </span>
+              ) : (
+                <button
+                  className="btn btn-accent flex items-center gap-2 self-start"
+                  disabled={!!busy}
+                  onClick={async () => {
+                    const c = await doing('abrindo o navegador…', api.githubDeviceStart())
+                    if (!c) return
+                    setCode(c)
+                    loggedIn(await run(api.githubDevicePoll()))
+                  }}
+                >
+                  {GH_ICON} Entrar com GitHub
+                </button>
+              )}
+            </div>
+          )}
           <div className="grid gap-3 md:grid-cols-2">
             <div className="flex flex-col gap-2 rounded-lg border border-line p-3">
-              <span className="font-semibold">Usar o GitHub CLI</span>
+              <span className="font-semibold">Ou: GitHub CLI</span>
               <span className="text-[12px] text-dim">Se você já fez <code>gh auth login</code>, o Zeno usa essa sessão.</span>
-              <button className="btn btn-accent mt-auto flex items-center justify-center gap-2" disabled={!!busy} onClick={async () => loggedIn(await doing('entrando…', api.githubLoginGh()))}>
-                {GH_ICON} Entrar com o GitHub CLI
+              <button className="btn mt-auto flex items-center justify-center gap-2" disabled={!!busy} onClick={async () => loggedIn(await doing('entrando…', api.githubLoginGh()))}>
+                {GH_ICON} Usar a sessão do GitHub CLI
               </button>
             </div>
             <form
@@ -81,7 +105,7 @@ export function GitHubModal({ onClose }: { onClose: () => void }) {
                 if (token.trim()) loggedIn(await doing('entrando…', api.githubLoginToken(token)))
               }}
             >
-              <span className="font-semibold">Colar um token</span>
+              <span className="font-semibold">Ou: colar um token</span>
               <span className="text-[12px] text-dim">
                 Crie em <a className="text-accent hover:underline" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noreferrer">github.com/settings/tokens</a> com acesso a repositórios (<i>Contents</i> e <i>Administration</i> de leitura e escrita, ou o escopo <code>repo</code>).
               </span>
@@ -91,29 +115,6 @@ export function GitHubModal({ onClose }: { onClose: () => void }) {
               </div>
             </form>
           </div>
-          {device && (
-            <div className="flex flex-col gap-2 rounded-lg border border-line p-3">
-              <span className="font-semibold">Entrar pelo navegador</span>
-              {code ? (
-                <span className="text-dim">
-                  Digite <b className="font-mono text-[15px] text-accent">{code.userCode}</b> em <a className="text-accent hover:underline" href={code.url} target="_blank" rel="noreferrer">{code.url}</a> e autorize. Esta janela atualiza sozinha.
-                </span>
-              ) : (
-                <button
-                  className="btn self-start"
-                  disabled={!!busy}
-                  onClick={async () => {
-                    const c = await doing('abrindo o navegador…', api.githubDeviceStart())
-                    if (!c) return
-                    setCode(c)
-                    loggedIn(await run(api.githubDevicePoll()))
-                  }}
-                >
-                  Entrar com GitHub no navegador
-                </button>
-              )}
-            </div>
-          )}
           {busy && <span className="text-accent">{busy}</span>}
         </div>
       ) : (
