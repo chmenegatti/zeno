@@ -182,7 +182,7 @@ Plugins no formato do Insomnia (`templateTags`, `requestHooks`, `responseHooks`,
 
 Menu do workspace › **Salvar no GitHub…** (ou `Ctrl+P` › *GitHub*):
 
-1. **Entre**: com a sessão do GitHub CLI (`gh auth login` feito antes) ou colando um token com acesso a repositórios. O token fica cifrado no cofre, com a chave no chaveiro do sistema. Com um OAuth App configurado em `ZENO_GITHUB_CLIENT_ID`, aparece também o login pelo navegador (device flow).
+1. **Entre**: **Entrar com GitHub** abre o navegador, você digita o código mostrado e autoriza o app *zeno*. Também dá pra usar a sessão do GitHub CLI (`gh auth login` feito antes) ou colar um token com acesso a repositórios. O token fica cifrado no cofre, com a chave no chaveiro do sistema.
 2. **Envie**: escolha os workspaces. Eles vão pra um repositório **privado** (`zeno-collections`, criado na primeira vez; dá pra trocar o nome), cada um numa pasta, num commit só. Arquivos apagados no app saem do repositório, e envio sem mudança não cria commit.
 3. **Baixe em outra máquina**: a lista mostra o que está no repositório; *baixar* cria o workspace, *atualizar daqui* troca a versão local.
 

@@ -61,6 +61,8 @@ const ws = (): string => {
   fs.writeFileSync(path.join(dir, 'loja', 'workspace.yaml'), 'id: wrk_loja\nname: Loja\n')
   fs.writeFileSync(path.join(dir, 'loja', 'api', 'listar.yaml'), 'id: req_1\nname: Listar\n')
   fs.writeFileSync(path.join(dir, 'loja', 'api', 'criar.yaml'), 'id: req_2\nname: Criar\n')
+  fs.writeFileSync(path.join(dir, 'loja', 'secrets.json'), '{"senha":"nao sobe"}')
+  fs.writeFileSync(path.join(dir, 'loja', 'README.md'), 'notas locais')
   fs.mkdirSync(path.join(dir, 'loja', '.git'))
   fs.writeFileSync(path.join(dir, 'loja', '.git', 'config'), 'nao vai')
   return path.join(dir, 'loja')
@@ -87,10 +89,24 @@ describe('GitHub: salvar coleções', () => {
     await sync.push([{ dir: 'loja', name: 'Loja', localDir: local }], 'Zeno: Loja')
     expect([...gh.files().keys()].sort()).toEqual(['loja/api/listar.yaml', 'loja/workspace.yaml'])
 
+    // arquivo que o Zeno não gerencia no repo (ex.: .gitignore, imagem) não é apagado no envio
+    gh.files().set('loja/.gitignore', '*.log')
+    gh.files().set('loja/docs/diagrama.png', 'png')
+    fs.writeFileSync(path.join(local, 'api', 'novo.yaml'), 'id: req_3\nname: Novo\n')
+    await sync.push([{ dir: 'loja', name: 'Loja', localDir: local }], 'Zeno: Loja')
+    expect([...gh.files().keys()].sort()).toEqual(['loja/.gitignore', 'loja/api/listar.yaml', 'loja/api/novo.yaml', 'loja/docs/diagrama.png', 'loja/workspace.yaml'])
+    fs.rmSync(path.join(local, 'api', 'novo.yaml'))
+    await sync.push([{ dir: 'loja', name: 'Loja', localDir: local }], 'Zeno: Loja')
+
     // baixar em outra máquina
     const other = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'zeno-gh2-')), 'loja')
     expect(await sync.pull('loja', other)).toBe(2)
     expect(fs.readFileSync(path.join(other, 'api', 'listar.yaml'), 'utf8')).toContain('Listar todos')
+    // arquivos locais que não são do Zeno ficam intactos ao atualizar
+    fs.writeFileSync(path.join(other, 'notas.md'), 'minhas notas')
+    await sync.pull('loja', other)
+    expect(fs.readFileSync(path.join(other, 'notas.md'), 'utf8')).toBe('minhas notas')
+    expect(fs.existsSync(path.join(other, '.gitignore'))).toBe(false)
     await expect(sync.pull('nao-existe', other)).rejects.toThrow('não está no repositório')
   })
 
