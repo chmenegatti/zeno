@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { findNode } from '@shared/tree'
 import { generate } from '@shared/curl'
 import type { RequestDoc } from '@shared/types'
 import { activeEnvId, activeWorkspace, api, useStore } from '../state'
 import { EditorState } from '@codemirror/state'
-import { codeLang } from '../codeLangs'
-import { codeTargets, snippet } from '../codegen'
 import { CodeEditor } from './CodeEditor'
 import { Modal, Segmented } from './ui'
 
@@ -14,8 +12,13 @@ const PICK_KEY = 'zeno:code-target'
 /** código do request: o backend entrega o request pronto e o código sai aqui (cURL próprio ou httpsnippet) */
 async function codeSnippet(wsId: string, req: RequestDoc, envId: string | null, target: string, resolveVars: boolean, client?: string): Promise<string> {
   const input = await api.codeInput(wsId, req, envId, resolveVars)
-  return client ? snippet(target, client, input) : generate('curl', input)
+  return client ? (await loadGen()).snippet(target, client, input) : generate('curl', input)
 }
+
+/** httpsnippet e os modos de realce (~1 MB de JS) só carregam quando a tela abre: menos memória com o app parado */
+type Gen = typeof import('../codegen') & Pick<typeof import('../codeLangs'), 'codeLang'>
+let gen: Promise<Gen> | null = null
+const loadGen = (): Promise<Gen> => (gen ??= Promise.all([import('../codegen'), import('../codeLangs')]).then(([a, b]) => ({ ...a, codeLang: b.codeLang })))
 
 type Target = { key: string; title: string; clients: { key: string; title: string; link?: string }[] }
 
@@ -74,10 +77,14 @@ export async function copyAsCurl(reqId: string): Promise<void> {
 
 export function CodeModal({ reqId, onClose }: { reqId: string; onClose: () => void }) {
   const [pick, setPick] = useState(savedPick)
-  const [targets] = useState<Target[]>(codeTargets)
   const [resolve, setResolve] = useState(true)
   const [code, setCode] = useState('')
   const [err, setErr] = useState('')
+  const [g, setG] = useState<Gen | null>(null)
+  useEffect(() => {
+    loadGen().then(setG, (e) => setErr(String(e)))
+  }, [])
+  const targets: Target[] = useMemo(() => (g ? g.codeTargets() : []), [g])
   const workspaces = useStore((s) => s.workspaces)
   const c = current(reqId)
   const req = c?.req
@@ -160,7 +167,7 @@ export function CodeModal({ reqId, onClose }: { reqId: string; onClose: () => vo
             </button>
           </div>
           <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-line bg-bg">
-            {err ? <p className="p-3 text-tpink">{err}</p> : <CodeEditor key={target?.key} value={code} readOnly wrap={false} extra={[...codeLang(target?.key), EditorState.tabSize.of(2)]} />}
+            {err ? <p className="p-3 text-tpink">{err}</p> : <CodeEditor key={target?.key} value={code} readOnly wrap={false} extra={[...(g?.codeLang(target?.key) ?? []), EditorState.tabSize.of(2)]} />}
           </div>
           <p className="text-[11px] text-faint">
             Gerado com httpsnippet (o mesmo do Insomnia). Senhas e tokens do cofre aparecem decifrados; com &quot;Resolver variáveis&quot; desligado, as <code>{'{{ variáveis }}'}</code> ficam como referência.

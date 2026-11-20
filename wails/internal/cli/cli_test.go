@@ -77,6 +77,7 @@ func setup(t *testing.T, reqs ...*Doc) fixture {
 	dir := t.TempDir()
 	st := store.New(dir)
 	st.Load()
+	t.Cleanup(st.Flush)
 	list, err := st.CreateWorkspace("Loja")
 	if err != nil {
 		t.Fatal(err)

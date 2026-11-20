@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/cookies"
 	"github.com/chmenegatti/zeno/wails/internal/doc"
@@ -50,6 +51,8 @@ type App struct {
 	watcher  *watch.Watcher
 	prompts  prompts
 	pending  pendingImport
+	bodies   bodyCache
+	trim     memTrim
 }
 
 func NewApp() *App {
@@ -92,6 +95,7 @@ func (a *App) startup(ctx context.Context) {
 }
 
 func (a *App) shutdown(context.Context) {
+	a.store.Flush()
 	if a.watcher != nil {
 		_ = a.watcher.Close()
 	}
@@ -100,6 +104,9 @@ func (a *App) shutdown(context.Context) {
 // Emit manda um evento pra interface (store:changed, response:added, run:step, prompt:ask)
 func (a *App) Emit(name string, data ...any) {
 	if a.ctx != nil {
+		for i := range data {
+			data[i] = a.bodies.offload(data[i])
+		}
 		runtime.EventsEmit(a.ctx, name, data...)
 	}
 }
@@ -121,5 +128,11 @@ func (a *App) Call(channel string, args []string) (any, error) {
 	if !ok {
 		return nil, fmt.Errorf("%s: %w", channel, ErrNotPorted)
 	}
-	return h(Args(args))
+	t0 := time.Now()
+	res, err := h(Args(args))
+	if os.Getenv("ZENO_TRACE") != "" {
+		defer func() { fmt.Fprintf(os.Stderr, "TRACE %s %v\n", channel, time.Since(t0)) }()
+	}
+	defer a.trim.after()
+	return a.bodies.offload(res), err
 }

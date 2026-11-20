@@ -53,6 +53,7 @@ type Store struct {
 	index      map[string]indexEntry
 	workspaces []*Doc
 	links      []string
+	resp       respCache
 }
 
 // DefaultDataDir: ZENO_DATA_DIR, ou $XDG_DATA_HOME/zeno, ou ~/.local/share/zeno (mesmo do Electron)

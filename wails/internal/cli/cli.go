@@ -323,6 +323,7 @@ func Run(argv []string, protector keyring.Protector, out Out, tty bool) (code in
 			return fail(err)
 		}
 	}
+	defer st.Flush()
 	folderID := ""
 	if a.folder != "" {
 		f, err := pickFolder(ws, a.folder)

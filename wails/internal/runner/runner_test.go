@@ -88,6 +88,7 @@ func setup(t *testing.T, base string, reqs []*Doc) env {
 	dir := t.TempDir()
 	st := store.New(dir)
 	st.Load()
+	t.Cleanup(st.Flush)
 	list, err := st.CreateWorkspace("Loja")
 	if err != nil {
 		t.Fatal(err)

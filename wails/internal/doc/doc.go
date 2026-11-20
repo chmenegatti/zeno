@@ -180,30 +180,15 @@ func cloneVal(v any) any {
 
 // MarshalJSON grava na ordem das chaves.
 func (d *Doc) MarshalJSON() ([]byte, error) {
-	if d == nil {
-		return []byte("null"), nil
-	}
-	var b bytes.Buffer
-	b.WriteByte('{')
-	for i, k := range d.keys {
-		if i > 0 {
-			b.WriteByte(',')
-		}
-		kb, _ := Marshal(k)
-		b.Write(kb)
-		b.WriteByte(':')
-		vb, err := Marshal(d.vals[k])
-		if err != nil {
-			return nil, err
-		}
-		b.Write(vb)
-	}
-	b.WriteByte('}')
-	return b.Bytes(), nil
+	return appendValue(nil, d)
 }
 
 // Marshal como JSON.stringify: sem escapar <, > e & (o state.json fica igual ao do Electron)
 func Marshal(v any) ([]byte, error) {
+	switch v.(type) {
+	case *Doc, []any, string:
+		return appendValue(nil, v)
+	}
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 	enc.SetEscapeHTML(false)

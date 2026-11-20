@@ -273,6 +273,7 @@ func TestEstado(t *testing.T) {
 
 func TestRespostas(t *testing.T) {
 	s := New(t.TempDir())
+	t.Cleanup(s.Flush)
 	for i := 0; i < 25; i++ {
 		s.AddResponse(doc.New("id", "res_"+string(rune('a'+i)), "requestId", "req_1", "body", "ok", "bodyEncoding", "utf8", "size", int64(2)))
 	}
@@ -284,12 +285,14 @@ func TestRespostas(t *testing.T) {
 
 func TestBodyGrandeVaiPraArquivo(t *testing.T) {
 	s := New(t.TempDir())
+	t.Cleanup(s.Flush)
 	big := strings.Repeat("x", LargeBody+10)
 	rec := doc.New("id", "res_big", "requestId", "req_1", "body", big, "bodyEncoding", "utf8", "size", int64(len(big)))
 	saved := s.AddResponse(rec)[0].(*Doc)
 	if saved.Get("bodyFile") != true || len(saved.Str("body")) != previewChars {
 		t.Fatalf("prévia: %d", len(saved.Str("body")))
 	}
+	s.Flush()
 	if fi, _ := os.Stat(s.ResponsesFile("req_1")); fi.Size() > 400*1024 {
 		t.Errorf("histórico grande demais: %d", fi.Size())
 	}
@@ -327,5 +330,26 @@ func TestSlugify(t *testing.T) {
 	}
 	if !sameSlug("igual-2", "Igual") || sameSlug("igual-x", "Igual") || !sameSlug("igual", "Igual") {
 		t.Error("sameSlug")
+	}
+}
+
+// gravação em segundo plano: o arquivo fica igual ao histórico e a releitura (sem cache) também
+func TestRespostasGravadas(t *testing.T) {
+	dir := t.TempDir()
+	s := New(dir)
+	for i := 0; i < 5; i++ {
+		s.AddResponse(doc.New("id", "res_"+string(rune('a'+i)), "requestId", "req_1", "body", strings.Repeat("y", 100*1024), "bodyEncoding", "utf8", "size", int64(100*1024)))
+	}
+	s.Flush()
+	other := New(dir)
+	h := other.GetResponses("req_1")
+	if len(h) != 5 || h[0].(*Doc).Str("id") != "res_e" {
+		t.Fatalf("arquivo: %d", len(h))
+	}
+	if err := s.ClearResponses("req_1"); err != nil || len(s.GetResponses("req_1")) != 0 {
+		t.Fatalf("limpar: %v", err)
+	}
+	if _, err := os.Stat(s.ResponsesFile("req_1")); !os.IsNotExist(err) {
+		t.Error("arquivo ficou")
 	}
 }
