@@ -1,12 +1,12 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Tab-less, local-first API client: REST, GraphQL, gRPC, WebSocket, YAML collections and encrypted secrets",
   "homepage": "https://www.cesarmenegatti.com/zeno/",
   "license": "MIT",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/chmenegatti/zeno/releases/download/v1.1.0/Zeno-1.1.0-windows-portable.zip",
-      "hash": "8414fe41817d15a38445f0a32913ddd4c7767a6e4b280734ad4d1aadea28ef6f"
+      "url": "https://github.com/chmenegatti/zeno/releases/download/v1.2.0/Zeno-1.2.0-windows-portable.zip",
+      "hash": "3adb10d2b7050336e70e81c898fe2ab868752a9912e89732eb4d017fcc17f4a4"
     }
   },
   "bin": [["zeno-cli.exe", "zeno-cli"]],

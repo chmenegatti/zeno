@@ -1,7 +1,7 @@
 # Cask do tap próprio (chmenegatti/homebrew-tap): brew install --cask chmenegatti/tap/zeno
 cask "zeno" do
-  version "1.1.0"
-  sha256 "611c0a328d7ce9d908133f7af7bc1f14c41c5dce9e51eeac045d399e431e3c84"
+  version "1.2.0"
+  sha256 "af5ffe61e485295c5ed197be16fb1275a53e4af09111bab0be7c5bbc9e54e1ef"
 
   url "https://github.com/chmenegatti/zeno/releases/download/v#{version}/Zeno-#{version}-macos-universal.dmg"
   name "Zeno"
