@@ -9,6 +9,7 @@ import (
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/exporters"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -22,7 +23,7 @@ func (a *App) exportBuild(ids []string, format string, secrets bool) (exporters.
 		}
 	}
 	if len(ws) == 0 {
-		return exporters.Result{}, 0, errors.New("nenhum workspace escolhido")
+		return exporters.Result{}, 0, errors.New(i18n.T("nenhum workspace escolhido"))
 	}
 	if format == "zeno" {
 		r, err := exporters.Zip(ws)
@@ -43,7 +44,7 @@ func (a *App) exportBuild(ids []string, format string, secrets bool) (exporters.
 		}
 		d, _ := v.(*Doc)
 		if d == nil {
-			return exporters.Result{}, 0, errors.New("workspace inválido")
+			return exporters.Result{}, 0, errors.New(i18n.T("workspace inválido"))
 		}
 		ws[i] = d
 	}
@@ -55,7 +56,7 @@ func (a *App) exportBuild(ids []string, format string, secrets bool) (exporters.
 		r, err := exporters.Postman(ws)
 		return r, blanked, err
 	}
-	return exporters.Result{}, 0, errors.New("formato desconhecido: " + format)
+	return exporters.Result{}, 0, errors.New(i18n.T("formato desconhecido: %s", format))
 }
 
 func (a *App) registerExport() {
@@ -79,7 +80,7 @@ func (a *App) registerExport() {
 			return nil, err
 		}
 		dest, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
-			Title:            "Exportar workspaces",
+			Title:            i18n.T("Exportar workspaces"),
 			DefaultDirectory: downloadsDir(),
 			DefaultFilename:  r.Name,
 		})

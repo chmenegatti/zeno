@@ -17,6 +17,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/engine"
 	"github.com/chmenegatti/zeno/wails/internal/grpcc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/keyring"
 	"github.com/chmenegatti/zeno/wails/internal/mock"
 	"github.com/chmenegatti/zeno/wails/internal/oauth2"
@@ -76,6 +77,9 @@ func NewApp() *App {
 		}
 		return false
 	})
+	// idioma das mensagens geradas no Go: o mesmo da interface (padrão inglês); antes de carregar os
+	// plugins, que traduzem mensagens na carga
+	i18n.Set(st.GetState().Map("ui").Str("lang"))
 	a.plugins.Load()
 	// OAuth 2.0 (#9): login no navegador do sistema, aviso na interface enquanto espera
 	oauth := &oauth2.Manager{Dir: st.Dir, Vault: a.vault, Interactive: true, Hooks: oauth2.Hooks{
@@ -138,8 +142,13 @@ func (a *App) domReady(ctx context.Context) {
 	}
 }
 
-// ErrNotPorted: canal que ainda não existe na versão Go (a interface mostra o erro e segue)
-var ErrNotPorted = fmt.Errorf("ainda não disponível na versão Go")
+// ErrNotPorted: canal que ainda não existe na versão Go (a interface mostra o erro e segue). Tipo próprio
+// pra traduzir na hora de mostrar e continuar valendo com errors.Is.
+var ErrNotPorted error = notPorted{}
+
+type notPorted struct{}
+
+func (notPorted) Error() string { return i18n.T("ainda não disponível na versão Go") }
 
 // Call é o único método exposto ao JavaScript
 func (a *App) Call(channel string, args []string) (any, error) {

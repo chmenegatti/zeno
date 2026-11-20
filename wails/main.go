@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/chmenegatti/zeno/wails/internal/cli"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/keyring"
 
 	"github.com/wailsapp/wails/v2"
@@ -44,6 +45,7 @@ func cliArgs() []string {
 
 func main() {
 	if args := cliArgs(); args != nil {
+		i18n.FromEnv()
 		os.Exit(cli.Run(args, keyring.System("zeno"), cli.StdOut(), cli.IsTTY()))
 	}
 	// o Wails monta o CSS da cor de fundo da janela com printf: em locale com vírgula decimal (pt_BR) o

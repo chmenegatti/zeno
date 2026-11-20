@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/mock"
 	"github.com/chmenegatti/zeno/wails/internal/store"
 )
@@ -15,7 +16,7 @@ import (
 func (a *App) mockStatus(wsID string) (any, error) {
 	ws := a.store.WorkspaceSnapshot(wsID)
 	if ws == nil {
-		return nil, errNoWorkspace
+		return nil, errNoWorkspace()
 	}
 	routes := []any{}
 	for _, r := range mock.Routes(ws) {
@@ -34,7 +35,7 @@ func (a *App) registerMock() {
 		id, _ := Get[string](args, 0)
 		ws := a.store.Workspace(id)
 		if ws == nil {
-			return nil, errNoWorkspace
+			return nil, errNoWorkspace()
 		}
 		if _, err := a.mocks.Start(id, int(ws.Map("settings").Map("mock").Num("port", mock.DefaultPort))); err != nil {
 			return nil, err
@@ -55,7 +56,7 @@ func (a *App) registerMock() {
 			return nil, err
 		}
 		if rec.Str("error") != "" {
-			return nil, errors.New("resposta com erro não vira exemplo")
+			return nil, errors.New(i18n.T("resposta com erro não vira exemplo"))
 		}
 		body, err := a.store.ResponseBody(rec)
 		if err != nil {

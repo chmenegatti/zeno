@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 )
 
 // File: arquivo mudado (GitFile)
@@ -201,7 +202,7 @@ func Diff(dir, rel string) (string, error) {
 // Commit: só o que está na pasta do workspace (o resto do repositório fica como está)
 func Commit(dir, message string) error {
 	if strings.TrimSpace(message) == "" {
-		return errors.New("escreva a mensagem do commit")
+		return errors.New(i18n.T("escreva a mensagem do commit"))
 	}
 	if _, err := Git(dir, "add", "-A", "--", "."); err != nil {
 		return err
@@ -230,7 +231,7 @@ func Push(dir string) error {
 func SwitchBranch(dir, branch string, create bool) error {
 	name := strings.TrimSpace(branch)
 	if name == "" {
-		return errors.New("informe o nome do branch")
+		return errors.New(i18n.T("informe o nome do branch"))
 	}
 	var err error
 	if create {

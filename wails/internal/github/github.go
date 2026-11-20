@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/store"
 )
 
@@ -111,7 +112,7 @@ func (a *API) Req(method, url string, body, out any, ok404 bool) (found bool, er
 			msg = fmt.Sprintf("%d: %s", res.StatusCode, e.Message)
 		}
 		if res.StatusCode == 401 {
-			return false, errors.New("token do GitHub inválido ou expirado: entre de novo")
+			return false, errors.New(i18n.T("token do GitHub inválido ou expirado: entre de novo"))
 		}
 		return false, fmt.Errorf("GitHub %s %s: %s", method, strings.Replace(url, APIBase, "", 1), msg)
 	}
@@ -221,7 +222,7 @@ func (s *Sync) EnsureRepo() (string, error) {
 		return r.DefaultBranch, nil
 	}
 	if _, err := s.API.Req("POST", "/user/repos", map[string]any{
-		"name": s.Repo, "private": true, "auto_init": true, "description": "Coleções do Zeno (cliente de API)",
+		"name": s.Repo, "private": true, "auto_init": true, "description": i18n.T("Coleções do Zeno (cliente de API)"),
 	}, &r, false); err != nil {
 		return "", err
 	}
@@ -427,7 +428,7 @@ func (s *Sync) Pull(dir, target string) (int, error) {
 		}
 	}
 	if len(blobs) == 0 {
-		return 0, fmt.Errorf("%q não está no repositório", dir)
+		return 0, fmt.Errorf(i18n.T("%q não está no repositório"), dir)
 	}
 	type file struct {
 		rel  string
@@ -570,5 +571,5 @@ func DevicePoll(c *http.Client, clientID, deviceCode string, interval, expiresIn
 			return "", fmt.Errorf("GitHub: %s", j.Error)
 		}
 	}
-	return "", errors.New("o código expirou: comece de novo")
+	return "", errors.New(i18n.T("o código expirou: comece de novo"))
 }

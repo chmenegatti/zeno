@@ -11,6 +11,7 @@ import (
 	"errors"
 	"unsafe"
 
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"golang.org/x/sys/windows"
 )
 
@@ -46,7 +47,7 @@ func (dpapi) Protect(text string) ([]byte, error) {
 
 func (dpapi) Unprotect(data []byte) (string, error) {
 	if !bytes.HasPrefix(data, dpapiPrefix) {
-		return "", errors.New("chave do cofre num formato desconhecido neste sistema")
+		return "", errors.New(i18n.T("chave do cofre num formato desconhecido neste sistema"))
 	}
 	var out windows.DataBlob
 	if err := windows.CryptUnprotectData(blob(data[len(dpapiPrefix):]), nil, blob(dpapiEntropy), 0, nil, windows.CRYPTPROTECT_UI_FORBIDDEN, &out); err != nil {

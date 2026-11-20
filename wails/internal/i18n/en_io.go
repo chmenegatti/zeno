@@ -1,0 +1,66 @@
+package i18n
+
+// pt → en (io)
+func init() {
+	add(map[string]string{
+		// importers
+		"nenhum workspace do Insomnia em %s":                                                      "no Insomnia workspace in %s",
+		"arquivo não é export JSON do Insomnia (v4)":                                              "file is not an Insomnia JSON export (v4)",
+		"arquivo não é export do Insomnia v5":                                                     "file is not an Insomnia v5 export",
+		"%s: API key em cookie virou header Cookie":                                               "%s: API key in cookie became a Cookie header",
+		"%s: auth %q não suportada (ficou sem auth)":                                              "%s: auth %q not supported (left without auth)",
+		"%s: arquivo .proto do Insomnia não vem junto; use server reflection ou escolha o .proto": "%s: the Insomnia .proto file is not included; use server reflection or choose the .proto",
+		"%s: usa a tag %s, que o Zeno não tem (só com plugin)":                                    "%s: uses the tag %s, which Zeno doesn't have (plugin only)",
+		"%s: ambiente base extra %q virou sub-ambiente":                                           "%s: extra base environment %q became a sub-environment",
+		"$ref externo não resolvido: %s":                                                          "external $ref not resolved: %s",
+		"%s: spec sem host; ajuste base_url no ambiente Base":                                     "%s: spec has no host; set base_url in the Base environment",
+		"%s: spec sem servers; ajuste base_url no ambiente Base":                                  "%s: spec has no servers; set base_url in the Base environment",
+		"%s: segurança %q (%s) virou Bearer {{ token }}; obtenha o token à parte":                 "%s: security %q (%s) became Bearer {{ token }}; get the token separately",
+		"%s: segurança %q (%s) não suportada":                                                     "%s: security %q (%s) not supported",
+		"%s: parâmetro de cookie %q ignorado":                                                     "%s: cookie parameter %q ignored",
+		"%s: body %s sem exemplo (ficou vazio)":                                                   "%s: %s body has no example (left empty)",
+		"%s: variável dinâmica %s não suportada":                                                  "%s: dynamic variable %s not supported",
+		"%s: body de arquivo binário não importado":                                               "%s: binary file body not imported",
+		"%s: scripts da coleção copiados para cada item do primeiro nível":                        "%s: collection scripts copied to each top-level item",
+		"%s: arquivo vazio":                                                           "%s: empty file",
+		"%s: não é JSON nem YAML válido (%s)":                                         "%s: not valid JSON or YAML (%s)",
+		"%s: o importador %q não devolveu um export do Insomnia v4":                   "%s: importer %q did not return an Insomnia v4 export",
+		"%s: coleção Postman v1; exporte de novo como v2.1":                           "%s: Postman v1 collection; export it again as v2.1",
+		"%s: formato não reconhecido (esperado Insomnia, OpenAPI/Swagger ou Postman)": "%s: unrecognized format (expected Insomnia, OpenAPI/Swagger or Postman)",
+		"ambientes do Postman precisam ser escolhidos junto com a coleção":            "Postman environments must be chosen together with the collection",
+		"nada para importar":                                                          "nothing to import",
+		"informe uma URL http(s)":                                                     "enter an http(s) URL",
+		"%s: arquivo grande demais":                                                   "%s: file too large",
+
+		// exporters
+		"%s: pasta do workspace desconhecida":                                         "%s: unknown workspace folder",
+		"%s: asserções não existem no Insomnia (ficaram de fora)":                     "%s: Insomnia has no assertions (left out)",
+		"%s: tags {%% %%} não existem no Postman (ficaram como texto)":                "%s: Postman has no {%% %%} tags (kept as text)",
+		"%s: prefixo do Bearer \"%s\" não existe no Postman":                          "%s: Postman has no Bearer prefix \"%s\"",
+		"%s: OAuth 2.0 device code não existe no Postman (virou authorization code)":  "%s: Postman has no OAuth 2.0 device code (became authorization code)",
+		"%s: scripts exportados como estão; confira se a API usada existe no Postman": "%s: scripts exported as is; check that the API they use exists in Postman",
+		"%s: asserções não existem no Postman (ficaram de fora)":                      "%s: Postman has no assertions (left out)",
+		"%s: headers da pasta não existem no Postman (ficaram de fora)":               "%s: Postman has no folder headers (left out)",
+
+		// oauth2
+		"OAuth 2.0: falta a URL do token":  "OAuth 2.0: token URL is missing",
+		"OAuth 2.0: falta o client ID":     "OAuth 2.0: client ID is missing",
+		"OAuth 2.0: fluxo %q desconhecido": "OAuth 2.0: unknown flow %q",
+		"o retorno (redirect URI) precisa ser http://127.0.0.1:<porta>/… ou http://localhost:<porta>/… pra o Zeno receber a autorização; veio %q": "the redirect URI must be http://127.0.0.1:<port>/… or http://localhost:<port>/… for Zeno to receive the authorization; got %q",
+		"porta inválida no redirect: %q":                      "invalid port in redirect: %q",
+		"não deu pra escutar em %s (porta ocupada?): %w":      "could not listen on %s (port in use?): %w",
+		"tempo esgotado esperando a autorização no navegador": "timed out waiting for authorization in the browser",
+		"autorização cancelada":                               "authorization canceled",
+		"este fluxo precisa do navegador: obtenha o token no app (o cache vale pra CLI) ou use client credentials": "this flow needs the browser: get the token in the app (the cache works for the CLI) or use client credentials",
+		"falta a URL de autorização":                "authorization URL is missing",
+		"state inválido":                            "invalid state",
+		"Autorizado. Pode voltar pro Zeno.":         "Authorized. You can go back to Zeno.",
+		"Autorização recusada: %s":                  "Authorization denied: %s",
+		"Recebendo o token…":                        "Receiving the token…",
+		"Autorize no navegador que abrimos.":        "Authorize in the browser we opened.",
+		"o retorno não trouxe access_token":         "the response did not include access_token",
+		"falta a URL de autorização do dispositivo": "device authorization URL is missing",
+		"Digite o código na página que abrimos.":    "Enter the code on the page we opened.",
+		"tempo esgotado esperando a autorização":    "timed out waiting for authorization",
+	})
+}

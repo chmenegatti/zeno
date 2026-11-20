@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 )
 
 type Doc = doc.Doc
@@ -197,7 +198,7 @@ func (m *Manager) serve(wsID string, w http.ResponseWriter, r *http.Request) int
 		ws = m.Workspace(wsID)
 	}
 	if ws == nil {
-		http.Error(w, "workspace não existe mais", http.StatusGone)
+		http.Error(w, i18n.T("workspace não existe mais"), http.StatusGone)
 		return http.StatusGone
 	}
 	routes := Routes(ws)
@@ -217,7 +218,7 @@ func (m *Manager) serve(wsID string, w http.ResponseWriter, r *http.Request) int
 		}
 		h.Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(map[string]any{"error": "sem exemplo para " + r.Method + " " + r.URL.Path, "routes": list})
+		_ = json.NewEncoder(w).Encode(map[string]any{"error": i18n.T("sem exemplo para %s %s", r.Method, r.URL.Path), "routes": list})
 		return http.StatusNotFound
 	}
 	ex := rt.Example
@@ -278,7 +279,7 @@ func (m *Manager) Start(wsID string, port int) (int, error) {
 	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	if err != nil {
 		if errors.Is(err, syscall.EADDRINUSE) {
-			return 0, fmt.Errorf("porta %d em uso: escolha outra", port)
+			return 0, fmt.Errorf(i18n.T("porta %d em uso: escolha outra"), port)
 		}
 		return 0, err
 	}

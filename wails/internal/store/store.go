@@ -29,6 +29,7 @@ import (
 	"unicode"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -347,7 +348,7 @@ func uniquePath(dir, name, ext string) string {
 func (s *Store) dirOfParent(parentID string) (string, error) {
 	e, ok := s.index[parentID]
 	if !ok || (e.kind != "workspace" && e.kind != "folder") {
-		return "", fmt.Errorf("pai inválido: %s", parentID)
+		return "", fmt.Errorf(i18n.T("pai inválido: %s"), parentID)
 	}
 	return e.path, nil
 }
@@ -361,7 +362,7 @@ func (s *Store) wsOf(id string) (*Doc, error) {
 			}
 		}
 	}
-	return nil, fmt.Errorf("workspace não encontrado para %s", id)
+	return nil, fmt.Errorf(i18n.T("workspace não encontrado para %s"), id)
 }
 
 // ---------- workspaces ----------
@@ -388,7 +389,7 @@ func (s *Store) SaveWorkspace(d *Doc) error {
 	defer s.mu.Unlock()
 	e, ok := s.index[d.Str("id")]
 	if !ok {
-		return errors.New("workspace não encontrado")
+		return errors.New(i18n.T("workspace não encontrado"))
 	}
 	out := stripEmpty(doc.New("id", d.Get("id"), "name", d.Get("name"), "description", or(d, "description"), "settings", d.Get("settings")))
 	if err := s.write(filepath.Join(e.path, wsFile), out); err != nil {
@@ -435,10 +436,10 @@ func (s *Store) LinkWorkspace(dir string) ([]*Doc, string, error) {
 	abs, _ := filepath.Abs(dir)
 	raw := readYaml(filepath.Join(abs, wsFile))
 	if raw == nil || raw.Str("id") == "" {
-		return nil, "", fmt.Errorf("não há %s em %s", wsFile, abs)
+		return nil, "", fmt.Errorf(i18n.T("não há %s em %s"), wsFile, abs)
 	}
 	if open, ok := s.index[raw.Str("id")]; ok {
-		return nil, "", fmt.Errorf("esse workspace já está aberto (%s)", open.path)
+		return nil, "", fmt.Errorf(i18n.T("esse workspace já está aberto (%s)"), open.path)
 	}
 	s.links = append(s.links, abs)
 	if err := s.saveLinks(); err != nil {
@@ -460,19 +461,19 @@ func (s *Store) MoveWorkspace(id, target string) ([]*Doc, error) {
 		}
 	}
 	if !ok || e.kind != "workspace" || ws == nil {
-		return nil, errors.New("workspace não encontrado")
+		return nil, errors.New(i18n.T("workspace não encontrado"))
 	}
 	dest, _ := filepath.Abs(target)
 	data, _ := filepath.Abs(s.Dir)
 	inside := func(a, b string) bool { return a == b || strings.HasPrefix(a, b+string(filepath.Separator)) }
 	if inside(dest, data) {
-		return nil, errors.New("escolha uma pasta fora da pasta de dados do Zeno")
+		return nil, errors.New(i18n.T("escolha uma pasta fora da pasta de dados do Zeno"))
 	}
 	if inside(dest, e.path) {
-		return nil, errors.New("escolha uma pasta fora do workspace")
+		return nil, errors.New(i18n.T("escolha uma pasta fora do workspace"))
 	}
 	if exists(filepath.Join(dest, wsFile)) {
-		return nil, errors.New("já existe um workspace nessa pasta")
+		return nil, errors.New(i18n.T("já existe um workspace nessa pasta"))
 	}
 	if ents, err := os.ReadDir(dest); err == nil && len(ents) > 0 {
 		dest = uniquePath(dest, ws.Str("name"), "")
@@ -603,7 +604,7 @@ func (s *Store) SaveRequest(req *Doc) error {
 	id := req.Str("id")
 	e, ok := s.index[id]
 	if !ok || e.kind != "request" {
-		return errors.New("request não encontrado")
+		return errors.New(i18n.T("request não encontrado"))
 	}
 	file := e.path
 	if !sameSlug(strings.TrimSuffix(filepath.Base(file), ".yaml"), req.Str("name")) {
@@ -633,7 +634,7 @@ func (s *Store) SaveFolder(d *Doc) ([]*Doc, error) {
 	defer s.mu.Unlock()
 	e, ok := s.index[d.Str("id")]
 	if !ok || e.kind != "folder" {
-		return nil, errors.New("pasta não encontrada")
+		return nil, errors.New(i18n.T("pasta não encontrada"))
 	}
 	if !sameSlug(filepath.Base(e.path), d.Str("name")) {
 		next := uniquePath(filepath.Dir(e.path), d.Str("name"), "")
@@ -696,7 +697,7 @@ func (s *Store) MoveNode(id, newParentID string, sortKey float64) ([]*Doc, error
 	defer s.mu.Unlock()
 	e, ok := s.index[id]
 	if !ok || (e.kind != "request" && e.kind != "folder") {
-		return nil, errors.New("nó inválido")
+		return nil, errors.New(i18n.T("nó inválido"))
 	}
 	target, err := s.dirOfParent(newParentID)
 	if err != nil {
@@ -704,7 +705,7 @@ func (s *Store) MoveNode(id, newParentID string, sortKey float64) ([]*Doc, error
 	}
 	sep := string(filepath.Separator)
 	if e.kind == "folder" && strings.HasPrefix(target+sep, e.path+sep) {
-		return nil, errors.New("não dá pra mover pasta pra dentro dela mesma")
+		return nil, errors.New(i18n.T("não dá pra mover pasta pra dentro dela mesma"))
 	}
 	ws, err := s.wsOf(id)
 	if err != nil {
@@ -712,7 +713,7 @@ func (s *Store) MoveNode(id, newParentID string, sortKey float64) ([]*Doc, error
 	}
 	node, _ := doc.Find(ws, id)
 	if node == nil {
-		return nil, errors.New("nó não encontrado")
+		return nil, errors.New(i18n.T("nó não encontrado"))
 	}
 	dest := e.path
 	ext := ""
@@ -749,7 +750,7 @@ func (s *Store) Duplicate(id string) ([]*Doc, string, error) {
 	node, _ := doc.Find(ws, id)
 	e := s.index[id]
 	if node == nil {
-		return nil, "", errors.New("nó não encontrado")
+		return nil, "", errors.New(i18n.T("nó não encontrado"))
 	}
 	cp := node.Clone()
 	var reid func(n *Doc)
@@ -766,7 +767,7 @@ func (s *Store) Duplicate(id string) ([]*Doc, string, error) {
 		}
 	}
 	reid(cp)
-	cp.Set("name", cp.Str("name")+" (cópia)")
+	cp.Set("name", cp.Str("name")+" "+i18n.T("(cópia)"))
 	cp.Set("sortKey", num(node.Num("sortKey", 0)+0.5))
 	if err := s.writeNodes(filepath.Dir(e.path), []any{cp}); err != nil {
 		return nil, "", err
@@ -784,7 +785,7 @@ func (s *Store) SaveEnvironment(wsID string, env *Doc) ([]*Doc, error) {
 	if file == "" {
 		e, ok := s.index[wsID]
 		if !ok {
-			return nil, errors.New("workspace não encontrado")
+			return nil, errors.New(i18n.T("workspace não encontrado"))
 		}
 		file = uniquePath(filepath.Join(e.path, envDir), env.Str("name"), ".yaml")
 	}

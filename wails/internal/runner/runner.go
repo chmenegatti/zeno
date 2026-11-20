@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/store"
 )
 
@@ -107,14 +108,14 @@ func Run(exec Executor, st *store.Store, opts Options, onStep func(step *Doc, in
 	}
 	ws0 := st.Workspace(opts.WsID)
 	if ws0 == nil {
-		return nil, errors.New("workspace não encontrado")
+		return nil, errors.New(i18n.T("workspace não encontrado"))
 	}
 	rootName := ws0.Str("name")
 	nodes := ws0.List("children")
 	if opts.FolderID != "" {
 		f := find(ws0, opts.FolderID)
 		if f == nil || f.Str("kind") != "folder" {
-			return nil, errors.New("pasta não encontrada")
+			return nil, errors.New(i18n.T("pasta não encontrada"))
 		}
 		rootName = f.Str("name")
 		nodes = f.List("children")
@@ -368,7 +369,7 @@ func ToJUnit(r *Doc) string {
 				}
 				lines = append(lines, l)
 			}
-			msg := "falhou"
+			msg := i18n.T("falhou")
 			if len(lines) > 0 {
 				msg = lines[0]
 			}
@@ -402,7 +403,7 @@ func ParseData(text, name string) ([]*Doc, error) {
 		if err != nil {
 			var se *json.SyntaxError
 			if errors.As(err, &se) {
-				return nil, fmt.Errorf("JSON inválido: %s", se.Error())
+				return nil, errors.New(i18n.T("JSON inválido: %s", se.Error()))
 			}
 			return nil, err
 		}
@@ -414,7 +415,7 @@ func ParseData(text, name string) ([]*Doc, error) {
 		for _, x := range list {
 			d, ok := x.(*Doc)
 			if !ok || d == nil {
-				return nil, errors.New("JSON de dados deve ser uma lista de objetos")
+				return nil, errors.New(i18n.T("JSON de dados deve ser uma lista de objetos"))
 			}
 			out = append(out, d)
 		}

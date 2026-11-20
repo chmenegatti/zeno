@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/coder/websocket"
 )
 
@@ -130,7 +131,7 @@ func (m *Manager) Send(reqID, text string) error {
 	cn := m.conns[reqID]
 	m.mu.Unlock()
 	if cn == nil {
-		return errors.New("WebSocket não está conectado")
+		return errors.New(i18n.T("WebSocket não está conectado"))
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()

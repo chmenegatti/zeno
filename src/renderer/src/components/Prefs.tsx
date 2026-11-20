@@ -217,7 +217,7 @@ export function PluginsModal({ onClose }: { onClose: () => void }) {
                       {p.templateTags.map((tag) => <span key={tag.name} className="rounded bg-tpurple/15 px-1.5 py-0.5 font-mono text-tag">{`{% ${tag.name} %}`}</span>)}
                       {p.requestHooks > 0 && <span className="rounded bg-line px-1.5 py-0.5 text-dim">{p.requestHooks} request hook{p.requestHooks > 1 ? 's' : ''}</span>}
                       {p.responseHooks > 0 && <span className="rounded bg-line px-1.5 py-0.5 text-dim">{p.responseHooks} response hook{p.responseHooks > 1 ? 's' : ''}</span>}
-                      {p.requestActions.map((a) => <span key={a.label} className="rounded bg-line px-1.5 py-0.5 text-dim">{t('ação: {label}', { label: a.label })}</span>)}
+                      {p.requestActions.map((a) => <span key={a.label} className="rounded bg-line px-1.5 py-0.5 text-dim">{t('ação: {label}', { label: a.label || t('Ação') })}</span>)}
                       {p.importers.map((im) => <span key={im.name} className="rounded bg-line px-1.5 py-0.5 text-dim">{t('importador: {name}', { name: im.name })}</span>)}
                     </div>
                   )}

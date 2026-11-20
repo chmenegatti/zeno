@@ -7,12 +7,14 @@ package doc
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"gopkg.in/yaml.v3"
 )
 
@@ -48,10 +50,10 @@ func (c *conv) fromNode(n *yaml.Node) (any, error) {
 	case yaml.AliasNode:
 		c.aliases++
 		if c.aliases > MaxAliases {
-			return nil, fmt.Errorf("YAML com aliases demais (mais de %d)", MaxAliases)
+			return nil, fmt.Errorf(i18n.T("YAML com aliases demais (mais de %d)"), MaxAliases)
 		}
 		if c.expanding[n.Alias] {
-			return nil, fmt.Errorf("YAML com alias que aponta pra si mesmo")
+			return nil, errors.New(i18n.T("YAML com alias que aponta pra si mesmo"))
 		}
 		c.expanding[n.Alias] = true
 		defer delete(c.expanding, n.Alias)
@@ -103,7 +105,7 @@ func (c *conv) fromNode(n *yaml.Node) (any, error) {
 		}
 		return n.Value, nil
 	}
-	return nil, fmt.Errorf("nó YAML não suportado (%d)", n.Kind)
+	return nil, fmt.Errorf(i18n.T("nó YAML não suportado (%d)"), n.Kind)
 }
 
 // EncodeYAML grava no formato do Electron.

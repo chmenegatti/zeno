@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/jsonq"
 )
 
@@ -77,7 +78,7 @@ var fnDefaults = map[string][]string{
 	"hash":      {"sha256", "hex", ""},
 	"base64":    {"encode", "normal", ""},
 	"file":      {""},
-	"prompt":    {"Valor", "", "", "", "false"},
+	"prompt":    {"", "", "", "", "false"},
 	"jsonpath":  {"", "$."},
 }
 
@@ -120,7 +121,7 @@ type Prompt struct {
 type ErrPromptCancelled struct{ Title string }
 
 func (e *ErrPromptCancelled) Error() string {
-	return fmt.Sprintf("envio cancelado (pergunta %q sem resposta)", e.Title)
+	return i18n.T("envio cancelado (pergunta %q sem resposta)", e.Title)
 }
 
 // Context do envio: últimas respostas, enviar dependência, perguntar…
@@ -185,7 +186,7 @@ func EvalFn(name string, raw []string, c *Context) (string, error) {
 		case "sha512":
 			h = sha512.New()
 		default:
-			return "", fmt.Errorf("algoritmo %q não suportado", a[0])
+			return "", fmt.Errorf(i18n.T("algoritmo %q não suportado"), a[0])
 		}
 		h.Write([]byte(a[2]))
 		if a[1] == "base64" {
@@ -203,7 +204,7 @@ func EvalFn(name string, raw []string, c *Context) (string, error) {
 			s = strings.TrimRight(s, "=")
 			b, err := base64.RawStdEncoding.DecodeString(s)
 			if err != nil {
-				return "", errors.New("texto não é base64 válido")
+				return "", errors.New(i18n.T("texto não é base64 válido"))
 			}
 			return string(b), nil
 		}
@@ -214,7 +215,7 @@ func EvalFn(name string, raw []string, c *Context) (string, error) {
 		return out, nil
 	case "file":
 		if a[0] == "" {
-			return "", errors.New("informe o caminho do arquivo")
+			return "", errors.New(i18n.T("informe o caminho do arquivo"))
 		}
 		f := a[0]
 		if f == "~" || strings.HasPrefix(f, "~/") || strings.HasPrefix(f, `~\`) {
@@ -229,10 +230,10 @@ func EvalFn(name string, raw []string, c *Context) (string, error) {
 	case "prompt":
 		p := Prompt{Title: a[0], Label: a[1], DefaultValue: a[2], Key: a[3], Mask: a[4] == "true"}
 		if p.Title == "" {
-			p.Title = "Valor"
+			p.Title = i18n.T("Valor")
 		}
 		if c.Ask == nil {
-			return "", fmt.Errorf("%q pergunta na hora de enviar (sem prévia)", p.Title)
+			return "", fmt.Errorf(i18n.T("%q pergunta na hora de enviar (sem prévia)"), p.Title)
 		}
 		v, ok := c.Ask(p)
 		if !ok {
@@ -242,7 +243,7 @@ func EvalFn(name string, raw []string, c *Context) (string, error) {
 	case "jsonpath":
 		data, err := doc.FromJSON([]byte(a[0]))
 		if err != nil {
-			return "", errors.New("o texto não é JSON válido")
+			return "", errors.New(i18n.T("o texto não é JSON válido"))
 		}
 		path := a[1]
 		if path == "" {
@@ -253,11 +254,11 @@ func EvalFn(name string, raw []string, c *Context) (string, error) {
 			return "", err
 		}
 		if !found {
-			return "", fmt.Errorf("filtro %q não achou nada", a[1])
+			return "", fmt.Errorf(i18n.T("filtro %q não achou nada"), a[1])
 		}
 		return jsonq.Text(v), nil
 	}
-	return "", fmt.Errorf("tag %q não suportada", name)
+	return "", fmt.Errorf(i18n.T("tag %q não suportada"), name)
 }
 
 // filtro de body: JSONPath (mesmo das asserções)
@@ -298,7 +299,7 @@ func xmlPath(xml, path string) (string, bool) {
 // Extract: campo de uma resposta (body com filtro, raw, header, url)
 func Extract(res *doc.Doc, field, filterRaw string) (string, error) {
 	if e := res.Str("error"); e != "" {
-		return "", fmt.Errorf("request de origem falhou: %s", e)
+		return "", fmt.Errorf(i18n.T("request de origem falhou: %s"), e)
 	}
 	switch field {
 	case "url":
@@ -323,7 +324,7 @@ func Extract(res *doc.Doc, field, filterRaw string) (string, error) {
 				}
 			}
 		}
-		return "", fmt.Errorf("header %q não está na resposta", filter)
+		return "", fmt.Errorf(i18n.T("header %q não está na resposta"), filter)
 	}
 	if filter == "" {
 		return res.Str("body"), nil
@@ -334,14 +335,14 @@ func Extract(res *doc.Doc, field, filterRaw string) (string, error) {
 			return "", err
 		}
 		if !found {
-			return "", fmt.Errorf("filtro %q não achou nada na resposta", filter)
+			return "", fmt.Errorf(i18n.T("filtro %q não achou nada na resposta"), filter)
 		}
 		return jsonq.Text(v), nil
 	}
 	if v, ok := xmlPath(res.Str("body"), filter); ok {
 		return v, nil
 	}
-	return "", fmt.Errorf("filtro %q não achou nada na resposta", filter)
+	return "", fmt.Errorf(i18n.T("filtro %q não achou nada na resposta"), filter)
 }
 
 func uuidV4() string {
@@ -424,7 +425,7 @@ func resolveOne(name string, args []string, c *Context) (string, error) {
 			res = r
 		}
 		if res == nil {
-			return "", fmt.Errorf("request %s ainda não tem resposta (envie ele antes)", reqID)
+			return "", fmt.Errorf(i18n.T("request %s ainda não tem resposta (envie ele antes)"), reqID)
 		}
 		return Extract(res, field, filter)
 	}
@@ -433,7 +434,7 @@ func resolveOne(name string, args []string, c *Context) (string, error) {
 			return v, err
 		}
 	}
-	return "", fmt.Errorf("tag %q não suportada", name)
+	return "", fmt.Errorf(i18n.T("tag %q não suportada"), name)
 }
 
 // ---------- request referenciado por id ou nome ----------

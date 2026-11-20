@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 )
 
 // Source: arquivo ou URL
@@ -35,7 +36,7 @@ type Extra struct {
 func parse(src Source) (any, error) {
 	t := strings.TrimSpace(strings.TrimPrefix(src.Text, "\ufeff"))
 	if t == "" {
-		return nil, fmt.Errorf("%s: arquivo vazio", src.Name)
+		return nil, errors.New(i18n.T("%s: arquivo vazio", src.Name))
 	}
 	if strings.HasPrefix(t, "{") || strings.HasPrefix(t, "[") {
 		if v, err := doc.FromJSON([]byte(t)); err == nil {
@@ -45,7 +46,7 @@ func parse(src Source) (any, error) {
 	}
 	v, err := doc.ParseYAML([]byte(t))
 	if err != nil {
-		return nil, fmt.Errorf("%s: não é JSON nem YAML válido (%s)", src.Name, strings.Split(err.Error(), "\n")[0])
+		return nil, errors.New(i18n.T("%s: não é JSON nem YAML válido (%s)", src.Name, strings.Split(err.Error(), "\n")[0]))
 	}
 	return v, nil
 }
@@ -83,7 +84,7 @@ func ParseSources(sources []Source, extra []Extra) (Result, error) {
 				return Result{}, err
 			}
 			if !IsV4(out) {
-				return Result{}, fmt.Errorf("%s: o importador %q não devolveu um export do Insomnia v4", src.Name, im.Name)
+				return Result{}, errors.New(i18n.T("%s: o importador %q não devolveu um export do Insomnia v4", src.Name, im.Name))
 			}
 			docs, _ := FromExportV4(out)
 			add(Convert(docs, false))
@@ -118,16 +119,16 @@ func ParseSources(sources []Source, extra []Extra) (Result, error) {
 		case IsPostmanEnvironment(raw):
 			envs = append(envs, raw)
 		case truthy(get(raw, "info", "schema")) && postmanV1.MatchString(jsString(get(raw, "info", "schema"))):
-			return Result{}, fmt.Errorf("%s: coleção Postman v1; exporte de novo como v2.1", src.Name)
+			return Result{}, errors.New(i18n.T("%s: coleção Postman v1; exporte de novo como v2.1", src.Name))
 		default:
-			return Result{}, fmt.Errorf("%s: formato não reconhecido (esperado Insomnia, OpenAPI/Swagger ou Postman)", src.Name)
+			return Result{}, errors.New(i18n.T("%s: formato não reconhecido (esperado Insomnia, OpenAPI/Swagger ou Postman)", src.Name))
 		}
 	}
 	for _, c := range collections {
 		add(ConvertPostman(c, envs))
 	}
 	if len(envs) > 0 && len(collections) == 0 {
-		return Result{}, errors.New("ambientes do Postman precisam ser escolhidos junto com a coleção")
+		return Result{}, errors.New(i18n.T("ambientes do Postman precisam ser escolhidos junto com a coleção"))
 	}
 	var list []*Doc
 	for _, id := range order {
@@ -135,7 +136,7 @@ func ParseSources(sources []Source, extra []Extra) (Result, error) {
 	}
 	sortWorkspaces(list)
 	if len(list) == 0 {
-		return Result{}, errors.New("nada para importar")
+		return Result{}, errors.New(i18n.T("nada para importar"))
 	}
 	return Result{Workspaces: list, Warnings: warnings}, nil
 }
@@ -144,7 +145,7 @@ func ParseSources(sources []Source, extra []Extra) (Result, error) {
 func FetchSource(ctx context.Context, rawURL string) (Source, error) {
 	u := strings.TrimSpace(rawURL)
 	if !regexp.MustCompile(`(?i)^https?://`).MatchString(u) {
-		return Source{}, errors.New("informe uma URL http(s)")
+		return Source{}, errors.New(i18n.T("informe uma URL http(s)"))
 	}
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
@@ -167,7 +168,7 @@ func FetchSource(ctx context.Context, rawURL string) (Source, error) {
 		return Source{}, err
 	}
 	if len(b) > max {
-		return Source{}, fmt.Errorf("%s: arquivo grande demais", u)
+		return Source{}, errors.New(i18n.T("%s: arquivo grande demais", u))
 	}
 	return Source{Name: u, Text: string(b), URL: res.Request.URL.String()}, nil
 }

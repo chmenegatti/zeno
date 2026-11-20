@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 )
 
 func input() *Doc {
@@ -185,5 +186,16 @@ func TestRunPhase(t *testing.T) {
 	}
 	if !reflect.DeepEqual(rep.Errors, []string{"pós-resposta (Login): x"}) || !reflect.DeepEqual(rep.Logs, []string{"[pasta API] pasta"}) {
 		t.Errorf("report: %v %v", rep.Errors, rep.Logs)
+	}
+}
+
+// toda chave __t('…') do bootstrap.js tem tradução em inglês
+func TestBootstrapTraduzido(t *testing.T) {
+	i18n.Set("en")
+	defer i18n.Set("pt")
+	for _, m := range regexp.MustCompile(`__t\('([^']+)'\)`).FindAllStringSubmatch(bootstrap, -1) {
+		if i18n.T(m[1]) == strings.SplitN(m[1], "§", 2)[0] {
+			t.Errorf("sem tradução: %q", m[1])
+		}
 	}
 }

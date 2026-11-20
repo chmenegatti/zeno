@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/vars"
 	"golang.org/x/net/http/httpproxy"
 	"golang.org/x/net/proxy"
@@ -37,19 +38,19 @@ func proxyFunc(n vars.Net, used func(*url.URL), tunnel *tunnels) (func(*http.Req
 	case "custom":
 		raw := n.ProxyURL
 		if raw == "" {
-			return nil, errors.New("proxy personalizado sem endereço (configurações do workspace)")
+			return nil, errors.New(i18n.T("proxy personalizado sem endereço (configurações do workspace)"))
 		}
 		if !strings.Contains(raw, "://") {
 			raw = "http://" + raw
 		}
 		u, err := url.Parse(raw)
 		if err != nil || u.Host == "" {
-			return nil, fmt.Errorf("endereço do proxy inválido: %q", n.ProxyURL)
+			return nil, fmt.Errorf(i18n.T("endereço do proxy inválido: %q"), n.ProxyURL)
 		}
 		switch u.Scheme {
 		case "http", "https", "socks5", "socks5h":
 		default:
-			return nil, fmt.Errorf("proxy %q: use http://, https:// ou socks5://", u.Scheme)
+			return nil, fmt.Errorf(i18n.T("proxy %q: use http://, https:// ou socks5://"), u.Scheme)
 		}
 		cfg = &httpproxy.Config{HTTPProxy: raw, HTTPSProxy: raw, NoProxy: n.NoProxy}
 	default:
@@ -76,14 +77,14 @@ func rootCAs(file string) (*x509.CertPool, error) {
 	}
 	b, err := os.ReadFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("CA própria: %w", err)
+		return nil, fmt.Errorf(i18n.T("CA própria: %w"), err)
 	}
 	pool, err := x509.SystemCertPool()
 	if err != nil || pool == nil {
 		pool = x509.NewCertPool()
 	}
 	if !pool.AppendCertsFromPEM(b) {
-		return nil, fmt.Errorf("CA própria: nenhum certificado PEM em %s", file)
+		return nil, fmt.Errorf(i18n.T("CA própria: nenhum certificado PEM em %s"), file)
 	}
 	return pool, nil
 }
@@ -138,7 +139,7 @@ func loadCert(cc vars.ClientCert) (*tls.Certificate, error) {
 		}
 		key, leaf, chain, err := pkcs12.DecodeChain(data, cc.Passphrase)
 		if err != nil {
-			return nil, fmt.Errorf("PFX: %w (senha certa?)", err)
+			return nil, fmt.Errorf(i18n.T("PFX: %w (senha certa?)"), err)
 		}
 		c := &tls.Certificate{Certificate: [][]byte{leaf.Raw}, PrivateKey: key, Leaf: leaf}
 		for _, ca := range chain {
@@ -147,7 +148,7 @@ func loadCert(cc vars.ClientCert) (*tls.Certificate, error) {
 		return c, nil
 	}
 	if cc.Cert == "" {
-		return nil, errors.New("sem arquivo de certificado")
+		return nil, errors.New(i18n.T("sem arquivo de certificado"))
 	}
 	key := cc.Key
 	if key == "" {
@@ -173,7 +174,7 @@ func (c *clientCerts) get(*tls.CertificateRequestInfo) (*tls.Certificate, error)
 		}
 		cert, err := loadCert(cc)
 		if err != nil {
-			return nil, fmt.Errorf("certificado do cliente pra %s: %w", cc.Host, err)
+			return nil, fmt.Errorf(i18n.T("certificado do cliente pra %s: %w"), cc.Host, err)
 		}
 		if c.loaded == nil {
 			c.loaded = map[int]*tls.Certificate{}
@@ -253,7 +254,7 @@ func dialTunnel(ctx context.Context, proxy *url.URL, addr string, roots *x509.Ce
 	res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		conn.Close()
-		return nil, fmt.Errorf("proxy %s recusou o túnel: %s", proxy.Host, res.Status)
+		return nil, fmt.Errorf(i18n.T("proxy %s recusou o túnel: %s"), proxy.Host, res.Status)
 	}
 	// o destino pode falar primeiro (HTTP/2 manda SETTINGS logo, como no gRPC sem TLS): o que já veio
 	// junto com a resposta do CONNECT é do túnel
@@ -364,7 +365,7 @@ func tlsFor(p vars.Prepared, target *url.URL) (*tls.Config, *x509.CertPool, erro
 				return nil
 			}
 			if len(cs.PeerCertificates) == 0 {
-				return errors.New("servidor não mandou certificado")
+				return errors.New(i18n.T("servidor não mandou certificado"))
 			}
 			inter := x509.NewCertPool()
 			for _, c := range cs.PeerCertificates[1:] {

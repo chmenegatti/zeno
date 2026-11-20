@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"sync"
 	"unsafe"
+
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 )
 
 const macIterations = 1003
@@ -41,7 +43,7 @@ func (k *keychain) find() (string, bool, error) {
 		return "", false, nil
 	}
 	if st != C.errSecSuccess {
-		return "", false, fmt.Errorf("Keychain: erro %d ao ler a senha do cofre", int(st))
+		return "", false, fmt.Errorf(i18n.T("Keychain: erro %d ao ler a senha do cofre"), int(st))
 	}
 	defer C.SecKeychainItemFreeContent(nil, data)
 	return C.GoStringN((*C.char)(data), C.int(n)), true, nil
@@ -54,7 +56,7 @@ func (k *keychain) add(pw string) error {
 	defer C.free(unsafe.Pointer(p))
 	st := C.SecKeychainAddGenericPassword(0, C.UInt32(len(k.service)), svc, C.UInt32(len(k.account)), acc, C.UInt32(len(pw)), unsafe.Pointer(p), nil)
 	if st != C.errSecSuccess {
-		return fmt.Errorf("Keychain: erro %d ao guardar a senha do cofre", int(st))
+		return fmt.Errorf(i18n.T("Keychain: erro %d ao guardar a senha do cofre"), int(st))
 	}
 	return nil
 }
@@ -68,7 +70,7 @@ func (k *keychain) password(create bool) (string, error) {
 		return pw, err
 	}
 	if !create {
-		return "", errors.New("a senha do cofre não está no Keychain deste Mac")
+		return "", errors.New(i18n.T("a senha do cofre não está no Keychain deste Mac"))
 	}
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {

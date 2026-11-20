@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 )
 
 // IsOpenAPI: OpenAPI 3.x ou Swagger 2.0
@@ -28,7 +29,7 @@ func resolver(root *Doc, w *warner) func(any) any {
 	lookup := func(ref string) any {
 		if !strings.HasPrefix(ref, "#/") {
 			if !seen[ref] {
-				w.warn("$ref externo não resolvido: " + ref)
+				w.warn(i18n.T("$ref externo não resolvido: %s", ref))
 			}
 			seen[ref] = true
 			return doc.New()
@@ -205,10 +206,10 @@ func ConvertOpenAPI(spec any, sourceURL string) Result {
 	wsID := StableID("wrk", "openapi", title)
 	baseData := doc.New("base_url", serverURL(d, sourceURL))
 	if !v3 && !truthy(d.Get("host")) {
-		w.warn(title + ": spec sem host; ajuste base_url no ambiente Base")
+		w.warn(i18n.T("%s: spec sem host; ajuste base_url no ambiente Base", title))
 	}
 	if v3 && len(arr(d.Get("servers"))) == 0 {
-		w.warn(title + ": spec sem servers; ajuste base_url no ambiente Base")
+		w.warn(i18n.T("%s: spec sem servers; ajuste base_url no ambiente Base", title))
 	}
 
 	// ---------- segurança → auth com variáveis ----------
@@ -242,7 +243,7 @@ func ConvertOpenAPI(spec any, sourceURL string) Result {
 				t := s.Str("type")
 				if (t == "http" && bearerRe.MatchString(s.Str("scheme"))) || t == "oauth2" || t == "openIdConnect" {
 					if t != "http" {
-						w.warn(fmt.Sprintf("%s: segurança %q (%s) virou Bearer {{ token }}; obtenha o token à parte", title, name, t))
+						w.warn(i18n.T("%s: segurança %q (%s) virou Bearer {{ token }}; obtenha o token à parte", title, name, t))
 					}
 					return doc.New("type", "bearer", "token", addVar("token", ""))
 				}
@@ -259,7 +260,7 @@ func ConvertOpenAPI(spec any, sourceURL string) Result {
 					}
 					return doc.New("type", "apikey", "key", s.Get("name"), "value", v, "addTo", "header")
 				}
-				w.warn(fmt.Sprintf("%s: segurança %q (%s) não suportada", title, name, jsString(s.Get("type"))))
+				w.warn(i18n.T("%s: segurança %q (%s) não suportada", title, name, jsString(s.Get("type"))))
 			}
 		}
 		return doc.New("type", "none")
@@ -339,7 +340,7 @@ func ConvertOpenAPI(spec any, sourceURL string) Result {
 				case "header":
 					headers = append(headers, doc.New("name", p.Get("name"), "value", blank(), "enabled", truthy(p.Get("required"))))
 				case "cookie":
-					w.warn(fmt.Sprintf("%s: parâmetro de cookie %q ignorado", where, jsString(p.Get("name"))))
+					w.warn(i18n.T("%s: parâmetro de cookie %q ignorado", where, jsString(p.Get("name"))))
 				case "body":
 					text, _ := doc.MarshalIndent(sample(p.Get("schema"), deref, 0, nil))
 					body = doc.New("mime", "application/json", "text", string(text))
@@ -560,7 +561,7 @@ func requestBody(rb *Doc, deref func(any) any, where string, w *warner) *Doc {
 		return doc.New("mime", "application/json", "text", string(text))
 	}
 	if !hasFirst {
-		w.warn(where + ": body " + pick + " sem exemplo (ficou vazio)")
+		w.warn(i18n.T("%s: body %s sem exemplo (ficou vazio)", where, pick))
 		return doc.New("mime", pick, "text", "")
 	}
 	return doc.New("mime", pick, "text", str(first))

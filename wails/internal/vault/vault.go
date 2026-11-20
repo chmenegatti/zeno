@@ -13,13 +13,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/keyring"
 )
 
@@ -37,7 +37,7 @@ type Error struct{ msg string }
 
 func (e *Error) Error() string { return e.msg }
 
-func vErr(f string, a ...any) error { return &Error{fmt.Sprintf(f, a...)} }
+func vErr(msg string) error { return &Error{msg} }
 
 // Vault aberto pra uma pasta de dados
 type Vault struct {
@@ -87,15 +87,15 @@ func (v *Vault) loadKeyLocked() ([]byte, error) {
 	}
 	data, err := os.ReadFile(v.keyFile)
 	if err != nil {
-		return nil, vErr("cofre ainda não tem chave")
+		return nil, vErr(i18n.T("cofre ainda não tem chave"))
 	}
 	plain, err := v.prot.Unprotect(data)
 	if err != nil {
-		return nil, vErr("não deu pra abrir a chave do cofre com o chaveiro deste computador")
+		return nil, vErr(i18n.T("não deu pra abrir a chave do cofre com o chaveiro deste computador"))
 	}
 	key, err := base64.StdEncoding.DecodeString(plain)
 	if err != nil || len(key) != 32 {
-		return nil, vErr("chave do cofre corrompida")
+		return nil, vErr(i18n.T("chave do cofre corrompida"))
 	}
 	v.key = key
 	return key, nil
@@ -113,10 +113,10 @@ func (v *Vault) ensureKey() ([]byte, error) {
 	}
 	ok, backend, weak := v.prot.Available()
 	if !ok {
-		return nil, vErr("chaveiro do sistema indisponível; não dá pra criar o cofre")
+		return nil, vErr(i18n.T("chaveiro do sistema indisponível; não dá pra criar o cofre"))
 	}
 	if weak {
-		return nil, vErr("chaveiro %q não protege de verdade; instale/abra o gnome-keyring ou kwallet", backend)
+		return nil, vErr(i18n.T("chaveiro %q não protege de verdade; instale/abra o gnome-keyring ou kwallet", backend))
 	}
 	key := make([]byte, 32)
 	_, _ = rand.Read(key)
@@ -158,25 +158,25 @@ func (v *Vault) Decrypt(token string) (string, error) {
 	}
 	parts := strings.Split(token[len(Prefix):], "$")
 	if len(parts) != 3 {
-		return "", vErr("segredo adulterado ou corrompido")
+		return "", vErr(i18n.T("segredo adulterado ou corrompido"))
 	}
 	key, err := v.loadKey()
 	if err != nil {
 		return "", err
 	}
 	if KeyID(key) != parts[0] {
-		return "", vErr("segredo cifrado com outra chave (%s); redefina o valor neste computador", parts[0])
+		return "", vErr(i18n.T("segredo cifrado com outra chave (%s); redefina o valor neste computador", parts[0]))
 	}
 	iv, err1 := base64.StdEncoding.DecodeString(parts[1])
 	data, err2 := base64.StdEncoding.DecodeString(parts[2])
 	if err1 != nil || err2 != nil || len(iv) != 12 {
-		return "", vErr("segredo adulterado ou corrompido")
+		return "", vErr(i18n.T("segredo adulterado ou corrompido"))
 	}
 	block, _ := aes.NewCipher(key)
 	gcm, _ := cipher.NewGCM(block)
 	plain, err := gcm.Open(nil, iv, data, nil)
 	if err != nil {
-		return "", vErr("segredo adulterado ou corrompido")
+		return "", vErr(i18n.T("segredo adulterado ou corrompido"))
 	}
 	return string(plain), nil
 }

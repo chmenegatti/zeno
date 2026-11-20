@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 )
 
 var postmanSchema = regexp.MustCompile(`schema\.getpostman\.com/json/collection/v2`)
@@ -95,7 +96,7 @@ func ConvertPostman(collection any, envs []any) Result {
 			if t, ok := dynamic[name]; ok {
 				return t
 			}
-			w.warn(fmt.Sprintf("%s: variável dinâmica %s não suportada", where, name))
+			w.warn(i18n.T("%s: variável dinâmica %s não suportada", where, name))
 			return whole
 		})
 	}
@@ -151,7 +152,7 @@ func ConvertPostman(collection any, envs []any) Result {
 			}
 			return doc.New("type", "apikey", "key", getv("apikey", "key"), "value", getv("apikey", "value"), "addTo", to)
 		}
-		w.warn(fmt.Sprintf("%s: auth %q não suportada (ficou sem auth)", where, jsString(a.Get("type"))))
+		w.warn(i18n.T("%s: auth %q não suportada (ficou sem auth)", where, jsString(a.Get("type"))))
 		return doc.New("type", "none")
 	}
 	kv := func(list any, where string) []any {
@@ -215,7 +216,7 @@ func ConvertPostman(collection any, envs []any) Result {
 			text, _ := doc.MarshalIndent(g)
 			return doc.New("mime", "application/graphql", "text", string(text))
 		case "file":
-			w.warn(where + ": body de arquivo binário não importado")
+			w.warn(i18n.T("%s: body de arquivo binário não importado", where))
 		}
 		return doc.New("mime", nil)
 	}
@@ -372,7 +373,7 @@ func ConvertPostman(collection any, envs []any) Result {
 			}
 			n.Set("scripts", s)
 		}
-		w.warn(title + ": scripts da coleção copiados para cada item do primeiro nível")
+		w.warn(i18n.T("%s: scripts da coleção copiados para cada item do primeiro nível", title))
 	}
 	// workspace não tem auth: a da coleção desce para o primeiro nível que herda
 	if rootAuth := auth(obj(c.Get("auth")), title); rootAuth.Str("type") != "inherit" {

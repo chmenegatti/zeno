@@ -244,7 +244,7 @@
     ok('excluir', !find(list, d.id))
     const cp = await z.duplicateWorkspace(wsId)
     const copy = cp.workspaces.find((x) => x.id === cp.id)
-    ok('duplicar workspace', copy && copy.name === 'E2E (cópia)' && copy.id !== wsId && copy.children.length === ws.children.length, copy && copy.name)
+    ok('duplicar workspace', copy && /^E2E \((cópia|copy)\)$/.test(copy.name) && copy.id !== wsId && copy.children.length === ws.children.length, copy && copy.name)
     await z.deleteWorkspace(cp.id)
   })
   await safe('importação', async () => {
