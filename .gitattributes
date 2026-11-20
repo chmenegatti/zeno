@@ -1,0 +1,4 @@
+# LF em todo checkout (no Windows o git converteria pra CRLF e os golden/fixtures deixariam de bater)
+* text=auto eol=lf
+*.png binary
+*.ico binary

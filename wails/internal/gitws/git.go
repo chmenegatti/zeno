@@ -259,8 +259,9 @@ func Init(dir string) error {
 func relTo(dir, file, repoRel string) string {
 	rel, err := filepath.Rel(dir, file)
 	if err != nil || strings.HasPrefix(rel, "..") {
-		if real, e := filepath.EvalSymlinks(dir); e == nil {
-			if r, e := filepath.Rel(real, file); e == nil && !strings.HasPrefix(r, "..") {
+		// compara pelos caminhos reais dos dois lados (link; no Windows também nome curto RUNNER~1 x longo)
+		if rd, e := filepath.EvalSymlinks(dir); e == nil {
+			if r, e := filepath.Rel(rd, realPath(file)); e == nil && !strings.HasPrefix(r, "..") {
 				return filepath.ToSlash(r)
 			}
 		}
@@ -269,4 +270,17 @@ func relTo(dir, file, repoRel string) string {
 		}
 	}
 	return filepath.ToSlash(rel)
+}
+
+// realPath: caminho real de um arquivo que pode não existir mais (apagado no status do git): resolve a
+// pasta mais próxima que existe e junta o resto
+func realPath(p string) string {
+	if r, err := filepath.EvalSymlinks(p); err == nil {
+		return r
+	}
+	parent := filepath.Dir(p)
+	if parent == p {
+		return p
+	}
+	return filepath.Join(realPath(parent), filepath.Base(p))
 }
