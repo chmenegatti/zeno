@@ -1,12 +1,12 @@
 package vault
 
 import (
-	"runtime"
 	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
