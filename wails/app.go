@@ -49,6 +49,7 @@ type App struct {
 	handlers map[string]handler
 	watcher  *watch.Watcher
 	prompts  prompts
+	pending  pendingImport
 }
 
 func NewApp() *App {

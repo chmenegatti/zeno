@@ -316,6 +316,24 @@ func (a *App) register() {
 		return doc.New("count", n, "workspaces", st.Load()), nil
 	})
 
+	// ---------- importação ----------
+	a.handle("importPreview", func(args Args) (any, error) {
+		var src any = "file"
+		if len(args) > 0 {
+			v, err := doc.FromJSON([]byte(args[0]))
+			if err != nil {
+				return nil, err
+			}
+			src = v
+		}
+		return a.importPreview(src)
+	})
+	a.handle("importRun", func(args Args) (any, error) {
+		ids, _ := Get[[]string](args, 0)
+		protect, _ := Get[bool](args, 1)
+		return a.importRun(ids, protect)
+	})
+
 	// ---------- plugins ----------
 	a.handle("pluginsList", func(Args) (any, error) { return a.plugins.List(), nil })
 	a.handle("pluginsReload", func(Args) (any, error) { return a.plugins.Load(), nil })

@@ -1,0 +1,117 @@
+{
+  "workspaces": [
+    {
+      "id": "wrk_v5loja",
+      "name": "Loja v5",
+      "settings": {
+        "insecureTLS": false,
+        "timeoutMs": 30000
+      },
+      "environments": [
+        {
+          "id": "env_v5base",
+          "name": "Base Environment",
+          "parentId": null,
+          "data": {
+            "base_url": "https://loja.test",
+            "tenant": "acme"
+          },
+          "sortKey": 0
+        },
+        {
+          "id": "env_v5prod",
+          "name": "Produção",
+          "parentId": "env_v5base",
+          "color": "#ff0000",
+          "data": {
+            "base_url": "https://prod.loja.test"
+          },
+          "sortKey": 1
+        }
+      ],
+      "children": [
+        {
+          "kind": "folder",
+          "id": "fld_v5prod",
+          "name": "Produtos",
+          "sortKey": -10,
+          "headers": [
+            {
+              "name": "X-Tenant",
+              "value": "{{ _.tenant }}",
+              "enabled": true
+            }
+          ],
+          "auth": {
+            "type": "bearer",
+            "token": "{{ _.token }}"
+          },
+          "vars": {},
+          "children": [
+            {
+              "kind": "request",
+              "id": "req_v5listar",
+              "name": "Listar",
+              "method": "GET",
+              "url": "{{ _.base_url }}/produtos",
+              "params": [
+                {
+                  "name": "limit",
+                  "value": "10",
+                  "enabled": true
+                }
+              ],
+              "headers": [],
+              "body": {
+                "mime": null
+              },
+              "auth": {
+                "type": "inherit"
+              },
+              "sortKey": -5
+            },
+            {
+              "kind": "request",
+              "id": "req_v5criar",
+              "name": "Criar",
+              "method": "POST",
+              "url": "{{ _.base_url }}/produtos",
+              "params": [],
+              "headers": [],
+              "body": {
+                "mime": "application/json",
+                "text": "{\"nome\": \"Caneta\"}"
+              },
+              "auth": {
+                "type": "basic",
+                "username": "ana",
+                "password": "{{ _.senha }}"
+              },
+              "scripts": {
+                "pre": "console.log(1)"
+              },
+              "sortKey": -4
+            }
+          ]
+        },
+        {
+          "kind": "request",
+          "id": "req_v5saude",
+          "name": "Saúde",
+          "method": "GET",
+          "url": "{{ _.base_url }}/saude",
+          "params": [],
+          "headers": [],
+          "body": {
+            "mime": null
+          },
+          "auth": {
+            "type": "inherit"
+          },
+          "sortKey": 1
+        }
+      ]
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,214 @@
+{
+  "workspaces": [
+    {
+      "id": "wrk_c5e2a1fcc79310c0284e8bf5",
+      "name": "Loja",
+      "description": "API de exemplo\n\nVersão 1.2.0",
+      "settings": {
+        "insecureTLS": false,
+        "timeoutMs": 30000
+      },
+      "environments": [
+        {
+          "id": "env_ee04eca0f29b9b27133a2b0a",
+          "name": "Base",
+          "parentId": null,
+          "data": {
+            "base_url": "https://api.loja.test/v1",
+            "token": "",
+            "id": "p-1",
+            "chave": ""
+          },
+          "sortKey": 0
+        },
+        {
+          "id": "env_13b212388ea48bb23bea7695",
+          "name": "Local",
+          "parentId": "env_ee04eca0f29b9b27133a2b0a",
+          "data": {
+            "base_url": "http://localhost:8080/v1"
+          },
+          "sortKey": 1
+        }
+      ],
+      "children": [
+        {
+          "kind": "folder",
+          "id": "fld_bb3d869d34d03eaf91953c9b",
+          "name": "produtos",
+          "description": "Catálogo",
+          "sortKey": -10000,
+          "headers": [],
+          "auth": {
+            "type": "inherit"
+          },
+          "vars": {},
+          "children": [
+            {
+              "kind": "request",
+              "id": "req_af8bda8d6955a026c53ab881",
+              "name": "Listar produtos",
+              "method": "GET",
+              "url": "{{ base_url }}/produtos",
+              "params": [
+                {
+                  "name": "limit",
+                  "value": "20",
+                  "enabled": true
+                }
+              ],
+              "headers": [
+                {
+                  "name": "X-Tenant",
+                  "value": "acme",
+                  "enabled": false
+                }
+              ],
+              "body": {
+                "mime": null
+              },
+              "auth": {
+                "type": "bearer",
+                "token": "{{ token }}"
+              },
+              "sortKey": 0
+            },
+            {
+              "kind": "request",
+              "id": "req_ccf27ca0986fac7615a5efc2",
+              "name": "Criar produto",
+              "method": "POST",
+              "url": "{{ base_url }}/produtos",
+              "params": [],
+              "headers": [],
+              "body": {
+                "mime": "application/json",
+                "text": "{\n  \"nome\": \"Caneta\",\n  \"preco\": 3.5,\n  \"tags\": [\n    \"string\"\n  ],\n  \"categoria\": {\n    \"nome\": \"escritorio\",\n    \"pai\": null\n  }\n}"
+              },
+              "auth": {
+                "type": "bearer",
+                "token": "{{ token }}"
+              },
+              "sortKey": 1
+            },
+            {
+              "kind": "request",
+              "id": "req_050fb8fc2017079c7b556637",
+              "name": "obterProduto",
+              "method": "GET",
+              "url": "{{ base_url }}/produtos/{{ id }}",
+              "params": [],
+              "headers": [],
+              "body": {
+                "mime": null
+              },
+              "auth": {
+                "type": "apikey",
+                "key": "X-API-Key",
+                "value": "{{ chave }}",
+                "addTo": "header"
+              },
+              "sortKey": 2
+            },
+            {
+              "kind": "request",
+              "id": "req_789d3bf57e8f2141284e6d7d",
+              "name": "Apagar produto (obsoleto)",
+              "method": "DELETE",
+              "url": "{{ base_url }}/produtos/{{ id }}",
+              "params": [],
+              "headers": [],
+              "body": {
+                "mime": null
+              },
+              "auth": {
+                "type": "none"
+              },
+              "sortKey": 3
+            },
+            {
+              "kind": "request",
+              "id": "req_713c926a7cb3bd8889567c89",
+              "name": "Enviar foto",
+              "method": "PUT",
+              "url": "{{ base_url }}/produtos/{{ id }}/foto",
+              "params": [],
+              "headers": [],
+              "body": {
+                "mime": "multipart/form-data",
+                "fields": [
+                  {
+                    "name": "legenda",
+                    "value": "Frente",
+                    "enabled": true
+                  },
+                  {
+                    "name": "arquivo",
+                    "value": "",
+                    "enabled": true,
+                    "file": ""
+                  }
+                ]
+              },
+              "auth": {
+                "type": "bearer",
+                "token": "{{ token }}"
+              },
+              "sortKey": 4
+            }
+          ]
+        },
+        {
+          "kind": "folder",
+          "id": "fld_8ea0c42523e4ac4174bad85d",
+          "name": "pedidos",
+          "sortKey": -9999,
+          "headers": [],
+          "auth": {
+            "type": "inherit"
+          },
+          "vars": {},
+          "children": [
+            {
+              "kind": "request",
+              "id": "req_cdf66a158908cd7a6a60ba0c",
+              "name": "Criar pedido",
+              "method": "POST",
+              "url": "{{ base_url }}/pedidos",
+              "params": [],
+              "headers": [],
+              "body": {
+                "mime": "application/json",
+                "text": "{\n  \"produto\": \"p-1\",\n  \"quantidade\": 2\n}"
+              },
+              "auth": {
+                "type": "bearer",
+                "token": "{{ token }}"
+              },
+              "sortKey": 5
+            }
+          ]
+        },
+        {
+          "kind": "request",
+          "id": "req_8f48d9165cd1282958a6ae24",
+          "name": "Saúde",
+          "method": "GET",
+          "url": "{{ base_url }}/saude",
+          "params": [],
+          "headers": [],
+          "body": {
+            "mime": null
+          },
+          "auth": {
+            "type": "none"
+          },
+          "sortKey": 6
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "Loja / Saúde: parâmetro de cookie \"sessao\" ignorado"
+  ]
+}

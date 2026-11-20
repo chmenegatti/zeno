@@ -1,0 +1,37 @@
+{
+  "swagger": "2.0",
+  "info": { "title": "Loja v2", "version": "2" },
+  "host": "loja.test",
+  "basePath": "/api",
+  "schemes": ["https"],
+  "securityDefinitions": { "basico": { "type": "basic" } },
+  "security": [{ "basico": [] }],
+  "paths": {
+    "/itens/{itemId}": {
+      "put": {
+        "tags": ["itens"],
+        "summary": "Atualizar item",
+        "parameters": [
+          { "name": "itemId", "in": "path", "required": true, "type": "integer" },
+          { "name": "body", "in": "body", "schema": { "$ref": "#/definitions/Item" } },
+          { "name": "status", "in": "query", "type": "array", "items": { "type": "string", "enum": ["ativo", "inativo"] } }
+        ],
+        "responses": { "200": { "description": "ok" } }
+      }
+    },
+    "/itens/{itemId}/anexo": {
+      "post": {
+        "tags": ["itens"],
+        "summary": "Anexar",
+        "consumes": ["multipart/form-data"],
+        "parameters": [
+          { "name": "itemId", "in": "path", "required": true, "type": "integer" },
+          { "name": "nota", "in": "formData", "type": "string" },
+          { "name": "arquivo", "in": "formData", "type": "file" }
+        ],
+        "responses": { "200": { "description": "ok" } }
+      }
+    }
+  },
+  "definitions": { "Item": { "type": "object", "properties": { "nome": { "type": "string", "example": "Lápis" } } } }
+}
