@@ -33,7 +33,11 @@ var unesc = regexp.MustCompile(`\\(['"\\])`)
 // ParseArgs: nome e argumentos da tag
 func ParseArgs(tag string) (string, []string) {
 	inner := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(tag), "{%"), "%}"))
-	name := strings.Fields(inner + " ")[0]
+	// {% %} vazio: nome vazio, sem argumentos (como o parseArgs do Electron), nunca panic
+	name := ""
+	if f := strings.Fields(inner); len(f) > 0 {
+		name = f[0]
+	}
 	rest := inner[len(name):]
 	args := []string{}
 	for _, m := range argRe.FindAllStringSubmatchIndex(rest, -1) {

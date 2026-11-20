@@ -112,6 +112,10 @@ func TestUnknownTags(t *testing.T) {
 	if got := unknownTags([]string{"https://x/{% uuid 'v4' %}/{% response 'body', 'req_1', '', 'never' %}", "{% timestamp 'unix' %}"}); len(got) != 0 {
 		t.Errorf("conhecidas: %v", got)
 	}
+	// {% %} vazio não derruba a importação
+	if got := unknownTags([]string{"https://x/{% %}"}); len(got) != 1 {
+		t.Errorf("vazia: %v", got)
+	}
 	got := unknownTags([]string{"https://x/{% minha_tag 'a' %}/{% outra %}", "{% minha_tag 'b' %}"})
 	if strings.Join(got, ", ") != "{% minha_tag %}, {% outra %}" {
 		t.Errorf("desconhecidas: %v", got)
