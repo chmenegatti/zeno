@@ -1,10 +1,10 @@
-//go:build !linux
+//go:build !linux && !windows
 
 package keyring
 
 import "errors"
 
-// macOS (Keychain) e Windows (DPAPI) entram com a distribuição nesses sistemas (#82, #83)
+// macOS (Keychain) entra com a distribuição nesse sistema (#83)
 type unsupported struct{}
 
 func (unsupported) Available() (bool, string, bool) { return false, "indisponível", true }

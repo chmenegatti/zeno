@@ -1,0 +1,18 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "Zeno",
+  "outputfilename": "zeno",
+  "frontend:install": "",
+  "frontend:build": "",
+  "author": {
+    "name": "Cesar Menegatti",
+    "email": "zeno@localhost"
+  },
+  "info": {
+    "companyName": "Zeno",
+    "productName": "Zeno",
+    "productVersion": "0.0.0",
+    "copyright": "MIT",
+    "comments": "Cliente de API desktop sem abas"
+  }
+}
