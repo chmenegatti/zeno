@@ -163,13 +163,19 @@ func kvs(v any) []kv {
 type Prepared struct {
 	Method, URL string
 	Headers     [][2]string
-	BodyKind    string // none | text | form
+	BodyKind    string // none | text | form | multipart
 	Text        string
 	Form        [][2]string
+	Multipart   []Part
 	InsecureTLS bool
 	TimeoutMs   float64
 	Missing     []string
 	Unsupported []string
+}
+
+// Part: campo de multipart (File = caminho do arquivo no disco)
+type Part struct {
+	Name, Value, File string
 }
 
 // Prepare monta o request final: variáveis, auth e headers herdados (port de prepare.ts)
@@ -264,7 +270,17 @@ func Prepare(ws, req *Doc, anc []*Doc, envID string) Prepared {
 		if !has("content-type") {
 			headers = append(headers, [2]string{"Content-Type", mime})
 		}
-	case mime != "" && mime != "multipart/form-data":
+	case mime == "multipart/form-data":
+		// Content-Type com o boundary vem do envio
+		p.BodyKind = "multipart"
+		for _, it := range body.List("fields") {
+			f, _ := it.(*Doc)
+			if f == nil || f.Get("enabled") == false || f.Str("name") == "" {
+				continue
+			}
+			p.Multipart = append(p.Multipart, Part{Name: R(f.Str("name")), Value: R(f.Str("value")), File: f.Str("file")})
+		}
+	case mime != "":
 		p.BodyKind = "text"
 		p.Text = R(body.Str("text"))
 		if !has("content-type") {

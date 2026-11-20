@@ -213,7 +213,7 @@ func (a *App) register() {
 		}
 		_, anc := doc.Find(ws, req.Str("id"))
 		p := vars.Prepare(ws, req, anc, envID)
-		rec := httpc.Send(req.Str("id"), p)
+		rec := httpc.Send(req.Str("id"), p, httpc.CookieHooks{})
 		history := st.AddResponse(rec)
 		// o body vai uma vez só, no histórico: a interface só lê id e erro de "response"
 		// (JSON de 2,7 MB: 6,6 MB pela ponte com o body duplicado, 222 ms; metade sem ele)
