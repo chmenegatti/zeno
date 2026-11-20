@@ -233,5 +233,9 @@ func (a *App) register() {
 	a.handle("tagPreview", empty(doc.New("error", "tags {% %} ainda não disponíveis na versão Go")))
 }
 
-// os vinculados entram no watcher na #57; por enquanto não há watcher
-func (a *App) watchLinks() {}
+// workspace vinculado ou movido: o watcher passa a vigiar a pasta nova
+func (a *App) watchLinks() {
+	if a.watcher != nil {
+		a.watcher.Add(a.store.LinkedDirs()...)
+	}
+}
