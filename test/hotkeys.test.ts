@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bindings, comboFromEvent, comboFromInsomnia, conflicts, findHotkey, findHotkeys, fromInsomnia, HOTKEYS, matches, parseCombo, type KeyLike } from '../src/shared/hotkeys'
+import { keyLabel, bindings, comboFromEvent, comboFromInsomnia, conflicts, findHotkey, findHotkeys, fromInsomnia, HOTKEYS, matches, parseCombo, type KeyLike } from '../src/shared/hotkeys'
 
 const ev = (code: string, key: string, mods: Partial<KeyLike> = {}): KeyLike => ({ code, key, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, ...mods })
 const ctrl = { ctrlKey: true }
@@ -78,5 +78,17 @@ describe('hotkeys', () => {
     }
     expect(fromInsomnia(reg)).toEqual({ envEditor: ['Alt+E'], togglePin: [] })
     expect(fromInsomnia(reg, true)).toEqual({ togglePin: [] })
+  })
+})
+
+describe('keyLabel', () => {
+  it('macOS com símbolos; outros sistemas como está', () => {
+    expect(keyLabel('Ctrl+Shift+E', true)).toBe('⌘⇧E')
+    expect(keyLabel('Ctrl+=', true)).toBe('⌘=')
+    expect(keyLabel('Ctrl++', true)).toBe('⌘+')
+    expect(keyLabel('Ctrl+Shift+Enter', true)).toBe('⌘⇧↩')
+    expect(keyLabel('Ctrl+Alt+I', true)).toBe('⌘⌥I')
+    expect(keyLabel('F11', true)).toBe('F11')
+    expect(keyLabel('Ctrl+Shift+E', false)).toBe('Ctrl+Shift+E')
   })
 })

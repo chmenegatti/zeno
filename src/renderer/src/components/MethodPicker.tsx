@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { METHODS } from '@shared/types'
 import { useStore } from '../state'
+import { kl } from '../keys'
 
 /** cor de cada método (variáveis do tema) */
 const COLOR: Record<string, string> = {
@@ -93,7 +94,7 @@ export function MethodPicker({ value, onChange }: { value: string; onChange: (m:
         className="flex h-[30px] min-w-[96px] items-center justify-between gap-1.5 rounded-md border px-2.5 font-mono text-[12.5px] font-bold"
         style={{ color: c, borderColor: `color-mix(in srgb, ${c} 45%, transparent)`, background: `color-mix(in srgb, ${c} 12%, var(--color-bg))` }}
         onClick={() => setOpen(!open)}
-        title="Método HTTP (Ctrl+Shift+L)"
+        title={`Método HTTP (${kl('Ctrl+Shift+L')})`}
       >
         <span className="max-w-[90px] truncate">{value}</span>
         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden style={{ transform: open ? 'rotate(180deg)' : undefined, transition: 'transform 120ms' }}>

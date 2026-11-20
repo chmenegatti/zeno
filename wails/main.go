@@ -55,6 +55,7 @@ func main() {
 		MinHeight:        560,
 		AssetServer:      &assetserver.Options{Assets: assets},
 		BackgroundColour: &options.RGBA{R: 0x00, G: 0x12, B: 0x1c, A: 255},
+		Menu:             appMenu(),
 		Linux:            &linux.Options{Icon: icon, ProgramName: "zeno", WindowIsTranslucent: false},
 		OnStartup:        app.startup,
 		OnDomReady:       app.domReady,

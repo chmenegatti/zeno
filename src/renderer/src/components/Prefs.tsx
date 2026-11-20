@@ -5,11 +5,12 @@ import { EDITOR_FONT, recording, setUi, UI_FONT, ZOOM_STEPS } from '../hotkeys'
 import { Modal } from './ui'
 import { DEFAULT_THEME, THEMES, type Theme } from '@shared/themes'
 import { Select } from './Select'
+import { kl } from '../keys'
 
 const GROUPS: HotkeyGroup[] = ['Interface', 'Request', 'Ambientes']
 
 export function Kbd({ combo }: { combo: string }) {
-  return <kbd className="rounded border border-line bg-raised px-1.5 py-0.5 font-mono text-[11px] text-ink">{combo}</kbd>
+  return <kbd className="rounded border border-line bg-raised px-1.5 py-0.5 font-mono text-[11px] text-ink">{kl(combo)}</kbd>
 }
 
 // ---------- preferências ----------

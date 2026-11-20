@@ -17,6 +17,7 @@ import { askSchedule, stopSend } from '../sendSchedule'
 import { parseCurl } from '@shared/curl'
 import { beautifyJson } from '@shared/format'
 import { Select } from './Select'
+import { kl } from '../keys'
 
 type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'assertions' | 'notes'
 
@@ -156,7 +157,7 @@ export function RequestPane() {
                 <input type="checkbox" checked={req.storeCookies !== false} onChange={(e) => update({ storeCookies: e.target.checked ? undefined : false })} />
                 Guardar cookies da resposta
               </label>
-              <button className="btn btn-ghost px-1.5 py-0 text-[11.5px]" onClick={() => useStore.getState().openModal({ kind: 'cookies', id: cur.ws.id })}>ver cookies (Ctrl+K)</button>
+              <button className="btn btn-ghost px-1.5 py-0 text-[11.5px]" onClick={() => useStore.getState().openModal({ kind: 'cookies', id: cur.ws.id })}>ver cookies ({kl('Ctrl+K')})</button>
             </div>
             {ancestors.some((a) => a.headers.length) && (
               <div className="mt-3 text-[11.5px] text-faint">
@@ -222,7 +223,7 @@ function BodyEditor({ body, onChange }: { body: Body; onChange: (b: Body) => voi
             <div className="flex items-center gap-2 border-t border-line px-2 py-1">
               <button
                 className="btn btn-ghost px-2 py-0.5 text-[11.5px]"
-                title="Organiza o JSON com indentação (Ctrl+Shift+F no editor); mantém {{ variáveis }} e {% tags %}"
+                title={`Organiza o JSON com indentação (${kl('Ctrl+Shift+F')} no editor); mantém {{ variáveis }} e {% tags %}`}
                 onClick={() => {
                   const text = body.text ?? ''
                   if (!text.trim()) return
@@ -349,7 +350,7 @@ function SendOptions({ reqId }: { reqId: string }) {
     <div className="relative">
       <button
         className={`btn px-1.5 ${timer ? 'text-accent' : ''}`}
-        title="Opções de envio (Ctrl+Shift+Enter)"
+        title={`Opções de envio (${kl('Ctrl+Shift+Enter')})`}
         onClick={(e) => {
           e.stopPropagation()
           setOpen(!open)
