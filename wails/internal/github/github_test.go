@@ -89,7 +89,12 @@ func newFake(t *testing.T) *fakeGitHub {
 				reply(200, map[string]any{"object": map[string]any{"sha": g.head}})
 			}
 		case strings.HasPrefix(gp, "/trees/") && m == "GET":
-			tr := g.trees[g.commits[gp[7:]]]
+			// como a API real aqui: só sha de árvore
+			tr, ok := g.trees[gp[7:]]
+			if !ok {
+				reply(404, map[string]any{"message": "Not Found"})
+				return
+			}
 			items := []map[string]any{}
 			for _, path := range keys(tr) {
 				b := g.id("b")

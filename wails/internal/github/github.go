@@ -232,8 +232,9 @@ func (s *Sync) EnsureRepo() (string, error) {
 }
 
 type head struct {
-	commit string
-	tree   []treeItem
+	commit  string
+	treeSha string
+	tree    []treeItem
 }
 
 func (s *Sync) head(branch string) (*head, error) {
@@ -246,13 +247,22 @@ func (s *Sync) head(branch string) (*head, error) {
 	if err != nil || !found {
 		return nil, err
 	}
+	// o ref aponta pro commit; a árvore vem do commit
+	var c struct {
+		Tree struct {
+			Sha string `json:"sha"`
+		} `json:"tree"`
+	}
+	if _, err := s.API.Req("GET", s.path("/git/commits/"+ref.Object.Sha), nil, &c, false); err != nil {
+		return nil, err
+	}
 	var t struct {
 		Tree []treeItem `json:"tree"`
 	}
-	if _, err := s.API.Req("GET", s.path("/git/trees/"+ref.Object.Sha+"?recursive=1"), nil, &t, false); err != nil {
+	if _, err := s.API.Req("GET", s.path("/git/trees/"+c.Tree.Sha+"?recursive=1"), nil, &t, false); err != nil {
 		return nil, err
 	}
-	return &head{commit: ref.Object.Sha, tree: t.Tree}, nil
+	return &head{commit: ref.Object.Sha, treeSha: c.Tree.Sha, tree: t.Tree}, nil
 }
 
 func (s *Sync) blob(sha string) ([]byte, error) {
@@ -363,15 +373,7 @@ func (s *Sync) Push(workspaces []LocalWorkspace, message string) (*PushResult, e
 	treeReq := map[string]any{"tree": entries}
 	base := ""
 	if h != nil {
-		var c struct {
-			Tree struct {
-				Sha string `json:"sha"`
-			} `json:"tree"`
-		}
-		if _, err := s.API.Req("GET", s.path("/git/commits/"+h.commit), nil, &c, false); err != nil {
-			return nil, err
-		}
-		base = c.Tree.Sha
+		base = h.treeSha
 		treeReq["base_tree"] = base
 	}
 	var tree struct {
