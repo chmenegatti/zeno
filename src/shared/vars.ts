@@ -1,5 +1,6 @@
 // Origem das variáveis (de onde vem cada valor) e referências usadas num request.
 
+import { t } from './i18n'
 import type { Environment, Folder, RequestDoc, Workspace } from './types'
 import { varPath } from './template'
 
@@ -27,7 +28,7 @@ export function varSources(ws: Workspace, activeEnvId: string | null | undefined
   if (base) put(base.data, envSource(base))
   const sub = activeEnvId ? ws.environments.find((e) => e.id === activeEnvId && e.parentId !== null) : undefined
   if (sub) put(sub.data, envSource(sub))
-  for (const f of ancestors) put(f.vars ?? {}, { kind: 'folder', folderId: f.id, label: `pasta ${f.name}` })
+  for (const f of ancestors) put(f.vars ?? {}, { kind: 'folder', folderId: f.id, label: t('pasta {name}', { name: f.name }) })
   return out
 }
 

@@ -3,6 +3,7 @@ import type { GitFile, GitStatus, Workspace } from '@shared/types'
 import { api, useStore } from '../state'
 import { Modal } from './ui'
 import { Select } from './Select'
+import { t } from '@shared/i18n'
 
 const STATUS_STYLE: Record<GitFile['status'], [string, string]> = {
   M: ['M', 'text-tblue'],
@@ -38,7 +39,7 @@ export function GitButton({ ws }: { ws: Workspace }) {
   return (
     <button
       className={`btn btn-ghost flex items-center gap-1 px-2 ${st?.conflict ? 'text-torange' : ''}`}
-      title="Git do workspace"
+      title={t('Git do workspace')}
       onClick={() => useStore.getState().openModal({ kind: 'git', id: ws.id })}
     >
       <BranchIcon />
@@ -102,9 +103,9 @@ export function GitModal({ ws, onClose }: { ws: Workspace; onClose: () => void }
     return (
       <Modal title="Git" onClose={onClose}>
         <p className="mb-3 text-dim">
-          A pasta <code className="select-text">{ws.location.dir}</code> não está num repositório git.
+          {t('A pasta')} <code className="select-text">{ws.location.dir}</code> {t('não está num repositório git.')}
         </p>
-        <button className="btn btn-accent" disabled={!!busy} onClick={() => op('init', () => api.gitInit(ws.id))}>Criar repositório aqui (git init)</button>
+        <button className="btn btn-accent" disabled={!!busy} onClick={() => op('init', () => api.gitInit(ws.id))}>{t('Criar repositório aqui (git init)')}</button>
       </Modal>
     )
 
@@ -112,7 +113,7 @@ export function GitModal({ ws, onClose }: { ws: Workspace; onClose: () => void }
   return (
     <Modal title={`Git · ${ws.name}`} onClose={onClose} wide>
       {!st ? (
-        <p className="text-faint">lendo repositório…</p>
+        <p className="text-faint">{t('lendo repositório…')}</p>
       ) : (
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -123,14 +124,14 @@ export function GitModal({ ws, onClose }: { ws: Workspace; onClose: () => void }
               disabled={!!busy}
               onChange={(v) => op('switch', () => api.gitSwitch(ws.id, v, false))}
             >
-              {!st.branch && <option value="">(sem branch)</option>}
+              {!st.branch && <option value="">{t('(sem branch)')}</option>}
               {st.branches.map((b) => <option key={b} value={b}>{b}</option>)}
               {st.branch && !st.branches.includes(st.branch) && <option value={st.branch}>{st.branch}</option>}
             </Select>
             <button
               className="btn btn-ghost"
               disabled={!!busy}
-              onClick={() => openModal({ kind: 'prompt', title: 'Novo branch', value: '', onOk: (name) => {
+              onClick={() => openModal({ kind: 'prompt', title: t('Novo branch'), value: '', onOk: (name) => {
                 openModal({ kind: 'git', id: ws.id })
                 if (name) op('switch', () => api.gitSwitch(ws.id, name, true))
               } })}
@@ -138,31 +139,31 @@ export function GitModal({ ws, onClose }: { ws: Workspace; onClose: () => void }
               ＋ branch
             </button>
             <span className="text-[12px] text-faint">
-              {st.upstream ? <>↔ {st.upstream} · ↓{st.behind} ↑{st.ahead}</> : st.hasRemote ? 'sem upstream (o push cria)' : 'sem remoto'}
+              {st.upstream ? <>↔ {st.upstream} · ↓{st.behind} ↑{st.ahead}</> : st.hasRemote ? t('sem upstream (o push cria)') : t('sem remoto')}
             </span>
             <div className="flex-1" />
-            <button className="btn btn-ghost" title="Atualizar" onClick={refresh}>⟳</button>
+            <button className="btn btn-ghost" title={t('Atualizar')} onClick={refresh}>⟳</button>
             <button className="btn" disabled={!!busy || !st.upstream} title="git pull --rebase --autostash" onClick={() => op('pull', () => api.gitPull(ws.id))}>
-              {busy === 'pull' ? 'puxando…' : `↓ Pull${st.behind ? ` (${st.behind})` : ''}`}
+              {busy === 'pull' ? t('puxando…') : `↓ Pull${st.behind ? ` (${st.behind})` : ''}`}
             </button>
             <button className="btn" disabled={!!busy || !st.hasRemote} onClick={() => op('push', () => api.gitPush(ws.id))}>
-              {busy === 'push' ? 'enviando…' : `↑ Push${st.ahead ? ` (${st.ahead})` : ''}`}
+              {busy === 'push' ? t('enviando…§push') : `↑ Push${st.ahead ? ` (${st.ahead})` : ''}`}
             </button>
           </div>
 
           {st.conflict && (
             <div className="flex items-center gap-3 rounded-md border border-torange/50 bg-torange/10 p-2 text-[12.5px]">
               <span className="flex-1 text-torange">
-                O pull parou num conflito. Resolva os arquivos marcados com ! (no editor ou com <code>git status</code> em <code className="select-text">{st.root}</code>) ou desfaça.
+                {t('O pull parou num conflito. Resolva os arquivos marcados com ! (no editor ou com')} <code>git status</code> {t('em')} <code className="select-text">{st.root}</code>{t(') ou desfaça.')}
               </span>
-              <button className="btn" disabled={!!busy} onClick={() => op('abort', () => api.gitAbort(ws.id))}>Desfazer pull</button>
+              <button className="btn" disabled={!!busy} onClick={() => op('abort', () => api.gitAbort(ws.id))}>{t('Desfazer pull')}</button>
             </div>
           )}
 
           <div className="grid h-[44vh] min-h-[240px] grid-cols-[minmax(220px,1fr)_2fr] gap-2">
             <div className="overflow-auto rounded-md border border-line bg-bg py-1">
               {files.length === 0 ? (
-                <p className="px-3 py-6 text-center text-faint">Nada para commitar.</p>
+                <p className="px-3 py-6 text-center text-faint">{t('Nada para commitar.')}</p>
               ) : (
                 files.map((f) => {
                   const [sym, color] = STATUS_STYLE[f.status]
@@ -188,7 +189,7 @@ export function GitModal({ ws, onClose }: { ws: Workspace; onClose: () => void }
 
           {plain.length > 0 && (
             <div className="rounded-md border border-tpink/50 bg-tpink/10 p-2 text-[12.5px]">
-              <p className="text-tpink">{plain.length} segredo(s) em texto puro iriam para o repositório:</p>
+              <p className="text-tpink">{t('{n} segredo(s) em texto puro iriam para o repositório:', { n: plain.length })}</p>
               <pre className="my-1 max-h-[70px] overflow-auto text-[11px] text-dim">{plain.join('\n')}</pre>
               <div className="flex items-center gap-3">
                 <button
@@ -202,10 +203,10 @@ export function GitModal({ ws, onClose }: { ws: Workspace; onClose: () => void }
                     refresh()
                   }}
                 >
-                  {busy === 'protect' ? 'criptografando…' : 'Criptografar agora'}
+                  {busy === 'protect' ? t('criptografando…') : t('Criptografar agora')}
                 </button>
                 <label className="flex items-center gap-1.5 text-dim">
-                  <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} /> commitar mesmo assim
+                  <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} /> {t('commitar mesmo assim')}
                 </label>
               </div>
             </div>
@@ -219,13 +220,13 @@ export function GitModal({ ws, onClose }: { ws: Workspace; onClose: () => void }
               if (r) setMessage('')
             }}
           >
-            <input className="field flex-1" placeholder="Mensagem do commit" value={message} onChange={(e) => setMessage(e.target.value)} />
+            <input className="field flex-1" placeholder={t('Mensagem do commit')} value={message} onChange={(e) => setMessage(e.target.value)} />
             <button className="btn btn-accent" disabled={!!busy || !files.length || !message.trim() || blocked || st.conflict}>
-              {busy === 'commit' ? 'commitando…' : `Commit (${files.length})`}
+              {busy === 'commit' ? t('commitando…') : `Commit (${files.length})`}
             </button>
           </form>
           <p className="text-[11.5px] text-faint">
-            O commit leva só o que está na pasta do workspace (<code className="select-text">{ws.location.dir}</code>). Respostas, estado da tela e a chave do cofre ficam fora do repositório.
+            {t('O commit leva só o que está na pasta do workspace (')}<code className="select-text">{ws.location.dir}</code>{t('). Respostas, estado da tela e a chave do cofre ficam fora do repositório.')}
           </p>
         </div>
       )}
@@ -259,7 +260,7 @@ export function MoveHint({ ws }: { ws: Workspace }) {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-dim">
-        Este workspace está na pasta de dados do Zeno. Para versionar com git, mova-o para uma pasta do seu projeto (por exemplo <code>meu-projeto/api/</code>). Os requests continuam sendo arquivos YAML, um por request, e dá pra commitar, fazer pull e push daqui.
+        {t('Este workspace está na pasta de dados do Zeno. Para versionar com git, mova-o para uma pasta do seu projeto (por exemplo')} <code>{t('meu-projeto/api/')}</code>{t('). Os requests continuam sendo arquivos YAML, um por request, e dá pra commitar, fazer pull e push daqui.')}
       </p>
       <button
         className="btn btn-accent self-start"
@@ -268,7 +269,7 @@ export function MoveHint({ ws }: { ws: Workspace }) {
           if (list) setWorkspaces(list)
         }}
       >
-        Mover para pasta…
+        {t('Mover para pasta…')}
       </button>
     </div>
   )

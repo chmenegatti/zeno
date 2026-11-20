@@ -1,5 +1,6 @@
 // cURL <-> request, e geração de código (Go, JavaScript, Python). Puro: roda no main e no renderer.
 
+import { t } from './i18n'
 import type { Auth, Body, BodyField, KV, SendInput } from './types'
 
 // ---------- tokenizador estilo shell ----------
@@ -117,7 +118,7 @@ function splitPairs(s: string): KV[] {
 
 export function parseCurl(cmd: string): ParsedCurl {
   const args = shellSplit(cmd.trim())
-  if (!args.length || !/^curl(\.exe)?$/i.test(args[0])) throw new Error('não é um comando curl')
+  if (!args.length || !/^curl(\.exe)?$/i.test(args[0])) throw new Error(t('não é um comando curl'))
   let method = ''
   let url = ''
   const headers: KV[] = []
@@ -180,7 +181,7 @@ export function parseCurl(cmd: string): ParsedCurl {
       case '--cookie': {
         const c = next()
         if (c.includes('=')) headers.push(kv('Cookie', c))
-        else warnings.push(`arquivo de cookies ignorado: ${c}`)
+        else warnings.push(t('arquivo de cookies ignorado: {c}', { c }))
         break
       }
       case '-d':
@@ -188,7 +189,7 @@ export function parseCurl(cmd: string): ParsedCurl {
       case '--data-ascii':
       case '--data-binary': {
         const d = next()
-        if (d.startsWith('@')) warnings.push(`body lido de arquivo não foi importado: ${d}`)
+        if (d.startsWith('@')) warnings.push(t('body lido de arquivo não foi importado: {d}', { d }))
         // -d remove quebras de linha, como o curl faz; --data-binary não
         else data.push(a === '--data-binary' ? d : d.replace(/\r?\n/g, ''))
         break
@@ -205,7 +206,7 @@ export function parseCurl(cmd: string): ParsedCurl {
         const d = next()
         const m = /^([^=@]*)([=@])(.*)$/s.exec(d)
         if (!m) data.push(encodeURIComponent(d))
-        else if (m[2] === '@') warnings.push(`--data-urlencode com arquivo não foi importado: ${d}`)
+        else if (m[2] === '@') warnings.push(t('--data-urlencode com arquivo não foi importado: {d}', { d }))
         else data.push(m[1] ? `${m[1]}=${encodeURIComponent(m[3])}` : encodeURIComponent(m[3]))
         break
       }
@@ -264,12 +265,12 @@ export function parseCurl(cmd: string): ParsedCurl {
       default:
         if (IGNORED_WITH_VALUE.has(a)) {
           next()
-          warnings.push(`opção ignorada: ${a}`)
-        } else if (a.startsWith('-')) warnings.push(`opção desconhecida: ${a}`)
+          warnings.push(t('opção ignorada: {a}', { a }))
+        } else if (a.startsWith('-')) warnings.push(t('opção desconhecida: {a}', { a }))
         else if (!url) url = a
     }
   }
-  if (!url) throw new Error('o comando curl não tem URL')
+  if (!url) throw new Error(t('o comando curl não tem URL'))
 
   // query da URL vira params
   const params: KV[] = []

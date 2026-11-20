@@ -10,6 +10,7 @@ import { SseEvents, WsPane } from './Streams'
 import { prepare } from '@shared/prepare'
 import { isEventStream, isGrpcUrl, isWsUrl, parseSSE } from '@shared/stream'
 import { GrpcPane } from './Grpc'
+import { locale, t } from '@shared/i18n'
 
 type Section = 'body' | 'events' | 'headers' | 'tests' | 'timeline' | 'compare'
 
@@ -40,7 +41,7 @@ export function ResponsePane({ width }: { width: number }) {
   const res = history.find((r) => r.id === selected[id ?? '']) ?? history[0]
   // resultado dos scripts vale para o envio mais recente
   const report = id && res && res.id === history[0]?.id ? lastSend[id]?.scripts : undefined
-  const failed = report ? report.tests.filter((t) => !t.ok).length + report.errors.length : 0
+  const failed = report ? report.tests.filter((x) => !x.ok).length + report.errors.length : 0
   // WebSocket: o painel é o log da conexão
   const modeUrl = useMemo(() => (cur ? prepare(cur.ws, cur.req, cur.ancestors, envId).input.url : ''), [cur, envId])
   const wsMode = isWsUrl(modeUrl)
@@ -67,7 +68,7 @@ export function ResponsePane({ width }: { width: number }) {
           <span className="rounded-md bg-tblue/15 px-2 py-0.5 font-mono text-[12px] font-semibold text-tblue">STREAM</span>
           <span className="text-dim">text/event-stream</span>
           <div className="flex-1" />
-          <button className="btn py-0.5 text-[12px]" onClick={() => api.cancel(id!)}>Parar</button>
+          <button className="btn py-0.5 text-[12px]" onClick={() => api.cancel(id!)}>{t('Parar')}</button>
         </div>
         <div className="min-h-0 flex-1">
           <SseEvents events={liveEvents} live />
@@ -79,15 +80,15 @@ export function ResponsePane({ width }: { width: number }) {
   return (
     <section data-hk="response" className="flex shrink-0 flex-col border-l border-line bg-panel" style={{ width }}>
       {!res ? (
-        <div className="flex flex-1 items-center justify-center text-faint">{id && sending[id] ? 'Enviando…' : 'Sem resposta ainda'}</div>
+        <div className="flex flex-1 items-center justify-center text-faint">{id && sending[id] ? t('Enviando…') : t('Sem resposta ainda')}</div>
       ) : (
         <>
           <div className="flex items-center gap-2 px-3 py-3">
-            <span className={`rounded-md px-2 py-0.5 font-mono text-[12px] font-semibold ${statusColor(res)}`}>{res.error ? 'ERRO' : `${res.status} ${res.statusText}`}</span>
+            <span className={`rounded-md px-2 py-0.5 font-mono text-[12px] font-semibold ${statusColor(res)}`}>{res.error ? t('ERRO') : `${res.status} ${res.statusText}`}</span>
             <span className="text-dim">{res.timing.totalMs} ms</span>
             <span className="text-dim">{formatBytes(res.size)}</span>
             {res.streamEnd && <span className="truncate text-[11.5px] text-torange" title={res.streamEnd}>stream {res.streamEnd}</span>}
-            {id && sending[id] && <span className="animate-pulse text-accent">enviando…</span>}
+            {id && sending[id] && <span className="animate-pulse text-accent">{t('enviando…')}</span>}
             <div className="flex-1" />
             {history.length > 1 && (
               <Select
@@ -95,11 +96,11 @@ export function ResponsePane({ width }: { width: number }) {
                 className="field max-w-[180px] py-0.5 text-[11.5px]"
                 value={res.id}
                 onChange={(v) => useStore.setState((s) => ({ selectedResponse: { ...s.selectedResponse, [id!]: v } }))}
-                title="Histórico"
+                title={t('Histórico')}
               >
                 {history.map((h) => (
                   <option key={h.id} value={h.id}>
-                    {new Date(h.at).toLocaleTimeString('pt-BR')} · {h.error ? 'erro' : h.status}
+                    {new Date(h.at).toLocaleTimeString(locale())} · {h.error ? t('erro') : h.status}
                   </option>
                 ))}
               </Select>
@@ -107,28 +108,28 @@ export function ResponsePane({ width }: { width: number }) {
             {!res.error && cur && (
               <button
                 className="btn btn-ghost px-1.5 py-0.5 text-[11.5px]"
-                title="Salva esta resposta como exemplo do request (o mock do workspace responde com ela)"
+                title={t('Salva esta resposta como exemplo do request (o mock do workspace responde com ela)')}
                 onClick={async () => {
                   const { run, notify, updateRequest } = useStore.getState()
                   const ex = await run(api.exampleFromResponse(id!, res.id))
                   if (!ex) return
                   const list = cur.req.examples ?? []
                   updateRequest({ ...cur.req, examples: [...list, { ...ex, name: `${ex.name} (${list.length + 1})` }] })
-                  notify('Exemplo salvo (aba Exemplos do request)')
+                  notify(t('Exemplo salvo (aba Exemplos do request)'))
                 }}
               >
-                ★ exemplo
+                ★ {t('exemplo')}
               </button>
             )}
             <button
               className="btn btn-ghost px-1.5 py-0.5 text-[11.5px]"
-              title="Limpar histórico"
+              title={t('Limpar histórico')}
               onClick={async () => {
                 await api.clearResponses(id!)
                 useStore.setState((s) => ({ responses: { ...s.responses, [id!]: [] } }))
               }}
             >
-              limpar
+              {t('limpar')}
             </button>
           </div>
           {res.error ? (
@@ -143,20 +144,20 @@ export function ResponsePane({ width }: { width: number }) {
                   value={sec}
                   onChange={setSection}
                   options={[
-                    ...(stream ? [{ id: 'events' as const, label: <>Eventos<Count n={events.length} /></> }] : []),
+                    ...(stream ? [{ id: 'events' as const, label: <>{t('Eventos')}<Count n={events.length} /></> }] : []),
                     { id: 'body', label: 'Body' },
                     { id: 'headers', label: <>Headers<Count n={res.headers.length} /></> },
                     ...(report
-                      ? [{ id: 'tests' as const, label: <>Testes{report.tests.length ? <span className={`ml-1 text-[10.5px] ${failed ? 'text-tpink' : 'text-tgreen'}`}>{report.tests.length - report.tests.filter((t) => !t.ok).length}/{report.tests.length}</span> : failed ? <span className="ml-1 text-[10.5px] text-tpink">erro</span> : null}</> }]
+                      ? [{ id: 'tests' as const, label: <>{t('Testes')}{report.tests.length ? <span className={`ml-1 text-[10.5px] ${failed ? 'text-tpink' : 'text-tgreen'}`}>{report.tests.length - report.tests.filter((x) => !x.ok).length}/{report.tests.length}</span> : failed ? <span className="ml-1 text-[10.5px] text-tpink">{t('erro')}</span> : null}</> }]
                       : []),
-                    { id: 'timeline', label: 'Linha do tempo' },
-                    ...(history.length > 1 ? [{ id: 'compare' as const, label: 'Comparar' }] : [])
+                    { id: 'timeline', label: t('Linha do tempo') },
+                    ...(history.length > 1 ? [{ id: 'compare' as const, label: t('Comparar') }] : [])
                   ]}
                 />
                 <div className="flex-1" />
                 {sec === 'body' && res.bodyEncoding !== 'base64' && (
                   <label className="mr-2 flex items-center gap-1 text-[11.5px] text-dim">
-                    <input type="checkbox" checked={pretty} onChange={(e) => setPretty(e.target.checked)} /> formatar
+                    <input type="checkbox" checked={pretty} onChange={(e) => setPretty(e.target.checked)} /> {t('formatar')}
                   </label>
                 )}
               </div>
@@ -175,7 +176,7 @@ export function ResponsePane({ width }: { width: number }) {
                     </tbody>
                   </table>
                 )}
-                {sec === 'tests' && (report ? <ScriptResults report={report} /> : <p className="p-3 text-faint">Este envio não teve scripts nem asserções.</p>)}
+                {sec === 'tests' && (report ? <ScriptResults report={report} /> : <p className="p-3 text-faint">{t('Este envio não teve scripts nem asserções.')}</p>)}
                 {sec === 'timeline' && <TimelineView res={res} />}
                 {sec === 'compare' && <CompareView res={res} history={history} />}
               </div>

@@ -10,29 +10,30 @@ import { FAKER } from '@shared/faker'
 import { editorVars, useVarSources, VarBadge, varOptions } from './Vars'
 import type { TagSupport } from './CodeEditor'
 import { Select } from './Select'
+import { locale, t, tk } from '@shared/i18n'
 
 // ---------- rótulo ----------
 
 /** texto do badge, como no Insomnia: "Resposta ⇒ Login · $.token" */
 export function tagLabel(raw: string, workspaces: Workspace[]): { text: string; broken?: string } {
-  const t = parseTag(raw)
-  if (t.name === 'uuid') return { text: 'UUID' }
-  if (t.name === 'now') return { text: 'Agora' }
-  if (t.name === 'other') {
-    const pt = pluginTag(t.tag)
+  const tg = parseTag(raw)
+  if (tg.name === 'uuid') return { text: 'UUID' }
+  if (tg.name === 'now') return { text: t('Agora') }
+  if (tg.name === 'other') {
+    const pt = pluginTag(tg.tag)
     if (pt) {
       const args = parseArgs(raw).args.filter((a) => a !== '')
       return { text: `${pt.tag.displayName}${args.length ? ` · ${args.join(', ').slice(0, 24)}` : ''}` }
     }
-    return { text: t.tag, broken: `tag "${t.tag}" não suportada (nenhum plugin ativo tem)` }
+    return { text: tg.tag, broken: t('tag "{tag}" não suportada (nenhum plugin ativo tem)', { tag: tg.tag }) }
   }
-  if (t.name === 'fn') return { text: FN_SPECS[t.tag].badge(t.args) }
+  if (tg.name === 'fn') return { text: FN_SPECS[tg.tag].badge(tg.args) }
   // id ou nome ("Pasta / Nome"): workspace ativo primeiro
   const cur = activeWorkspace(useStore.getState())
-  const req = [cur, ...workspaces.filter((w) => w !== cur)].map((w) => (w ? findRequestRef(w.children, t.requestId) : null)).find(Boolean) ?? undefined
+  const req = [cur, ...workspaces.filter((w) => w !== cur)].map((w) => (w ? findRequestRef(w.children, tg.requestId) : null)).find(Boolean) ?? undefined
   const name = req?.name ?? '?'
-  const what = t.field === 'header' ? `header ${t.filter}` : t.field === 'url' ? 'URL' : t.field === 'raw' ? 'body' : t.filter || 'body'
-  return { text: `Resposta ⇒ ${name} · ${what}`, broken: req ? undefined : `request ${t.requestId || '(vazio)'} não encontrado` }
+  const what = tg.field === 'header' ? `header ${tg.filter}` : tg.field === 'url' ? 'URL' : tg.field === 'raw' ? 'body' : tg.filter || 'body'
+  return { text: t('Resposta ⇒ {name} · {what}', { name, what }), broken: req ? undefined : t('request {id} não encontrado', { id: tg.requestId || t('(vazio)') }) }
 }
 
 export function TagBadge({ raw, onChange }: { raw: string; onChange?: (next: string) => void }) {
@@ -42,7 +43,7 @@ export function TagBadge({ raw, onChange }: { raw: string; onChange?: (next: str
     <span
       role="button"
       className={`var-pill tag ${broken ? 'broken' : ''}`}
-      title={`${broken ? `${broken}\n` : ''}${raw}${onChange ? '\nclique pra editar' : ''}`}
+      title={`${broken ? `${broken}\n` : ''}${raw}${onChange ? `\n${t('clique pra editar')}` : ''}`}
       onMouseDown={(e) => e.preventDefault()}
       onClick={(e) => {
         e.stopPropagation()
@@ -65,7 +66,7 @@ export function openTagEditor(raw: string, onOk: (next: string) => void, onCance
 export function pluginTag(name: string): { plugin: PluginInfo; tag: PluginTagInfo } | null {
   for (const p of useStore.getState().plugins) {
     if (!p.enabled) continue
-    const tag = p.templateTags.find((t) => t.name === name)
+    const tag = p.templateTags.find((x) => x.name === name)
     if (tag) return { plugin: p, tag }
   }
   return null
@@ -91,12 +92,12 @@ export function allTagChoices(): typeof TAG_CHOICES {
     .getState()
     .plugins.filter((p) => p.enabled)
     .flatMap((p) =>
-      p.templateTags.map((t) => ({
-        label: t.displayName,
+      p.templateTags.map((x) => ({
+        label: x.displayName,
         detail: `plugin ${p.displayName}`,
-        keys: [t.name.toLowerCase(), ...t.displayName.toLowerCase().split(/\s+/), 'plugin'],
-        raw: buildPluginTag(t.name, t.args, []),
-        edit: t.args.length > 0
+        keys: [x.name.toLowerCase(), ...x.displayName.toLowerCase().split(/\s+/), 'plugin'],
+        raw: buildPluginTag(x.name, x.args, []),
+        edit: x.args.length > 0
       }))
     )
   return [...TAG_CHOICES, ...extra]
@@ -216,11 +217,11 @@ function useVarAutocomplete(value: string, onChange: (v: string) => void, ref: R
               </>
             ) : it.kind === 'tag' ? (
               <>
-                <span className="text-tag">ƒ {it.label}</span>
-                <span className="text-[11px] text-faint">{it.detail}</span>
+                <span className="text-tag">ƒ {t(it.label)}</span>
+                <span className="text-[11px] text-faint">{t(it.detail)}</span>
               </>
             ) : (
-              <span className="text-tag">ƒ Outra tag… <span className="text-[11px] text-faint">abre o editor</span></span>
+              <span className="text-tag">ƒ {t('Outra tag…')} <span className="text-[11px] text-faint">{t('abre o editor')}</span></span>
             )}
           </div>
         ))}
@@ -252,7 +253,7 @@ export function TemplateInput({ value, onChange, placeholder, className = '', pa
   const [editing, setEditing] = useState(false)
   const ref = useRef<HTMLInputElement>(null)
   const tokens = useMemo(() => tokenize(value), [value])
-  const hasTokens = tokens.some((t) => t.t !== 'text')
+  const hasTokens = tokens.some((x) => x.t !== 'text')
   const ac = useVarAutocomplete(value, onChange, ref)
   useEffect(() => {
     if (editing) ref.current?.focus()
@@ -309,15 +310,15 @@ export function TemplateInput({ value, onChange, placeholder, className = '', pa
       className={`field flex min-w-0 flex-1 cursor-text items-center gap-0.5 overflow-hidden whitespace-nowrap font-mono ${className}`}
       onClick={() => setEditing(true)}
       onFocus={(e) => e.target === e.currentTarget && setEditing(true)}
-      title={title ?? 'Clique pra editar · clique num badge pra mudar · {{ ou Ctrl+Espaço sugere variáveis e tags'}
+      title={title ?? t('Clique pra editar · clique num badge pra mudar · {{ ou Ctrl+Espaço sugere variáveis e tags')}
     >
-      {tokens.map((tk, i) =>
-        tk.t === 'text' ? (
-          <span key={i} className="whitespace-pre">{password ? '•'.repeat(Math.min(tk.v.length, 12)) : tk.v}</span>
-        ) : tk.t === 'var' ? (
-          <VarBadge key={i} name={tk.name} />
+      {tokens.map((tok, i) =>
+        tok.t === 'text' ? (
+          <span key={i} className="whitespace-pre">{password ? '•'.repeat(Math.min(tok.v.length, 12)) : tok.v}</span>
+        ) : tok.t === 'var' ? (
+          <VarBadge key={i} name={tok.name} />
         ) : (
-          <TagBadge key={i} raw={tk.raw} onChange={(next) => replaceAt(i, next)} />
+          <TagBadge key={i} raw={tok.raw} onChange={(next) => replaceAt(i, next)} />
         )
       )}
     </div>
@@ -348,13 +349,13 @@ function requestOptions(workspaces: Workspace[], current?: Workspace): ReqOption
 }
 
 const KINDS: { id: string; label: string }[] = [
-  { id: 'response', label: 'Resposta (valor de outro request)' },
+  { id: 'response', label: tk('Resposta (valor de outro request)') },
   { id: 'uuid', label: 'UUID v4' },
-  { id: 'now', label: 'Data e hora atual (ISO)' },
+  { id: 'now', label: tk('Data e hora atual (ISO)') },
   ...FN_NAMES.map((n) => ({ id: `fn:${n}`, label: FN_SPECS[n].label }))
 ]
 
-const kindOf = (t: TagDef): string => (t.name === 'fn' ? `fn:${t.tag}` : t.name)
+const kindOf = (d: TagDef): string => (d.name === 'fn' ? `fn:${d.tag}` : d.name)
 
 /** formulário dos argumentos que o plugin declarou (string, número, booleano, lista) */
 function PluginTagForm({ info, args, onChange }: { info: PluginTagInfo; args: string[]; onChange: (a: string[]) => void }) {
@@ -384,7 +385,7 @@ function PluginTagForm({ info, args, onChange }: { info: PluginTagInfo; args: st
           )}
         </label>
       ))}
-      {!info.args.length && <span className="text-[11.5px] text-faint">Sem argumentos.</span>}
+      {!info.args.length && <span className="text-[11.5px] text-faint">{t('Sem argumentos.')}</span>}
     </>
   )
 }
@@ -397,24 +398,24 @@ function FnForm({ tag, onChange }: { tag: Extract<TagDef, { name: 'fn' }>; onCha
     <>
       {spec.args.map((a, i) => (
         <label key={a.label} className="flex flex-col gap-1">
-          <span className="text-[11px] text-faint">{a.label}</span>
+          <span className="text-[11px] text-faint">{t(a.label)}</span>
           {a.kind === 'select' ? (
             <Select className="field py-1" value={tag.args[i]} onChange={(v) => set(i, v)}>
-              {(tag.tag === 'faker' ? Object.entries(FAKER).map(([id, f]) => ({ id, label: `${f.label} (${id})` })) : a.options ?? []).map((o) => (
-                <option key={o.id} value={o.id}>{o.label}</option>
+              {(tag.tag === 'faker' ? Object.entries(FAKER).map(([id, f]) => ({ id, label: `${t(f.label)} (${id})` })) : a.options ?? []).map((o) => (
+                <option key={o.id} value={o.id}>{t(o.label)}</option>
               ))}
               {/* valor importado que não está na lista */}
-              {tag.tag === 'faker' && !FAKER[tag.args[i]] && <option value={tag.args[i]}>{tag.args[i]} (desconhecido)</option>}
+              {tag.tag === 'faker' && !FAKER[tag.args[i]] && <option value={tag.args[i]}>{t('{value} (desconhecido)', { value: tag.args[i] })}</option>}
             </Select>
           ) : a.kind === 'textarea' ? (
-            <textarea className="field h-20 resize-y font-mono text-[12px]" placeholder={a.placeholder} value={tag.args[i]} onChange={(e) => set(i, e.target.value)} spellCheck={false} />
+            <textarea className="field h-20 resize-y font-mono text-[12px]" placeholder={a.placeholder && t(a.placeholder)} value={tag.args[i]} onChange={(e) => set(i, e.target.value)} spellCheck={false} />
           ) : (
-            <input className="field py-1 font-mono text-[12px]" placeholder={a.placeholder} value={tag.args[i]} onChange={(e) => set(i, e.target.value)} spellCheck={false} />
+            <input className="field py-1 font-mono text-[12px]" placeholder={a.placeholder && t(a.placeholder)} value={tag.args[i]} onChange={(e) => set(i, e.target.value)} spellCheck={false} />
           )}
         </label>
       ))}
-      {['hash', 'base64', 'jsonpath', 'file'].includes(tag.tag) && <span className="text-[11px] text-faint">Aceita <code>{'{{ variavel }}'}</code> nos campos de texto.</span>}
-      {tag.tag === 'prompt' && <span className="text-[11px] text-faint">Pergunta uma vez por envio; na janela dá pra marcar &quot;lembrar nesta sessão&quot;.</span>}
+      {['hash', 'base64', 'jsonpath', 'file'].includes(tag.tag) && <span className="text-[11px] text-faint">{t('Aceita')} <code>{'{{ variavel }}'}</code> {t('nos campos de texto.')}</span>}
+      {tag.tag === 'prompt' && <span className="text-[11px] text-faint">{t('Pergunta uma vez por envio; na janela dá pra marcar "lembrar nesta sessão".')}</span>}
     </>
   )
 }
@@ -447,12 +448,12 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
   // prévia com a última resposta (sem reenviar)
   useEffect(() => {
     if (tag.name === 'other' && !ptag) return setPreview({})
-    if (r && !r.requestId) return setPreview({ error: 'escolha o request' })
+    if (r && !r.requestId) return setPreview({ error: t('escolha o request') })
     let alive = true
-    const t = setTimeout(() => api.tagPreview(raw, false).then((p) => alive && setPreview(p)), 200)
+    const timer = setTimeout(() => api.tagPreview(raw, false).then((p) => alive && setPreview(p)), 200)
     return () => {
       alive = false
-      clearTimeout(t)
+      clearTimeout(timer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raw])
@@ -466,7 +467,7 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
   const multiWs = new Set(options.map((o) => o.wsName)).size > 1
 
   return (
-    <Modal title={initial ? 'Editar tag' : 'Inserir tag'} onClose={onClose}>
+    <Modal title={initial ? t('Editar tag') : t('Inserir tag')} onClose={onClose}>
       <form
         className="flex flex-col gap-3 text-[12.5px]"
         onSubmit={(e) => {
@@ -476,7 +477,7 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
         }}
       >
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-faint">Função</span>
+          <span className="text-[11px] text-faint">{t('Função')}</span>
           <Select
             className="field py-1"
             value={ptag ? `plugin:${ptag.name}` : kindOf(tag)}
@@ -495,9 +496,9 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
               setTag(n === 'response' ? { name: 'response', field: 'body', requestId: '', filter: '', trigger: 'never' } : ({ name: n } as TagDef))
             }}
           >
-            {KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
-            {plugins.filter((p) => p.enabled).flatMap((p) => p.templateTags.map((t) => <option key={`${p.id}:${t.name}`} value={`plugin:${t.name}`}>{t.displayName} (plugin {p.displayName})</option>))}
-            {tag.name === 'other' && !ptag && <option value="other">{tag.tag} (não suportada)</option>}
+            {KINDS.map((k) => <option key={k.id} value={k.id}>{t(k.label)}</option>)}
+            {plugins.filter((p) => p.enabled).flatMap((p) => p.templateTags.map((x) => <option key={`${p.id}:${x.name}`} value={`plugin:${x.name}`}>{t('{name} (plugin {plugin})', { name: x.displayName, plugin: p.displayName })}</option>))}
+            {tag.name === 'other' && !ptag && <option value="other">{t('{tag} (não suportada)', { tag: tag.tag })}</option>}
           </Select>
         </label>
 
@@ -507,15 +508,15 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
         {r && (
           <>
             <label className="flex flex-col gap-1">
-              <span className="text-[11px] text-faint">Atributo</span>
+              <span className="text-[11px] text-faint">{t('Atributo')}</span>
               <Select className="field py-1" value={r.field} onChange={(v) => set({ field: v as ResponseTag['field'] })}>
-                {FIELDS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+                {FIELDS.map((f) => <option key={f.id} value={f.id}>{t(f.label)}</option>)}
               </Select>
             </label>
 
             <div className="flex flex-col gap-1">
               <span className="text-[11px] text-faint">Request</span>
-              <input className="field py-1" placeholder="buscar request…" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input className="field py-1" placeholder={t('buscar request…')} value={search} onChange={(e) => setSearch(e.target.value)} />
               <div className="max-h-[180px] overflow-auto rounded-md border border-line">
                 {filtered.map((o) => (
                   <button
@@ -531,14 +532,14 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
                     </span>
                   </button>
                 ))}
-                {!filtered.length && <div className="px-2 py-1 text-faint">nenhum request</div>}
+                {!filtered.length && <div className="px-2 py-1 text-faint">{t('nenhum request')}</div>}
               </div>
-              {r.requestId && !selected && <span className="text-[11.5px] text-tpink">request {r.requestId} não encontrado</span>}
+              {r.requestId && !selected && <span className="text-[11.5px] text-tpink">{t('request {id} não encontrado', { id: r.requestId })}</span>}
             </div>
 
             {(r.field === 'body' || r.field === 'header') && (
               <label className="flex flex-col gap-1">
-                <span className="text-[11px] text-faint">{r.field === 'header' ? 'Nome do header' : 'Filtro (JSONPath ou caminho XML)'}</span>
+                <span className="text-[11px] text-faint">{r.field === 'header' ? t('Nome do header') : t('Filtro (JSONPath ou caminho XML)')}</span>
                 <input
                   className="field py-1 font-mono text-[12px]"
                   placeholder={r.field === 'header' ? 'X-Session' : '$.access_token'}
@@ -546,21 +547,21 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
                   onChange={(e) => set({ filter: e.target.value })}
                   spellCheck={false}
                 />
-                {r.field === 'body' && <span className="text-[11px] text-faint">JSON: <code>$.a.b</code>, <code>$.list[0].id</code>, <code>$..id</code> · XML: <code>resposta/resultado/chave</code></span>}
+                {r.field === 'body' && <span className="text-[11px] text-faint">JSON: <code>$.a.b</code>, <code>$.list[0].id</code>, <code>$..id</code> · XML: <code>{t('resposta/resultado/chave')}</code></span>}
               </label>
             )}
 
             <div className="flex items-start gap-3">
               <label className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className="text-[11px] text-faint">Reenviar o request</span>
+                <span className="text-[11px] text-faint">{t('Reenviar o request')}</span>
                 <Select className="field py-1" value={r.trigger} onChange={(v) => set({ trigger: v as ResponseTag['trigger'] })}>
-                  {TRIGGERS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                  {TRIGGERS.map((x) => <option key={x.id} value={x.id}>{t(x.label)}</option>)}
                 </Select>
-                <span className="text-[11px] text-faint">{TRIGGERS.find((t) => t.id === r.trigger)?.hint}</span>
+                <span className="text-[11px] text-faint">{t(TRIGGERS.find((x) => x.id === r.trigger)?.hint ?? '')}</span>
               </label>
               {r.trigger === 'when-expired' && (
                 <label className="flex flex-col gap-1">
-                  <span className="text-[11px] text-faint">Idade máx. (s)</span>
+                  <span className="text-[11px] text-faint">{t('Idade máx. (s)')}</span>
                   <input type="number" min={1} className="field w-[90px] py-1" value={r.maxAge ?? 60} onChange={(e) => set({ maxAge: Math.max(1, Number(e.target.value) || 60) })} />
                 </label>
               )}
@@ -571,10 +572,10 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
         {tag.name !== 'other' && (
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-faint">Prévia{preview.at ? ` · resposta de ${new Date(preview.at).toLocaleTimeString()}` : ''}</span>
+              <span className="text-[11px] text-faint">{t('Prévia')}{preview.at ? ` · ${t('resposta de {time}', { time: new Date(preview.at).toLocaleTimeString(locale()) })}` : ''}</span>
               {r && r.requestId && (
                 <button type="button" className="btn btn-ghost ml-auto px-2 py-0 text-[11.5px]" disabled={preview.loading} onClick={sendNow}>
-                  {preview.loading ? 'enviando…' : 'enviar request e atualizar'}
+                  {preview.loading ? t('enviando…') : t('enviar request e atualizar')}
                 </button>
               )}
             </div>
@@ -586,8 +587,8 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
 
         <code className="truncate text-[11px] text-faint select-text" title={raw}>{raw}</code>
         <div className="flex justify-end gap-2">
-          <button type="button" className="btn" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-accent" disabled={!!r && !r.requestId}>{initial ? 'Salvar' : 'Inserir'}</button>
+          <button type="button" className="btn" onClick={onClose}>{t('Cancelar')}</button>
+          <button className="btn btn-accent" disabled={!!r && !r.requestId}>{initial ? t('Salvar') : t('Inserir')}</button>
         </div>
       </form>
     </Modal>
@@ -627,11 +628,11 @@ function PromptModal({ ask, onReply }: { ask: PromptAsk; onReply: (a: { value: s
         <input autoFocus className="field font-mono" type={ask.mask ? 'password' : 'text'} value={value} onChange={(e) => setValue(e.target.value)} spellCheck={false} />
         <label className="flex items-center gap-2 text-[11.5px] text-dim">
           <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-          Lembrar nesta sessão (até fechar o app)
+          {t('Lembrar nesta sessão (até fechar o app)')}
         </label>
         <div className="flex justify-end gap-2">
-          <button type="button" className="btn" onClick={() => onReply(null)}>Cancelar envio</button>
-          <button className="btn btn-accent">Enviar</button>
+          <button type="button" className="btn" onClick={() => onReply(null)}>{t('Cancelar envio')}</button>
+          <button className="btn btn-accent">{t('Enviar')}</button>
         </div>
       </form>
     </div>

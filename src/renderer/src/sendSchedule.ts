@@ -1,13 +1,14 @@
 // Opções de envio (Ctrl+Shift+Enter): enviar depois de N segundos ou repetir a cada N segundos.
 
+import { t } from '@shared/i18n'
 import { useStore } from './state'
 
 const handles = new Map<string, ReturnType<typeof setTimeout>>()
 
-function setTimer(id: string, t: { mode: 'delay' | 'repeat'; seconds: number } | null): void {
+function setTimer(id: string, timer: { mode: 'delay' | 'repeat'; seconds: number } | null): void {
   useStore.setState((s) => {
     const next = { ...s.sendTimers }
-    if (t) next[id] = t
+    if (timer) next[id] = timer
     else delete next[id]
     return { sendTimers: next }
   })
@@ -44,12 +45,12 @@ export function scheduleSend(id: string, mode: 'delay' | 'repeat', seconds: numb
 export function askSchedule(id: string, mode: 'delay' | 'repeat'): void {
   useStore.getState().openModal({
     kind: 'prompt',
-    title: mode === 'delay' ? 'Enviar depois de quantos segundos?' : 'Repetir a cada quantos segundos?',
+    title: mode === 'delay' ? t('Enviar depois de quantos segundos?') : t('Repetir a cada quantos segundos?'),
     value: mode === 'delay' ? '5' : '10',
     onOk: (v) => {
       const n = Number(v.replace(',', '.'))
       if (Number.isFinite(n) && n > 0) scheduleSend(id, mode, n)
-      else useStore.getState().showError('Informe um número de segundos maior que zero')
+      else useStore.getState().showError(t('Informe um número de segundos maior que zero'))
     }
   })
 }

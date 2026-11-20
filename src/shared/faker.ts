@@ -1,5 +1,7 @@
 // {% faker 'randomEmail' %}: dados falsos com os nomes do Insomnia/Postman ($randomEmail…), sem dependência.
 
+import { t, tk } from './i18n'
+
 const pick = <T>(a: readonly T[]): T => a[Math.floor(Math.random() * a.length)]
 const int = (min: number, max: number): number => Math.floor(Math.random() * (max - min + 1)) + min
 const hex = (n: number): string => Array.from({ length: n }, () => int(0, 15).toString(16)).join('')
@@ -26,36 +28,36 @@ const uuid = (): string => `${hex(8)}-${hex(4)}-4${hex(3)}-${pick(['8', '9', 'a'
 const day = (dir: 1 | -1): string => new Date(Date.now() + dir * int(1, 365) * 86_400_000).toISOString()
 
 export const FAKER: Record<string, { label: string; gen: () => string }> = {
-  randomUUID: { label: 'UUID', gen: uuid },
-  randomFirstName: { label: 'Nome', gen: () => pick(FIRST) },
-  randomLastName: { label: 'Sobrenome', gen: () => pick(LAST) },
-  randomFullName: { label: 'Nome completo', gen: () => `${pick(FIRST)} ${pick(LAST)}` },
-  randomUserName: { label: 'Usuário', gen: () => `${slug(pick(FIRST))}${int(1, 999)}` },
-  randomEmail: { label: 'E-mail', gen: () => `${slug(pick(FIRST))}.${slug(pick(LAST))}${int(1, 99)}@${pick(DOMAIN)}` },
-  randomPassword: { label: 'Senha', gen: () => `${alnum(10)}${pick(['!', '#', '@', '$'])}${int(10, 99)}` },
-  randomPhoneNumber: { label: 'Telefone', gen: () => `(${int(11, 99)}) 9${int(1000, 9999)}-${int(1000, 9999)}` },
-  randomInt: { label: 'Inteiro (0–1000)', gen: () => String(int(0, 1000)) },
-  randomBoolean: { label: 'Booleano', gen: () => String(Math.random() < 0.5) },
-  randomPrice: { label: 'Preço', gen: () => (int(100, 99999) / 100).toFixed(2) },
-  randomAlphaNumeric: { label: 'Caractere alfanumérico', gen: () => alnum(1) },
-  randomCity: { label: 'Cidade', gen: () => pick(CITY) },
-  randomCountry: { label: 'País', gen: () => pick(COUNTRY) },
-  randomStreetAddress: { label: 'Endereço', gen: () => `${pick(STREET)}, ${int(1, 3000)}` },
-  randomCompanyName: { label: 'Empresa', gen: () => `${pick(COMPANY)} ${pick(['Ltda', 'S.A.', 'Tecnologia', 'Digital'])}` },
-  randomJobTitle: { label: 'Cargo', gen: () => pick(JOB) },
-  randomWord: { label: 'Palavra', gen: () => pick(WORDS) },
-  randomWords: { label: 'Palavras', gen: () => words(int(2, 5)) },
-  randomLoremSentence: { label: 'Frase', gen: sentence },
-  randomLoremParagraph: { label: 'Parágrafo', gen: () => Array.from({ length: int(3, 5) }, sentence).join(' ') },
-  randomColor: { label: 'Cor', gen: () => pick(COLOR) },
-  randomHexColor: { label: 'Cor hex', gen: () => `#${hex(6)}` },
-  randomIP: { label: 'IPv4', gen: () => `${int(1, 254)}.${int(0, 255)}.${int(0, 255)}.${int(1, 254)}` },
-  randomUrl: { label: 'URL', gen: () => `https://${pick(['www', 'api', 'app'])}.${pick(DOMAIN)}/${pick(WORDS)}` },
-  randomDatePast: { label: 'Data passada', gen: () => day(-1) },
-  randomDateFuture: { label: 'Data futura', gen: () => day(1) },
-  randomCPF: { label: 'CPF (válido)', gen: cpf },
-  timestamp: { label: 'Timestamp unix', gen: () => String(Math.floor(Date.now() / 1000)) },
-  isoTimestamp: { label: 'Data ISO', gen: () => new Date().toISOString() }
+  randomUUID: { label: tk('UUID'), gen: uuid },
+  randomFirstName: { label: tk('Nome§faker'), gen: () => pick(FIRST) },
+  randomLastName: { label: tk('Sobrenome'), gen: () => pick(LAST) },
+  randomFullName: { label: tk('Nome completo'), gen: () => `${pick(FIRST)} ${pick(LAST)}` },
+  randomUserName: { label: tk('Usuário'), gen: () => `${slug(pick(FIRST))}${int(1, 999)}` },
+  randomEmail: { label: tk('E-mail'), gen: () => `${slug(pick(FIRST))}.${slug(pick(LAST))}${int(1, 99)}@${pick(DOMAIN)}` },
+  randomPassword: { label: tk('Senha'), gen: () => `${alnum(10)}${pick(['!', '#', '@', '$'])}${int(10, 99)}` },
+  randomPhoneNumber: { label: tk('Telefone'), gen: () => `(${int(11, 99)}) 9${int(1000, 9999)}-${int(1000, 9999)}` },
+  randomInt: { label: tk('Inteiro (0–1000)'), gen: () => String(int(0, 1000)) },
+  randomBoolean: { label: tk('Booleano'), gen: () => String(Math.random() < 0.5) },
+  randomPrice: { label: tk('Preço'), gen: () => (int(100, 99999) / 100).toFixed(2) },
+  randomAlphaNumeric: { label: tk('Caractere alfanumérico'), gen: () => alnum(1) },
+  randomCity: { label: tk('Cidade'), gen: () => pick(CITY) },
+  randomCountry: { label: tk('País'), gen: () => pick(COUNTRY) },
+  randomStreetAddress: { label: tk('Endereço'), gen: () => `${pick(STREET)}, ${int(1, 3000)}` },
+  randomCompanyName: { label: tk('Empresa'), gen: () => `${pick(COMPANY)} ${pick(['Ltda', 'S.A.', 'Tecnologia', 'Digital'])}` },
+  randomJobTitle: { label: tk('Cargo'), gen: () => pick(JOB) },
+  randomWord: { label: tk('Palavra'), gen: () => pick(WORDS) },
+  randomWords: { label: tk('Palavras'), gen: () => words(int(2, 5)) },
+  randomLoremSentence: { label: tk('Frase'), gen: sentence },
+  randomLoremParagraph: { label: tk('Parágrafo'), gen: () => Array.from({ length: int(3, 5) }, sentence).join(' ') },
+  randomColor: { label: tk('Cor'), gen: () => pick(COLOR) },
+  randomHexColor: { label: tk('Cor hex'), gen: () => `#${hex(6)}` },
+  randomIP: { label: tk('IPv4'), gen: () => `${int(1, 254)}.${int(0, 255)}.${int(0, 255)}.${int(1, 254)}` },
+  randomUrl: { label: tk('URL'), gen: () => `https://${pick(['www', 'api', 'app'])}.${pick(DOMAIN)}/${pick(WORDS)}` },
+  randomDatePast: { label: tk('Data passada'), gen: () => day(-1) },
+  randomDateFuture: { label: tk('Data futura'), gen: () => day(1) },
+  randomCPF: { label: tk('CPF (válido)'), gen: cpf },
+  timestamp: { label: tk('Timestamp unix'), gen: () => String(Math.floor(Date.now() / 1000)) },
+  isoTimestamp: { label: tk('Data ISO'), gen: () => new Date().toISOString() }
 }
 
 /** CPF com dígitos verificadores válidos (só pra teste) */
@@ -72,6 +74,6 @@ function cpf(): string {
 
 export function fake(name: string): string {
   const f = FAKER[name.replace(/^\$/, '')]
-  if (!f) throw new Error(`faker "${name}" não existe (ex.: randomEmail, randomFullName, randomUUID)`)
+  if (!f) throw new Error(t('faker "{name}" não existe (ex.: randomEmail, randomFullName, randomUUID)', { name }))
   return f.gen()
 }

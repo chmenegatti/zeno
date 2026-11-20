@@ -10,6 +10,7 @@ import { buildGql, operationNames, parseGql, type GqlBody } from '@shared/graphq
 import { api, useStore } from '../state'
 import { CodeEditor, type TagSupport } from './CodeEditor'
 import { Select } from './Select'
+import { t } from '@shared/i18n'
 
 export interface GraphQLCtx {
   wsId: string
@@ -24,9 +25,9 @@ const cache = new Map<string, SchemaState>()
 const listeners = new Set<() => void>()
 const keyOf = (c: GraphQLCtx): string => `${c.wsId}\n${c.envId ?? ''}\n${c.req.url}`
 
-function asJSON(t: string): unknown {
+function asJSON(s: string): unknown {
   try {
-    return JSON.parse(t)
+    return JSON.parse(s)
   } catch {
     return null
   }
@@ -42,7 +43,7 @@ async function fetchSchema(c: GraphQLCtx, interactive: boolean): Promise<SchemaS
       const data = asJSON(r.body) as { data?: IntrospectionQuery; errors?: { message?: string }[] } | null
       if (data?.data?.__schema) st = { schema: buildClientSchema(data.data), at: Date.now() }
       else if (data?.errors?.length) st = { error: data.errors.map((e) => e.message ?? '').join('; ') || `HTTP ${r.status}`, at: Date.now() }
-      else st = { error: `HTTP ${r.status}: resposta não é introspecção GraphQL`, at: Date.now() }
+      else st = { error: t('HTTP {status}: resposta não é introspecção GraphQL', { status: r.status }), at: Date.now() }
     }
   } catch (e) {
     st = { error: e instanceof Error ? e.message : String(e), at: Date.now() }
@@ -70,9 +71,9 @@ export default function GraphQLBody({ text, onChange, ctx, tags }: { text: strin
   const set = (patch: Partial<GqlBody>): void => {
     const next = { ...g, ...patch }
     setG(next)
-    const t = buildGql(next)
-    lastText.current = t
-    onChange(t)
+    const out = buildGql(next)
+    lastText.current = out
+    onChange(out)
   }
 
   const key = keyOf(ctx)
@@ -109,7 +110,7 @@ export default function GraphQLBody({ text, onChange, ctx, tags }: { text: strin
     try {
       set({ query: print(parse(g.query)) })
     } catch (e) {
-      useStore.getState().notify(`Consulta inválida: ${e instanceof Error ? e.message.split('\n')[0] : e}`)
+      useStore.getState().notify(t('Consulta inválida: {error}', { error: e instanceof Error ? e.message.split('\n')[0] : String(e) }))
     }
   }
 
@@ -117,25 +118,25 @@ export default function GraphQLBody({ text, onChange, ctx, tags }: { text: strin
     <div className="flex min-h-0 flex-1 flex-col border-t border-line">
       <div className="flex flex-wrap items-center gap-2 px-2 py-1 text-[11.5px]">
         <span className={schema ? 'text-tgreen' : st?.error ? 'text-tred' : 'text-faint'} title={st?.error}>
-          {busy ? 'buscando schema…' : schema ? `schema: ${typeCount(schema)} tipos` : st?.error ? `sem schema: ${st.error.slice(0, 80)}` : 'sem schema'}
+          {busy ? t('buscando schema…') : schema ? t('schema: {n} tipos', { n: typeCount(schema) }) : st?.error ? t('sem schema: {error}', { error: st.error.slice(0, 80) }) : t('sem schema')}
         </span>
-        <button className="btn btn-ghost px-2 py-0.5 text-[11.5px]" disabled={busy || !ctx.req.url.trim()} title="Manda a consulta de introspecção pra URL do request (com headers e auth), sem gravar no histórico" onClick={() => void load(true)}>
-          {schema ? 'Atualizar schema' : 'Buscar schema'}
+        <button className="btn btn-ghost px-2 py-0.5 text-[11.5px]" disabled={busy || !ctx.req.url.trim()} title={t('Manda a consulta de introspecção pra URL do request (com headers e auth), sem gravar no histórico')} onClick={() => void load(true)}>
+          {schema ? t('Atualizar schema') : t('Buscar schema')}
         </button>
         <div className="flex-1" />
         {(ops.length > 1 || g.operationName) && (
           <label className="flex items-center gap-1.5 text-dim">
-            operação
+            {t('operação')}
             <Select className="field py-0.5 text-[11.5px]" value={g.operationName} onChange={(v) => set({ operationName: v })}>
-              <option value="">(automática)</option>
+              <option value="">{t('(automática)')}</option>
               {[...new Set([...ops, ...(g.operationName ? [g.operationName] : [])])].map((o) => (
                 <option key={o} value={o}>{o}</option>
               ))}
             </Select>
           </label>
         )}
-        <button className="btn btn-ghost px-2 py-0.5 text-[11.5px]" title="Reorganiza a consulta (remove comentários)" onClick={format}>
-          Formatar
+        <button className="btn btn-ghost px-2 py-0.5 text-[11.5px]" title={t('Reorganiza a consulta (remove comentários)')} onClick={format}>
+          {t('Formatar')}
         </button>
       </div>
       <div className="min-h-0 flex-[3] border-t border-line">
@@ -144,14 +145,14 @@ export default function GraphQLBody({ text, onChange, ctx, tags }: { text: strin
           onChange={(query) => set({ query })}
           tags={tags}
           extra={extra}
-          placeholder="query { … }  (Ctrl+Espaço sugere campos do schema)"
+          placeholder={t('query { … }  (Ctrl+Espaço sugere campos do schema)')}
           onView={(v) => {
             view.current = v
             if (schema) updateSchema(v, schema)
           }}
         />
       </div>
-      <div className="border-t border-line px-2 py-1 text-[11.5px] text-dim">Variáveis (JSON)</div>
+      <div className="border-t border-line px-2 py-1 text-[11.5px] text-dim">{t('Variáveis (JSON)')}</div>
       <div className="min-h-0 flex-[2] border-t border-line">
         <CodeEditor value={g.variables} onChange={(variables) => set({ variables })} lang="json" tags={tags} placeholder='{ "id": 1 }' />
       </div>

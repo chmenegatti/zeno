@@ -5,6 +5,7 @@ import { ASSERT_OPS, ASSERT_SOURCES, type Assertion, type RequestDoc, type RunRe
 import { activeEnvId, api, useStore } from '../state'
 import { MethodBadge, Modal } from './ui'
 import { Select } from './Select'
+import { t } from '@shared/i18n'
 
 // ---------- asserções ----------
 
@@ -34,30 +35,30 @@ export function AssertionsEditor({ list, onChange }: { list: Assertion[]; onChan
   return (
     <div className="flex flex-col gap-2 p-3 text-[12.5px]">
       <p className="text-[11.5px] text-faint">
-        Checagens da resposta, sem programar. Rodam depois dos scripts e aparecem em <b>Testes</b>; o valor aceita <code>{'{{ variáveis }}'}</code>. JSONPath: <code>$.user.id</code>, <code>$.items[0]</code>, <code>$.items[*].id</code>, <code>$..id</code>.
+        {t('Checagens da resposta, sem programar. Rodam depois dos scripts e aparecem em')} <b>{t('Testes')}</b>; {t('o valor aceita')} <code>{`{{ ${t('variáveis')} }}`}</code>. JSONPath: <code>$.user.id</code>, <code>$.items[0]</code>, <code>$.items[*].id</code>, <code>$..id</code>.
       </p>
       {list.map((a, i) => (
         <div key={i} className={`group flex items-center gap-1.5 ${a.enabled ? '' : 'opacity-45'}`}>
-          <input type="checkbox" checked={a.enabled} onChange={(e) => set(i, { enabled: e.target.checked })} title="Ativa" />
+          <input type="checkbox" checked={a.enabled} onChange={(e) => set(i, { enabled: e.target.checked })} title={t('Ativa')} />
           <Select className="field w-[112px] py-1" value={a.source} onChange={(v) => set(i, { source: v as Assertion['source'] })}>
-            {ASSERT_SOURCES.map((s) => <option key={s} value={s}>{SOURCE_LABEL[s]}</option>)}
+            {ASSERT_SOURCES.map((s) => <option key={s} value={s}>{t(SOURCE_LABEL[s])}</option>)}
           </Select>
           {(a.source === 'header' || a.source === 'json') && (
-            <input className="field min-w-0 flex-1 font-mono text-[12px]" placeholder={a.source === 'json' ? '$.campo' : 'Content-Type'} value={a.path ?? ''} onChange={(e) => set(i, { path: e.target.value })} />
+            <input className="field min-w-0 flex-1 font-mono text-[12px]" placeholder={a.source === 'json' ? `$.${t('campo')}` : 'Content-Type'} value={a.path ?? ''} onChange={(e) => set(i, { path: e.target.value })} />
           )}
           <Select className="field w-[112px] py-1" value={a.op} onChange={(v) => set(i, { op: v as Assertion['op'] })}>
-            {OPS_FOR[a.source].map((o) => <option key={o} value={o}>{OP_LABEL[o]}</option>)}
+            {OPS_FOR[a.source].map((o) => <option key={o} value={o}>{t(OP_LABEL[o])}</option>)}
           </Select>
           {NO_VALUE.includes(a.op) ? (
             <span className="min-w-0 flex-1" />
           ) : (
-            <input className="field min-w-0 flex-1 font-mono text-[12px]" placeholder={a.op === 'matches' ? 'regex' : 'valor'} value={a.value ?? ''} onChange={(e) => set(i, { value: e.target.value })} />
+            <input className="field min-w-0 flex-1 font-mono text-[12px]" placeholder={a.op === 'matches' ? 'regex' : t('valor')} value={a.value ?? ''} onChange={(e) => set(i, { value: e.target.value })} />
           )}
-          <button className="btn btn-ghost px-1.5 py-0.5 opacity-0 group-hover:opacity-100" title="Remover" onClick={() => onChange(list.filter((_, j) => j !== i))}>✕</button>
+          <button className="btn btn-ghost px-1.5 py-0.5 opacity-0 group-hover:opacity-100" title={t('Remover')} onClick={() => onChange(list.filter((_, j) => j !== i))}>✕</button>
         </div>
       ))}
       <div>
-        <button className="btn btn-ghost text-[12px]" onClick={() => onChange([...list, { ...NEW, ...(list.some((a) => a.source === 'status') ? { source: 'json', path: '$.', op: 'exists', value: undefined } : {}) }])}>＋ Asserção</button>
+        <button className="btn btn-ghost text-[12px]" onClick={() => onChange([...list, { ...NEW, ...(list.some((a) => a.source === 'status') ? { source: 'json', path: '$.', op: 'exists', value: undefined } : {}) }])}>＋ {t('Asserção')}</button>
       </div>
     </div>
   )
@@ -69,7 +70,7 @@ function requestsOf(nodes: TreeNode[]): RequestDoc[] {
   return sortNodes([...nodes]).flatMap((n) => (n.kind === 'request' ? [n] : requestsOf(n.children)))
 }
 
-const stepOk = (s: RunStep): boolean => !s.error && s.tests.every((t) => t.ok)
+const stepOk = (s: RunStep): boolean => !s.error && s.tests.every((x) => x.ok)
 
 /** id = pasta, ou o workspace inteiro */
 export function RunModal({ ws, folderId, onClose }: { ws: Workspace; folderId: string | null; onClose: () => void }) {
@@ -95,8 +96,8 @@ export function RunModal({ ws, folderId, onClose }: { ws: Workspace; folderId: s
 
   useEffect(
     () =>
-      api.onRunStep((step, _i, t) => {
-        setTotal(t)
+      api.onRunStep((step, _i, n) => {
+        setTotal(n)
         setSteps((s) => [...s, step])
       }),
     []
@@ -131,7 +132,7 @@ export function RunModal({ ws, folderId, onClose }: { ws: Workspace; folderId: s
   const saveJUnit = async () => {
     if (!report) return
     const file = await useStore.getState().run(api.runSaveJUnit(report))
-    if (file) useStore.getState().notify(`relatório salvo em ${file}`)
+    if (file) useStore.getState().notify(t('relatório salvo em {file}', { file }))
   }
 
   const passed = steps.filter(stepOk).length
@@ -141,60 +142,60 @@ export function RunModal({ ws, folderId, onClose }: { ws: Workspace; folderId: s
   const multiIt = steps.some((s) => s.iteration > 1)
 
   return (
-    <Modal title={`Rodar · ${name}`} onClose={close} wide>
+    <Modal title={t('Rodar · {name}', { name })} onClose={close} wide>
       <div className="flex flex-col gap-3 text-[12.5px]">
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-[11px] text-faint">Ambiente</span>
+            <span className="text-[11px] text-faint">{t('Ambiente')}</span>
             <Select className="field py-1" value={envId ?? ''} disabled={running} onChange={(v) => setEnvId(v || null)}>
-              <option value="">Só base</option>
+              <option value="">{t('Só base')}</option>
               {subs.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </Select>
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-[11px] text-faint">Iterações</span>
+            <span className="text-[11px] text-faint">{t('Iterações')}</span>
             <input type="number" min={1} className="field w-[80px] py-1" value={iterations} disabled={running} onChange={(e) => setIterations(Math.max(1, Number(e.target.value) || 1))} />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-[11px] text-faint">Atraso (ms)</span>
+            <span className="text-[11px] text-faint">{t('Atraso (ms)')}</span>
             <input type="number" min={0} step={100} className="field w-[90px] py-1" value={delayMs} disabled={running} onChange={(e) => setDelayMs(Math.max(0, Number(e.target.value) || 0))} />
           </label>
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] text-faint">Dados (CSV/JSON)</span>
+            <span className="text-[11px] text-faint">{t('Dados (CSV/JSON)')}</span>
             <div className="flex items-center gap-1">
-              <button className="btn py-1" disabled={running} onClick={pickData} title="Cada linha vira variáveis numa iteração">{data ? `${data.name} · ${data.rows.length} linha(s)` : 'Escolher…'}</button>
-              {data && <button className="btn btn-ghost px-1.5 py-1" disabled={running} onClick={() => setData(null)} title="Tirar dados">✕</button>}
+              <button className="btn py-1" disabled={running} onClick={pickData} title={t('Cada linha vira variáveis numa iteração')}>{data ? `${data.name} · ${t('{n} linha(s)', { n: data.rows.length })}` : t('Escolher…')}</button>
+              {data && <button className="btn btn-ghost px-1.5 py-1" disabled={running} onClick={() => setData(null)} title={t('Tirar dados')}>✕</button>}
             </div>
           </div>
           <label className="mb-1.5 flex items-center gap-1.5 text-dim">
-            <input type="checkbox" checked={bail} disabled={running} onChange={(e) => setBail(e.target.checked)} /> parar na 1ª falha
+            <input type="checkbox" checked={bail} disabled={running} onChange={(e) => setBail(e.target.checked)} /> {t('parar na 1ª falha')}
           </label>
           <div className="ml-auto flex gap-2">
             {running ? (
-              <button className="btn" onClick={() => api.runCancel()}>Parar</button>
+              <button className="btn" onClick={() => api.runCancel()}>{t('Parar')}</button>
             ) : (
-              <button autoFocus className="btn btn-accent" disabled={!reqs.length} onClick={start}>{steps.length ? 'Rodar de novo' : `Rodar ${reqs.length} request(s)`}</button>
+              <button autoFocus className="btn btn-accent" disabled={!reqs.length} onClick={start}>{steps.length ? t('Rodar de novo') : t('Rodar {n} request(s)', { n: reqs.length })}</button>
             )}
           </div>
         </div>
         {data && iterations > 1 && iterations !== data.rows.length && (
-          <p className="text-[11.5px] text-faint">{iterations} iterações com {data.rows.length} linha(s): as linhas se repetem em ciclo.</p>
+          <p className="text-[11.5px] text-faint">{t('{n} iterações com {rows} linha(s): as linhas se repetem em ciclo.', { n: iterations, rows: data.rows.length })}</p>
         )}
 
         {(steps.length > 0 || running) && (
           <div className="flex items-center gap-3 border-t border-line pt-3">
-            <span className="font-semibold">{running ? `Rodando ${steps.length}/${total}…` : report?.cancelled ? 'Parado' : 'Concluído'}</span>
+            <span className="font-semibold">{running ? t('Rodando {done}/{total}…', { done: steps.length, total }) : report?.cancelled ? t('Parado') : t('Concluído')}</span>
             <span className="text-tgreen">{passed} ok</span>
-            <span className={failed ? 'text-tpink' : 'text-faint'}>{failed} com falha</span>
-            <span className="text-faint">{tests.filter((t) => t.ok).length}/{tests.length} testes</span>
+            <span className={failed ? 'text-tpink' : 'text-faint'}>{t('{n} com falha', { n: failed })}</span>
+            <span className="text-faint">{t('{ok}/{n} testes', { ok: tests.filter((x) => x.ok).length, n: tests.length })}</span>
             {report && <span className="text-faint">{report.totalMs} ms</span>}
             <div className="ml-auto flex items-center gap-3">
               {failed > 0 && (
                 <label className="flex items-center gap-1 text-[11.5px] text-dim">
-                  <input type="checkbox" checked={onlyFail} onChange={(e) => setOnlyFail(e.target.checked)} /> só falhas
+                  <input type="checkbox" checked={onlyFail} onChange={(e) => setOnlyFail(e.target.checked)} /> {t('só falhas')}
                 </label>
               )}
-              {report && <button className="btn py-1" onClick={saveJUnit}>Exportar JUnit…</button>}
+              {report && <button className="btn py-1" onClick={saveJUnit}>{t('Exportar JUnit…')}</button>}
             </div>
           </div>
         )}
@@ -211,10 +212,10 @@ export function RunModal({ ws, folderId, onClose }: { ws: Workspace; folderId: s
                 <li key={r.id} className="flex items-center gap-2">
                   <MethodBadge method={r.method} className="w-9" />
                   <span className="truncate">{r.name}</span>
-                  {(r.assertions?.some((a) => a.enabled) || r.scripts?.post?.trim()) && <span className="text-[10.5px] text-faint">testes</span>}
+                  {(r.assertions?.some((a) => a.enabled) || r.scripts?.post?.trim()) && <span className="text-[10.5px] text-faint">{t('testes')}</span>}
                 </li>
               ))}
-              {!reqs.length && <li className="text-faint">Nenhum request aqui.</li>}
+              {!reqs.length && <li className="text-faint">{t('Nenhum request aqui.')}</li>}
             </ul>
           )}
           {shown.map(([s, i]) => {
@@ -222,7 +223,7 @@ export function RunModal({ ws, folderId, onClose }: { ws: Workspace; folderId: s
             const expanded = toggled.has(i) !== !ok
             return (
               <div key={i} className="border-b border-line/60 py-1">
-                <button className="flex w-full items-center gap-2 text-left" onClick={() => setToggled((t) => { const n = new Set(t); if (n.has(i)) n.delete(i); else n.add(i); return n })}>
+                <button className="flex w-full items-center gap-2 text-left" onClick={() => setToggled((cur) => { const n = new Set(cur); if (n.has(i)) n.delete(i); else n.add(i); return n })}>
                   <span className={`w-4 shrink-0 font-semibold ${ok ? 'text-tgreen' : 'text-tpink'}`}>{ok ? '✓' : '✕'}</span>
                   <MethodBadge method={s.method} className="w-9 shrink-0" />
                   <span className="min-w-0 flex-1 truncate">
@@ -230,8 +231,8 @@ export function RunModal({ ws, folderId, onClose }: { ws: Workspace; folderId: s
                     {s.name}
                     {multiIt && <span className="ml-1 text-faint">#{s.iteration}</span>}
                   </span>
-                  {s.missing && <span className="text-[11px] text-torange" title={`variável sem valor: ${s.missing.join(', ')}`}>⚠</span>}
-                  {s.tests.length > 0 && <span className={`text-[11px] ${s.tests.every((t) => t.ok) ? 'text-faint' : 'text-tpink'}`}>{s.tests.filter((t) => t.ok).length}/{s.tests.length}</span>}
+                  {s.missing && <span className="text-[11px] text-torange" title={t('variável sem valor: {names}', { names: s.missing.join(', ') })}>⚠</span>}
+                  {s.tests.length > 0 && <span className={`text-[11px] ${s.tests.every((x) => x.ok) ? 'text-faint' : 'text-tpink'}`}>{s.tests.filter((x) => x.ok).length}/{s.tests.length}</span>}
                   <span className={`w-10 text-right font-mono text-[11.5px] ${!s.status ? 'text-tpink' : s.status < 400 ? 'text-tgreen' : 'text-tpink'}`}>{s.status || '—'}</span>
                   <span className="w-16 text-right font-mono text-[11px] text-faint">{s.timeMs} ms</span>
                 </button>
@@ -239,13 +240,13 @@ export function RunModal({ ws, folderId, onClose }: { ws: Workspace; folderId: s
                   <div className="ml-6 mt-1 flex flex-col gap-0.5 text-[12px]">
                     {s.error && <div className="font-mono text-[11.5px] text-tpink select-text">{s.error}</div>}
                     {s.warnings?.map((w) => <div key={w} className="text-[11.5px] text-torange">{w}</div>)}
-                    {s.missing && <div className="text-[11.5px] text-torange">variável sem valor: {s.missing.join(', ')}</div>}
-                    {s.tests.map((t, j) => (
+                    {s.missing && <div className="text-[11.5px] text-torange">{t('variável sem valor: {names}', { names: s.missing.join(', ') })}</div>}
+                    {s.tests.map((x, j) => (
                       <div key={j} className="flex gap-2">
-                        <span className={t.ok ? 'text-tgreen' : 'text-tpink'}>{t.ok ? '✓' : '✕'}</span>
+                        <span className={x.ok ? 'text-tgreen' : 'text-tpink'}>{x.ok ? '✓' : '✕'}</span>
                         <span className="min-w-0">
-                          {t.name}
-                          {t.error && <span className="ml-2 font-mono text-[11.5px] text-tpink select-text">{t.error}</span>}
+                          {x.name}
+                          {x.error && <span className="ml-2 font-mono text-[11.5px] text-tpink select-text">{x.error}</span>}
                         </span>
                       </div>
                     ))}

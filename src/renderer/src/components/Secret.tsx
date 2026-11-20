@@ -3,6 +3,7 @@ import { isEncrypted } from '@shared/secret'
 import type { VaultStatus } from '@shared/types'
 import { api, useStore } from '../state'
 import { TemplateInput } from './Tags'
+import { t } from '@shared/i18n'
 
 export function LockIcon({ size = 11 }: { size?: number }) {
   return (
@@ -31,15 +32,15 @@ export function SecretInput({ value, onChange, placeholder }: { value: string; o
   if (isEncrypted(value as unknown)) {
     return (
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <span className="field flex min-w-0 flex-1 items-center gap-1.5 text-tpurple" title="Valor cifrado no cofre (AES-256-GCM, chave no chaveiro do sistema)">
+        <span className="field flex min-w-0 flex-1 items-center gap-1.5 text-tpurple" title={t('Valor cifrado no cofre (AES-256-GCM, chave no chaveiro do sistema)')}>
           <LockIcon />
-          {revealed !== null ? <code className="truncate text-ink select-text">{revealed}</code> : <span className="text-[12px]">criptografado</span>}
+          {revealed !== null ? <code className="truncate text-ink select-text">{revealed}</code> : <span className="text-[12px]">{t('criptografado')}</span>}
         </span>
         <button type="button" className="btn btn-ghost px-2 py-1 text-[12px]" onClick={async () => setRevealed(revealed === null ? ((await run(api.vaultReveal(value))) ?? null) : null)}>
-          {revealed === null ? 'mostrar' : 'esconder'}
+          {revealed === null ? t('mostrar') : t('esconder')}
         </button>
-        <button type="button" className="btn btn-ghost px-2 py-1 text-[12px]" onClick={() => onChange('')} title="Apagar e digitar outro valor">
-          trocar
+        <button type="button" className="btn btn-ghost px-2 py-1 text-[12px]" onClick={() => onChange('')} title={t('Apagar e digitar outro valor')}>
+          {t('trocar')}
         </button>
       </div>
     )
@@ -51,7 +52,7 @@ export function SecretInput({ value, onChange, placeholder }: { value: string; o
       <button
         type="button"
         className="btn btn-ghost px-2 py-1 text-tpurple"
-        title="Criptografar no cofre"
+        title={t('Criptografar no cofre')}
         disabled={!value || value.includes('{{') || value.includes('{%')}
         onClick={async () => {
           const tok = await run(api.vaultEncrypt(value))

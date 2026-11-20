@@ -11,9 +11,9 @@ describe('filtro da resposta', () => {
     expect(filterJson(body, '$..id')).toMatchObject({ count: 2 })
   })
   it('erros não quebram', () => {
-    expect(filterJson(body, '$.nada')).toEqual({ error: 'nada encontrado' })
-    expect(filterJson(body, '$.a[')).toMatchObject({ error: expect.stringContaining('inválido') })
-    expect(filterJson('<xml/>', '$.a')).toEqual({ error: 'o body não é JSON válido' })
+    expect(filterJson(body, '$.nada')).toEqual({ error: 'nothing found' })
+    expect(filterJson(body, '$.a[')).toMatchObject({ error: expect.stringContaining('Invalid JSONPath') })
+    expect(filterJson('<xml/>', '$.a')).toEqual({ error: 'the body is not valid JSON' })
   })
   it('caminho na posição do cursor', () => {
     const at = (needle: string, off = 1) => jsonPathAt(body, body.indexOf(needle) + off)

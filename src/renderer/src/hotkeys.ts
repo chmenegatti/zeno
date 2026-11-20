@@ -1,5 +1,6 @@
 // Atalhos globais (padrão do Insomnia) e preferências de interface: zoom, fontes, lateral.
 
+import { t } from '@shared/i18n'
 import { EditorView } from '@uiw/react-codemirror'
 import { beautifyJson } from '@shared/format'
 import { findHotkeys, type HotkeyDef } from '@shared/hotkeys'
@@ -59,7 +60,7 @@ function zoomStep(dir: 1 | -1): void {
 function editorFont(delta: number): void {
   const size = clamp((ui().editorFontSize ?? EDITOR_FONT.def) + delta, EDITOR_FONT)
   setUi({ editorFontSize: size })
-  useStore.getState().notify(`Fonte dos editores ${size}px`)
+  useStore.getState().notify(t('Fonte dos editores {size}px', { size }))
 }
 
 /** foca um alvo marcado com data-hk (o próprio elemento ou o 1º focável dentro) */
@@ -153,12 +154,12 @@ const ACTIONS: Record<string, () => void> = {
     const pinned = s.app.pinned ?? []
     const on = !pinned.includes(id)
     s.setApp({ pinned: on ? [...pinned, id] : pinned.filter((x) => x !== id) })
-    s.notify(on ? `"${found.node.name}" fixado` : `"${found.node.name}" desafixado`)
+    s.notify(on ? t('"{name}" fixado', { name: found.node.name }) : t('"{name}" desafixado', { name: found.node.name }))
   },
   showValues: () => {
     const on = !useStore.getState().showValues
     useStore.setState({ showValues: on })
-    useStore.getState().notify(on ? 'Variáveis mostrando o valor (Alt+Shift+U volta)' : 'Variáveis mostrando o nome')
+    useStore.getState().notify(on ? t('Variáveis mostrando o valor (Alt+Shift+U volta)') : t('Variáveis mostrando o nome'))
   }
 }
 
@@ -173,7 +174,7 @@ function beautifyFocused(): void {
     const out = beautifyJson(text)
     if (out !== text) view.dispatch({ changes: { from: 0, to: text.length, insert: out } })
   } catch {
-    useStore.getState().notify('Só dá pra formatar JSON válido')
+    useStore.getState().notify(t('Só dá pra formatar JSON válido'))
   }
 }
 
@@ -193,14 +194,14 @@ export const recording = { on: false }
 function onKey(e: KeyboardEvent): void {
   if (recording.on) return
   const s = useStore.getState()
-  const t = e.target as HTMLElement | null
-  const inEditor = !!t?.closest('.cm-editor')
+  const el = e.target as HTMLElement | null
+  const inEditor = !!el?.closest('.cm-editor')
   const allowed = (hk: HotkeyDef): boolean =>
     !(e.repeat && !/^(zoom|editorFont)/.test(hk.id)) && // segurar a tecla repete só zoom/fonte
     (hk.global || (!s.modal && !s.tagEdit)) &&
     !(hk.notInEditor && inEditor) &&
     !(hk.onlyInEditor && !inEditor) &&
-    !(hk.notInText && !!t?.matches('input,textarea,select,[role="combobox"],[contenteditable="true"]'))
+    !(hk.notInText && !!el?.matches('input,textarea,select,[role="combobox"],[contenteditable="true"]'))
   const keys = { key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey, altGraph: e.getModifierState?.('AltGraph') }
   const hk = findHotkeys(keys, ui().hotkeys).find(allowed)
   if (!hk) return

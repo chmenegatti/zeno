@@ -6,6 +6,7 @@ import { runAction, setUi } from '../hotkeys'
 import { DEFAULT_THEME, THEMES } from '@shared/themes'
 import { Kbd } from './Prefs'
 import { MethodBadge } from './ui'
+import { t } from '@shared/i18n'
 
 interface Command {
   id: string
@@ -27,23 +28,23 @@ function useCommands(): Command[] {
   return useMemo(() => {
     const b = bindings(app.ui?.hotkeys)
     const { openModal, setApp } = useStore.getState()
-    const out: Command[] = HOTKEYS.filter((h) => !SKIP.has(h.id)).map((h) => ({ id: h.id, label: h.label, keys: b[h.id], run: () => runAction(h.id) }))
-    out.push({ id: 'import', label: 'Importar (Insomnia, OpenAPI, Postman)', run: () => openModal({ kind: 'import' }) })
+    const out: Command[] = HOTKEYS.filter((h) => !SKIP.has(h.id)).map((h) => ({ id: h.id, label: t(h.label), keys: b[h.id], run: () => runAction(h.id) }))
+    out.push({ id: 'import', label: t('Importar (Insomnia, OpenAPI, Postman)'), run: () => openModal({ kind: 'import' }) })
     for (const th of THEMES)
       if (th.id !== (app.ui?.theme ?? DEFAULT_THEME))
-        out.push({ id: `theme:${th.id}`, label: `Tema: ${th.name}`, hint: th.dark ? 'escuro' : 'claro', run: () => setUi({ theme: th.id === DEFAULT_THEME ? undefined : th.id }) })
-    out.push({ id: 'github', label: 'GitHub: salvar ou baixar coleções', hint: 'repositório privado', run: () => openModal({ kind: 'github' }) })
-    out.push({ id: 'plugins', label: 'Plugins', hint: 'ligar, desligar, recarregar', run: () => openModal({ kind: 'plugins' }) })
+        out.push({ id: `theme:${th.id}`, label: t('Tema: {name}', { name: th.name }), hint: th.dark ? t('escuro') : t('claro'), run: () => setUi({ theme: th.id === DEFAULT_THEME ? undefined : th.id }) })
+    out.push({ id: 'github', label: t('GitHub: salvar ou baixar coleções'), hint: t('repositório privado'), run: () => openModal({ kind: 'github' }) })
+    out.push({ id: 'plugins', label: 'Plugins', hint: t('ligar, desligar, recarregar'), run: () => openModal({ kind: 'plugins' }) })
     if (ws) {
-      out.push({ id: 'run', label: 'Rodar workspace', run: () => openModal({ kind: 'run', id: ws.id }) })
+      out.push({ id: 'run', label: t('Rodar workspace'), run: () => openModal({ kind: 'run', id: ws.id }) })
       out.push({ id: 'git', label: 'Git', run: () => openModal({ kind: 'git', id: ws.id }) })
       const envs = ws.environments.filter((e) => e.parentId !== null)
       const cur = app.activeEnv[ws.id] ?? null
-      for (const e of [{ id: null, name: 'Só base' }, ...envs])
-        if (e.id !== cur) out.push({ id: `env:${e.id}`, label: `Ambiente: ${e.name}`, hint: 'trocar ambiente', run: () => setApp({ activeEnv: { ...app.activeEnv, [ws.id]: e.id } }) })
+      for (const e of [{ id: null, name: t('Só base') }, ...envs])
+        if (e.id !== cur) out.push({ id: `env:${e.id}`, label: t('Ambiente: {name}', { name: e.name }), hint: t('trocar ambiente'), run: () => setApp({ activeEnv: { ...app.activeEnv, [ws.id]: e.id } }) })
     }
     for (const w of workspaces)
-      if (w.id !== ws?.id) out.push({ id: `ws:${w.id}`, label: `Workspace: ${w.name}`, hint: 'alternar workspace', run: () => setApp({ activeWorkspaceId: w.id, activeRequestId: undefined }) })
+      if (w.id !== ws?.id) out.push({ id: `ws:${w.id}`, label: `Workspace: ${w.name}`, hint: t('alternar workspace'), run: () => setApp({ activeWorkspaceId: w.id, activeRequestId: undefined }) })
     return out
   }, [workspaces, app, ws])
 }
@@ -109,12 +110,12 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         <input
           autoFocus
           className="border-b border-line bg-transparent px-4 py-3 text-[14px] outline-none placeholder:text-faint"
-          placeholder="Buscar request em todos os workspaces…   (> só comandos)"
+          placeholder={t('Buscar request em todos os workspaces…   (> só comandos)')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto py-1">
-          {!items.length && <p className="px-4 py-6 text-center text-faint">Nada encontrado</p>}
+          {!items.length && <p className="px-4 py-6 text-center text-faint">{t('Nada encontrado')}</p>}
           {items.map((it, i) => (
             <div key={it.kind === 'cmd' ? `c:${it.cmd.id}` : it.id}>
               {i === firstCmd && i > 0 && <div className="mx-3 my-1 border-t border-line" />}
@@ -144,10 +145,10 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
           ))}
         </div>
         <div className="flex gap-3 border-t border-line px-4 py-1.5 text-[11px] text-faint">
-          <span>↑↓ navegar</span>
-          <span>Enter abrir</span>
-          <span>Esc fechar</span>
-          <span className="flex-1 text-right">{index.length} requests em {workspaces.length} workspaces</span>
+          <span>{t('↑↓ navegar')}</span>
+          <span>{t('Enter abrir')}</span>
+          <span>{t('Esc fechar')}</span>
+          <span className="flex-1 text-right">{t('{r} requests em {w} workspaces', { r: index.length, w: workspaces.length })}</span>
         </div>
       </div>
     </div>

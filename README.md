@@ -33,7 +33,7 @@ Popular API clients keep piling on tabs, cloud accounts and ever more crowded sc
 - **Painless migration.** Imports Insomnia collections straight from its data folder, including environments and token chaining.
 - **Local-first.** No account, no telemetry, no mandatory sync.
 - **Lightweight.** Built in Go, rendering in the OS's own web view: an 8–24 MB package and about 220 MB of memory when idle.
-- **Your way.** 20 themes, Insomnia-compatible (and remappable) shortcuts, a command palette and Insomnia-format plugins.
+- **Your way.** English or Portuguese interface, 20 themes, Insomnia-compatible (and remappable) shortcuts, a command palette and Insomnia-format plugins.
 
 <table>
   <tr>

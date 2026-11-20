@@ -6,6 +6,7 @@ import { activeEnvId, activeWorkspace, api, useStore } from '../state'
 import { EditorState } from '@codemirror/state'
 import { CodeEditor } from './CodeEditor'
 import { Modal, Segmented } from './ui'
+import { t } from '@shared/i18n'
 
 const PICK_KEY = 'zeno:code-target'
 
@@ -72,7 +73,7 @@ export async function copyAsCurl(reqId: string): Promise<void> {
   const text = await run(codeSnippet(c.wsId, c.req, c.envId, 'curl', true))
   if (text === undefined) return
   await api.copyText(text)
-  notify('cURL copiado')
+  notify(t('cURL copiado'))
 }
 
 export function CodeModal({ reqId, onClose }: { reqId: string; onClose: () => void }) {
@@ -89,7 +90,7 @@ export function CodeModal({ reqId, onClose }: { reqId: string; onClose: () => vo
   const c = current(reqId)
   const req = c?.req
 
-  const target = targets.find((t) => t.key === pick.target) ?? targets[0]
+  const target = targets.find((x) => x.key === pick.target) ?? targets[0]
   const client = target?.clients.find((x) => x.key === pick.client) ?? target?.clients[0]
 
   useEffect(() => {
@@ -97,9 +98,9 @@ export function CodeModal({ reqId, onClose }: { reqId: string; onClose: () => vo
     // só vale a resposta da escolha atual (trocar rápido não deixa código velho na tela)
     let alive = true
     codeSnippet(c.wsId, c.req, c.envId, target.key, resolve, client.key).then(
-      (t) => {
+      (snippet) => {
         if (!alive) return
-        setCode(t)
+        setCode(snippet)
         setErr('')
       },
       (e) => alive && setErr(String(e).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''))
@@ -117,18 +118,18 @@ export function CodeModal({ reqId, onClose }: { reqId: string; onClose: () => vo
 
   if (!c) return null
   return (
-    <Modal title={`Gerar código · ${c.req.name}`} onClose={onClose} wide>
+    <Modal title={`${t('Gerar código')} · ${c.req.name}`} onClose={onClose} wide>
       <div className="flex h-[62vh] min-h-[340px] gap-3">
         {/* linguagens */}
         <div className="flex w-[190px] shrink-0 flex-col gap-0.5 overflow-y-auto pr-1">
-          {targets.map((t) => {
-            const [sig, color] = BADGE[t.key] ?? [t.key.slice(0, 2), 'var(--color-dim)']
-            const on = t.key === target?.key
+          {targets.map((tg) => {
+            const [sig, color] = BADGE[tg.key] ?? [tg.key.slice(0, 2), 'var(--color-dim)']
+            const on = tg.key === target?.key
             return (
               <button
-                key={t.key}
+                key={tg.key}
                 className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-left ${on ? 'bg-raised text-ink' : 'text-dim hover:bg-raised/60 hover:text-ink'}`}
-                onClick={() => setPick({ target: t.key, client: t.clients[0]?.key ?? '' })}
+                onClick={() => setPick({ target: tg.key, client: tg.clients[0]?.key ?? '' })}
               >
                 <span
                   className="flex h-6 w-8 shrink-0 items-center justify-center rounded-md font-mono text-[10.5px] font-bold"
@@ -136,8 +137,8 @@ export function CodeModal({ reqId, onClose }: { reqId: string; onClose: () => vo
                 >
                   {sig}
                 </span>
-                <span className="truncate">{t.title}</span>
-                <span className="ml-auto text-[10.5px] text-faint">{t.clients.length > 1 ? t.clients.length : ''}</span>
+                <span className="truncate">{tg.title}</span>
+                <span className="ml-auto text-[10.5px] text-faint">{tg.clients.length > 1 ? tg.clients.length : ''}</span>
               </button>
             )
           })}
@@ -153,25 +154,25 @@ export function CodeModal({ reqId, onClose }: { reqId: string; onClose: () => vo
             <div className="flex-1" />
             <label className="flex items-center gap-1.5 text-[12px] text-dim">
               <input type="checkbox" checked={resolve} onChange={(e) => setResolve(e.target.checked)} />
-              Resolver variáveis
+              {t('Resolver variáveis')}
             </label>
             <button
               className="btn btn-accent"
               disabled={!!err}
               onClick={async () => {
                 await api.copyText(code)
-                useStore.getState().notify('Código copiado')
+                useStore.getState().notify(t('Código copiado'))
               }}
             >
-              Copiar
+              {t('Copiar')}
             </button>
           </div>
           <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-line bg-bg">
             {err ? <p className="p-3 text-tpink">{err}</p> : <CodeEditor key={target?.key} value={code} readOnly wrap={false} extra={[...(g?.codeLang(target?.key) ?? []), EditorState.tabSize.of(2)]} />}
           </div>
           <p className="text-[11px] text-faint">
-            Gerado com httpsnippet (o mesmo do Insomnia). Senhas e tokens do cofre aparecem decifrados; com &quot;Resolver variáveis&quot; desligado, as <code>{'{{ variáveis }}'}</code> ficam como referência.
-            {client?.link && <> · <a className="text-accent hover:underline" href={client.link} target="_blank" rel="noreferrer">sobre {client.title}</a></>}
+            {t('Gerado com httpsnippet (o mesmo do Insomnia). Senhas e tokens do cofre aparecem decifrados; com "Resolver variáveis" desligado, as')} <code>{t('{{ variáveis }}')}</code> {t('ficam como referência.')}
+            {client?.link && <> · <a className="text-accent hover:underline" href={client.link} target="_blank" rel="noreferrer">{t('sobre {name}', { name: client.title })}</a></>}
           </p>
         </div>
       </div>

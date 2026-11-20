@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { t } from '@shared/i18n'
 import type { SendResult } from '@shared/api'
 import { findNode } from '@shared/tree'
 import { prepare } from '@shared/prepare'
@@ -242,8 +243,8 @@ export const useStore = create<Store>((set, get) => ({
       set((st) => ({ wsLog: { ...st.wsLog, [id]: [...(st.wsLog[id] ?? []), { ...e, reqId: id, at: Date.now() }].slice(-LOG_MAX) } }))
     if (act === 'close') return void api.wsClose(id)
     if (act === 'send') {
-      if (state !== 'open') return get().notify('Conecte primeiro')
-      if (cur.req.body.fields) return get().notify('Formulário não vira mensagem de WebSocket: escolha JSON ou texto na aba Mensagem')
+      if (state !== 'open') return get().notify(t('Conecte primeiro'))
+      if (cur.req.body.fields) return get().notify(t('Formulário não vira mensagem de WebSocket: escolha JSON ou texto na aba Mensagem'))
       await api.wsSend(cur.ws.id, cur.req, env, cur.req.body.text ?? '').catch((e: unknown) => log({ kind: 'error', data: e instanceof Error ? e.message : String(e) }))
       return
     }
@@ -352,7 +353,7 @@ const st = (): Store => useStore.getState()
 
 export async function createRequestIn(parentId: string): Promise<void> {
   await st().flushSaves()
-  const r = await st().run(api.createRequest(parentId, 'Novo request'))
+  const r = await st().run(api.createRequest(parentId, t('Novo request')))
   if (!r) return
   st().setWorkspaces(r.workspaces)
   st().selectRequest(r.id)
@@ -363,10 +364,10 @@ export async function createRequestIn(parentId: string): Promise<void> {
 export function createFolderIn(parentId: string): void {
   st().openModal({
     kind: 'prompt',
-    title: 'Nova pasta',
+    title: t('Nova pasta'),
     value: '',
     onOk: async (name) => {
-      const r = await st().run(api.createFolder(parentId, name || 'Nova pasta'))
+      const r = await st().run(api.createFolder(parentId, name || t('Nova pasta')))
       if (r) st().setWorkspaces(r.workspaces)
     }
   })
@@ -384,8 +385,8 @@ export async function duplicateNode(id: string): Promise<void> {
 export function deleteNode(node: TreeNode): void {
   st().openModal({
     kind: 'confirm',
-    title: node.kind === 'folder' ? 'Excluir pasta' : 'Excluir request',
-    message: node.kind === 'folder' ? `Excluir a pasta "${node.name}" e tudo dentro dela?` : `Excluir "${node.name}"?`,
+    title: node.kind === 'folder' ? t('Excluir pasta') : t('Excluir request'),
+    message: node.kind === 'folder' ? t('Excluir a pasta "{name}" e tudo dentro dela?', { name: node.name }) : t('Excluir "{name}"?', { name: node.name }),
     onOk: async () => {
       await st().flushSaves()
       const ws = await st().run(api.deleteNode(node.id))

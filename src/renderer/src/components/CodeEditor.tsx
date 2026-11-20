@@ -3,12 +3,13 @@ import { json } from '@codemirror/lang-json'
 import { xml } from '@codemirror/lang-xml'
 import { javascript } from '@codemirror/lang-javascript'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
-import { tags as t } from '@lezer/highlight'
+import { tags as hl } from '@lezer/highlight'
 import { search } from '@codemirror/search'
 import { autocompletion, startCompletion, type Completion, type CompletionContext, type CompletionResult, type CompletionSource } from '@codemirror/autocomplete'
 import { matchVars, openVarAt, rootName } from '@shared/vars'
 import { TAG_CHOICES } from '@shared/tagdef'
 import { useMemo, useRef } from 'react'
+import { getLang, t } from '@shared/i18n'
 
 /** tags {% %} dentro do editor viram badge clicável (igual ao Insomnia) */
 export interface TagSupport {
@@ -78,7 +79,7 @@ class TagWidget extends WidgetType {
     const l = this.tags.current?.label(this.raw) ?? { text: this.raw }
     el.className = `var-pill tag${l.broken ? ' broken' : ''}`
     el.textContent = `ƒ ${l.text}`
-    el.title = `${l.broken ? `${l.broken}\n` : ''}${this.raw}\nclique pra editar`
+    el.title = `${l.broken ? `${l.broken}\n` : ''}${this.raw}\n${t('clique pra editar')}`
     el.onmousedown = (e) => e.preventDefault()
     el.onclick = (e) => {
       e.preventDefault()
@@ -130,8 +131,8 @@ function tagExtension(tags: { current: TagSupport | undefined }) {
   // digitar "respon…", "uuid", "now" sugere a tag; escolher já vira badge (e a de resposta abre o editor)
   const choicesNow = (): TagChoice[] => tags.current?.choices?.() ?? TAG_CHOICES
   const tagOption = (c: TagChoice): Completion => ({
-    label: c.label,
-    detail: c.detail,
+    label: t(c.label),
+    detail: t(c.detail),
     type: 'function',
     apply: (view, _c, from, to) => {
       view.dispatch({ changes: { from, to, insert: c.raw }, selection: { anchor: from + c.raw.length } })
@@ -155,8 +156,8 @@ function tagExtension(tags: { current: TagSupport | undefined }) {
     }
   })
   const otherTag: Completion = {
-    label: 'Outra tag…',
-    detail: 'abre o editor',
+    label: t('Outra tag…'),
+    detail: t('abre o editor'),
     type: 'function',
     apply: (view, _c, from, to) => tags.current?.edit('', (next) => view.dispatch({ changes: { from, to, insert: next } }))
   }
@@ -195,8 +196,8 @@ function tagExtension(tags: { current: TagSupport | undefined }) {
   return [plugin, insert, autocompletion({ override: [source, langSource], icons: false })]
 }
 
-// textos do CodeMirror em pt-BR (busca, dobra, autocomplete)
-const phrases = EditorState.phrases.of({
+// textos do CodeMirror em pt-BR (busca, dobra, autocomplete); em inglês valem os padrões do CodeMirror
+const ptPhrases = EditorState.phrases.of({
   Find: 'Buscar',
   Replace: 'Substituir',
   next: 'próximo',
@@ -220,7 +221,6 @@ const phrases = EditorState.phrases.of({
 
 // cores vêm das variáveis do tema ativo (src/shared/themes.ts)
 const theme = [
-  phrases,
   search({ top: true }),
   EditorView.theme(
     {
@@ -250,20 +250,20 @@ const theme = [
   ),
   syntaxHighlighting(
     HighlightStyle.define([
-      { tag: t.propertyName, color: 'var(--syn-prop, var(--color-tblue))' },
-      { tag: [t.string, t.special(t.string)], color: 'var(--syn-string, var(--color-tgreen))' },
-      { tag: [t.number, t.integer, t.float], color: 'var(--syn-number, var(--color-torange))' },
-      { tag: [t.bool, t.null, t.atom], color: 'var(--syn-bool, var(--color-tpurple))' },
-      { tag: [t.keyword, t.tagName], color: 'var(--syn-keyword, var(--color-tpink))' },
-      { tag: [t.attributeName], color: 'var(--syn-attr, var(--color-tlime))' },
-      { tag: [t.comment], color: 'var(--color-faint)', fontStyle: 'italic' },
-      { tag: [t.punctuation, t.bracket, t.separator], color: 'var(--color-dim)' },
+      { tag: hl.propertyName, color: 'var(--syn-prop, var(--color-tblue))' },
+      { tag: [hl.string, hl.special(hl.string)], color: 'var(--syn-string, var(--color-tgreen))' },
+      { tag: [hl.number, hl.integer, hl.float], color: 'var(--syn-number, var(--color-torange))' },
+      { tag: [hl.bool, hl.null, hl.atom], color: 'var(--syn-bool, var(--color-tpurple))' },
+      { tag: [hl.keyword, hl.tagName], color: 'var(--syn-keyword, var(--color-tpink))' },
+      { tag: [hl.attributeName], color: 'var(--syn-attr, var(--color-tlime))' },
+      { tag: [hl.comment], color: 'var(--color-faint)', fontStyle: 'italic' },
+      { tag: [hl.punctuation, hl.bracket, hl.separator], color: 'var(--color-dim)' },
       // código gerado (Python, Go, shell…): funções, tipos, built-ins e operadores, como numa IDE
-      { tag: [t.function(t.variableName), t.function(t.propertyName), t.definition(t.variableName)], color: 'var(--syn-prop, var(--color-tblue))' },
-      { tag: [t.typeName, t.className, t.namespace], color: 'var(--syn-attr, var(--color-tlime))' },
-      { tag: [t.standard(t.variableName), t.special(t.variableName), t.self, t.meta, t.processingInstruction], color: 'var(--syn-bool, var(--color-tpurple))' },
-      { tag: [t.operator, t.operatorKeyword], color: 'var(--syn-keyword, var(--color-tpink))' },
-      { tag: [t.escape, t.regexp], color: 'var(--syn-number, var(--color-torange))' }
+      { tag: [hl.function(hl.variableName), hl.function(hl.propertyName), hl.definition(hl.variableName)], color: 'var(--syn-prop, var(--color-tblue))' },
+      { tag: [hl.typeName, hl.className, hl.namespace], color: 'var(--syn-attr, var(--color-tlime))' },
+      { tag: [hl.standard(hl.variableName), hl.special(hl.variableName), hl.self, hl.meta, hl.processingInstruction], color: 'var(--syn-bool, var(--color-tpurple))' },
+      { tag: [hl.operator, hl.operatorKeyword], color: 'var(--syn-keyword, var(--color-tpink))' },
+      { tag: [hl.escape, hl.regexp], color: 'var(--syn-number, var(--color-torange))' }
     ])
   )
 ]
@@ -293,8 +293,11 @@ export function CodeEditor({ value, onChange, lang = 'text', readOnly, wrap = tr
   const tagsRef = useRef(tags)
   tagsRef.current = tags
   const withTags = !!tags
+  // idioma lido ao criar o editor: troca de idioma recria as extensões
+  const uiLang = getLang()
   const extensions = useMemo(() => {
     const ext = [...theme]
+    if (uiLang === 'pt') ext.push(ptPhrases)
     if (withTags) ext.push(...tagExtension(tagsRef))
     if (lang === 'json') ext.push(json())
     if (lang === 'xml') ext.push(xml())
@@ -303,7 +306,7 @@ export function CodeEditor({ value, onChange, lang = 'text', readOnly, wrap = tr
     if (extra) ext.push(...extra)
     return ext
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang, wrap, withTags])
+  }, [lang, wrap, withTags, uiLang])
   return (
     <CodeMirror
       value={value}

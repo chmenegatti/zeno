@@ -81,7 +81,7 @@ describe('parseCurl', () => {
   it('erros e avisos', () => {
     expect(() => parseCurl('wget x')).toThrow()
     expect(() => parseCurl('curl -k')).toThrow(/URL/)
-    expect(parseCurl('curl -d @body.json https://x').warnings[0]).toMatch(/arquivo/)
+    expect(parseCurl('curl -d @body.json https://x').warnings[0]).toMatch(/file/)
     expect(isCurl('  curl https://x')).toBe(true)
     expect(isCurl('https://curl.se')).toBe(false)
   })
