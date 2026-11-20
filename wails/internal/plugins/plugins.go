@@ -12,10 +12,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -239,7 +241,12 @@ func loadOne(dir string) *plugin {
 		if err != nil {
 			return nil, err
 		}
-		exports = v
+		// o módulo principal precisa exportar um objeto; outro valor = nada exportado
+		if o, ok := v.(*goja.Object); ok {
+			exports = o
+		} else {
+			exports = vm.NewObject()
+		}
 		return goja.Undefined(), nil
 	}, nil)
 	if err != nil {
@@ -469,9 +476,9 @@ func requireFn(vm *goja.Runtime, file, root string, cache map[string]*goja.Objec
 }
 
 // executa um arquivo como módulo CommonJS
-func runModule(vm *goja.Runtime, file, root string, cache map[string]*goja.Object) (*goja.Object, error) {
+func runModule(vm *goja.Runtime, file, root string, cache map[string]*goja.Object) (goja.Value, error) {
 	if m, ok := cache[file]; ok {
-		return m.Get("exports").ToObject(vm), nil
+		return m.Get("exports"), nil
 	}
 	code, err := os.ReadFile(file)
 	if err != nil {
@@ -489,7 +496,8 @@ func runModule(vm *goja.Runtime, file, root string, cache map[string]*goja.Objec
 	if _, err := fn(goja.Undefined(), exports, vm.ToValue(requireFn(vm, file, root, cache)), mod, vm.ToValue(file), vm.ToValue(filepath.Dir(file))); err != nil {
 		return nil, err
 	}
-	return mod.Get("exports").ToObject(vm), nil
+	// como no Node: module.exports pode ser qualquer valor (false, número, função…)
+	return mod.Get("exports"), nil
 }
 
 func nativeModule(vm *goja.Runtime, name string) goja.Value {
@@ -634,9 +642,9 @@ func (ps *Plugins) HasTag(name string) bool {
 func coerce(v string, t string) any {
 	switch t {
 	case "number":
-		var f float64
-		if strings.TrimSpace(v) != "" {
-			if _, err := fmt.Sscan(v, &f); err == nil {
+		// como Number(v) com Number.isFinite: o texto inteiro tem que ser número
+		if t := strings.TrimSpace(v); t != "" {
+			if f, err := strconv.ParseFloat(t, 64); err == nil && !math.IsInf(f, 0) && !math.IsNaN(f) {
 				return f
 			}
 		}

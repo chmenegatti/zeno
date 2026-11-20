@@ -156,6 +156,24 @@ func TestArgumentosComTipo(t *testing.T) {
 	}
 }
 
+func TestExportsPrimitivoENumeroEstrito(t *testing.T) {
+	dir := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(dir, "p"), 0o755)
+	_ = os.WriteFile(filepath.Join(dir, "p", "package.json"), []byte(`{"name":"p","main":"index.js"}`), 0o644)
+	_ = os.WriteFile(filepath.Join(dir, "p", "falso.js"), []byte(`module.exports = false`), 0o644)
+	_ = os.WriteFile(filepath.Join(dir, "p", "nada.js"), []byte(`module.exports = null`), 0o644)
+	_ = os.WriteFile(filepath.Join(dir, "p", "index.js"), []byte(`const f = require('./falso'), n = require('./nada')
+module.exports.templateTags = [{ name: 'tipo', args: [{ type: 'number' }], run: (c, x) => [typeof f, f === false, n === null, typeof x, String(x)].join(',') }]`), 0o644)
+	p := New(dir, nil)
+	p.Load()
+	if v, err := p.RunTag("tipo", []string{"12abc"}, render, vars); err != nil || v != "boolean,true,true,string,12abc" {
+		t.Errorf("%q %v", v, err)
+	}
+	if v, _ := p.RunTag("tipo", []string{" 1e3 "}, render, vars); v != "boolean,true,true,number,1000" {
+		t.Errorf("%q", v)
+	}
+}
+
 func TestDesligadoNaoRoda(t *testing.T) {
 	p := newTest(t, nil, "exemplo")
 	if p.List()[0].Enabled || p.HasTag("minha_funcao") {
