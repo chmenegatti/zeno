@@ -273,6 +273,19 @@ func TestIteracoesBailCancelar(t *testing.T) {
 	eq(t, v.List("steps")[0].(*Doc).List("tests")[0].(*Doc).Str("error"), "valor: x")
 }
 
+func TestAvisosEVariaveisSemValor(t *testing.T) {
+	e := setup(t, server(t), []*Doc{req("name", "x", "url", "{{ base_url }}/items?a={{ nada }}&b={% tag_inexistente %}")})
+	r, err := Run(e.exec, e.st, Options{WsID: e.wsID, Iterations: 1}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := r.List("steps")[0].(*Doc)
+	b, _ := json.Marshal(s)
+	if !strings.Contains(string(b), `"missing":["nada"]`) || !strings.Contains(string(b), `"warnings":["`) {
+		t.Errorf("passo sem missing/warnings: %s", b)
+	}
+}
+
 func TestOrdem(t *testing.T) {
 	e := setup(t, "http://x", []*Doc{req("name", "b"), req("name", "a")})
 	got := []string{}

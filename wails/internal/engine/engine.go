@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/assert"
@@ -39,6 +40,84 @@ type Engine struct {
 	Vault   *vault.Vault
 	Plugins *plugins.Plugins
 	Hooks   Hooks
+	// NoPersist (CLI): o que os scripts gravam em ambientes fica só na memória desta execução: não
+	// escreve YAML, nem cifra, nem deixa token em texto puro no disco quando não há chaveiro
+	NoPersist bool
+	// SoftSecrets (CLI): segredo cifrado que não abre (sem chaveiro, chave de outra máquina) fica sem
+	// valor em vez de abortar o envio, pra --var / dados suprirem o valor
+	SoftSecrets bool
+
+	overlayMu sync.Mutex
+	overlay   map[string]*Doc // envId → dados, com NoPersist
+}
+
+// ambientes com o que os scripts gravaram nesta execução (NoPersist)
+func (e *Engine) withOverlay(ws *Doc) *Doc {
+	e.overlayMu.Lock()
+	defer e.overlayMu.Unlock()
+	if len(e.overlay) == 0 || ws == nil {
+		return ws
+	}
+	envs := []any{}
+	for _, x := range ws.List("environments") {
+		if d, ok := x.(*Doc); ok {
+			if data, has := e.overlay[d.Str("id")]; has {
+				d = d.Clone()
+				d.Set("data", data)
+			}
+			envs = append(envs, d)
+		} else {
+			envs = append(envs, x)
+		}
+	}
+	out := ws.Clone()
+	out.Set("environments", envs)
+	return out
+}
+
+// open decifra os segredos; com SoftSecrets, o que não abre some do objeto e o nome vai pra locked
+// (num par nome/valor, o nome da variável/header, mais útil que "value")
+func (e *Engine) open(x any, locked *[]string) (any, error) {
+	if !e.SoftSecrets {
+		return e.Vault.DecryptDeep(x, nil)
+	}
+	switch t := x.(type) {
+	case []any:
+		out := make([]any, len(t))
+		for i, v := range t {
+			o, err := e.open(v, locked)
+			if err != nil {
+				return nil, err
+			}
+			out[i] = o
+		}
+		return out, nil
+	case *Doc:
+		if t == nil {
+			return t, nil
+		}
+		out := doc.New()
+		for _, k := range t.Keys() {
+			v := t.Get(k)
+			if s, ok := v.(string); ok && vault.IsEncrypted(s) {
+				if p, err := e.Vault.Decrypt(s); err == nil {
+					out.Set(k, p)
+				} else if name, ok := t.Get("name").(string); ok && k == "value" {
+					*locked = append(*locked, name)
+				} else {
+					*locked = append(*locked, k)
+				}
+				continue
+			}
+			o, err := e.open(v, locked)
+			if err != nil {
+				return nil, err
+			}
+			out.Set(k, o)
+		}
+		return out, nil
+	}
+	return x, nil
 }
 
 // tag de plugin pro resolvedor de tags (nil sem plugins)
@@ -127,9 +206,10 @@ func (e *Engine) Execute(ws, req *Doc, envID string, depth int) (*Doc, error) {
 // ExecuteWith: Execute com variáveis extras (linha de dados do executor, --var da CLI), que valem
 // sobre ambiente e pastas
 func (e *Engine) ExecuteWith(ws, req *Doc, envID string, depth int, extraVars *Doc) (*Doc, error) {
+	ws = e.withOverlay(ws)
 	_, anc := doc.Find(ws, req.Str("id"))
 	// segredos do cofre abertos só aqui, só pro envio
-	openWS, openReq, openAnc, secrets, err := e.openForSend(ws, req, anc)
+	openWS, openReq, openAnc, secrets, locked, err := e.openForSendLocked(ws, req, anc)
 	if err != nil {
 		return nil, err
 	}
@@ -249,6 +329,11 @@ func (e *Engine) ExecuteWith(ws, req *Doc, envID string, depth int, extraVars *D
 	}
 	for _, t := range p.Unsupported {
 		warnings = append(warnings, "tag não resolvida: "+t)
+	}
+	for _, k := range locked {
+		if extraVars == nil || !extraVars.Has(k) {
+			warnings = append(warnings, `segredo cifrado "`+k+`" não abriu (sem chaveiro?); passe o valor com --var`)
+		}
 	}
 	// requestHooks dos plugins: podem mudar método, URL, headers e body (texto) antes do envio
 	if e.Plugins != nil {
@@ -430,28 +515,35 @@ func (e *Engine) TagPreview(raw string, send bool) *Doc {
 
 // abre os segredos de ambientes, pastas e request só pro envio; devolve as cópias abertas e os valores
 func (e *Engine) openForSend(ws, req *doc.Doc, anc []*doc.Doc) (*doc.Doc, *doc.Doc, []*doc.Doc, map[string]bool, error) {
+	o, r, a, secrets, _, err := e.openForSendLocked(ws, req, anc)
+	return o, r, a, secrets, err
+}
+
+// openForSendLocked: openForSend + nomes dos segredos que não abriram (SoftSecrets)
+func (e *Engine) openForSendLocked(ws, req *doc.Doc, anc []*doc.Doc) (*doc.Doc, *doc.Doc, []*doc.Doc, map[string]bool, []string, error) {
 	secrets := map[string]bool{}
-	envs, err := e.Vault.DecryptDeep(ws.Get("environments"), nil)
+	var locked []string
+	envs, err := e.open(ws.Get("environments"), &locked)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 	vault.CollectSecrets(ws.Get("environments"), envs, secrets)
 	openWS := doc.New("id", ws.Get("id"), "settings", ws.Get("settings"), "environments", envs, "children", ws.Get("children"))
-	r, err := e.Vault.DecryptDeep(req, nil)
+	r, err := e.open(req, &locked)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 	vault.CollectSecrets(req, r, secrets)
 	openAnc := make([]*doc.Doc, len(anc))
 	for i, f := range anc {
-		o, err := e.Vault.DecryptDeep(f, nil)
+		o, err := e.open(f, &locked)
 		if err != nil {
-			return nil, nil, nil, nil, err
+			return nil, nil, nil, nil, nil, err
 		}
 		vault.CollectSecrets(f, o, secrets)
 		openAnc[i] = o.(*doc.Doc)
 	}
-	return openWS, r.(*doc.Doc), openAnc, secrets, nil
+	return openWS, r.(*doc.Doc), openAnc, secrets, locked, nil
 }
 
 // PrepareOpen: request pronto sem enviar (gerar código, ações de plugin): segredos abertos e tags
@@ -650,6 +742,7 @@ func (e *Engine) persistEnvChanges(ws, base, sub *Doc, before, after scripts.Sta
 	if cur == nil {
 		cur = ws
 	}
+	cur = e.withOverlay(cur)
 	for _, t := range targets {
 		var raw *Doc
 		for _, x := range cur.List("environments") {
@@ -674,12 +767,21 @@ func (e *Engine) persistEnvChanges(ws, base, sub *Doc, before, after scripts.Sta
 			if t.old.Has(k) && same(t.old.Get(k), v) {
 				continue
 			}
-			if s, ok := v.(string); ok && s != "" && (vault.IsEncrypted(raw.Map("data").Get(k)) || protect.LooksSecret(k)) {
+			if s, ok := v.(string); ok && !e.NoPersist && s != "" && (vault.IsEncrypted(raw.Map("data").Get(k)) || protect.LooksSecret(k)) {
 				if enc, err := e.Vault.Encrypt(s); err == nil {
 					v = enc
 				}
 			}
 			data.Set(k, v)
+		}
+		if e.NoPersist {
+			e.overlayMu.Lock()
+			if e.overlay == nil {
+				e.overlay = map[string]*Doc{}
+			}
+			e.overlay[raw.Str("id")] = data
+			e.overlayMu.Unlock()
+			continue
 		}
 		env := raw.Clone()
 		env.Set("data", data)

@@ -195,10 +195,10 @@ outer:
 					}
 					step.Set("error", strings.Join(msgs, "; "))
 				}
-				if m := r.List("missing"); len(m) > 0 {
+				if m := strs(r.Get("missing")); len(m) > 0 {
 					step.Set("missing", m)
 				}
-				if w := r.List("warnings"); len(w) > 0 {
+				if w := strs(r.Get("warnings")); len(w) > 0 {
 					step.Set("warnings", w)
 				}
 			}
@@ -223,6 +223,21 @@ outer:
 		rep.Set("cancelled", true)
 	}
 	return rep, nil
+}
+
+// strs: lista de textos do motor ([]string) ou lida de JSON ([]any)
+func strs(v any) []any {
+	switch x := v.(type) {
+	case []string:
+		out := make([]any, len(x))
+		for i, s := range x {
+			out[i] = s
+		}
+		return out
+	case []any:
+		return x
+	}
+	return nil
 }
 
 // asDocs: testes do motor (structs assert.Test ou Docs) como lista de Docs, no formato JSON da interface
