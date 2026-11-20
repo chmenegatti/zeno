@@ -52,8 +52,9 @@ func (m *Manager) Open(reqID string) bool {
 	return m.conns[reqID] != nil
 }
 
-// Connect abre (fechando a anterior do mesmo request) e lê as mensagens em segundo plano
-func (m *Manager) Connect(reqID, url string, header http.Header, client *http.Client) error {
+// Connect abre (fechando a anterior do mesmo request) e lê as mensagens em segundo plano.
+// setCookies (opcional) recebe os Set-Cookie do handshake
+func (m *Manager) Connect(reqID, url string, header http.Header, client *http.Client, setCookies func([]string)) error {
 	m.Close(reqID)
 	dctx, dcancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer dcancel()
@@ -63,6 +64,11 @@ func (m *Manager) Connect(reqID, url string, header http.Header, client *http.Cl
 			return errors.New(err.Error() + " (HTTP " + res.Status + ")")
 		}
 		return err
+	}
+	if res != nil && setCookies != nil {
+		if set := res.Header.Values("Set-Cookie"); len(set) > 0 {
+			setCookies(set)
+		}
 	}
 	c.SetReadLimit(16 << 20)
 	ctx, cancel := context.WithCancel(context.Background())

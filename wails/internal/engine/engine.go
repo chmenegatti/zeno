@@ -379,7 +379,10 @@ func (e *Engine) ExecuteWith(ws, req *Doc, envID string, depth int, extraVars *D
 	}
 	// SSE (#6): cada evento sai na hora pra interface
 	reqID := req.Str("id")
-	hooks.Event = func(ev httpc.SSEEvent) { e.emit("sse:event", reqID, ev) }
+	// só com interface: na CLI (sem Emit) o stream respeita o timeout do workspace
+	if e.Hooks.Emit != nil {
+		hooks.Event = func(ev httpc.SSEEvent) { e.emit("sse:event", reqID, ev) }
+	}
 	rec := httpc.Send(reqID, p, hooks)
 	vault.RedactTimeline(rec, secrets)
 	if e.Plugins != nil && rec.Str("error") == "" {

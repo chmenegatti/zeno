@@ -226,7 +226,7 @@ function BodyEditor({ body, onChange, gql, ws }: { body: Body; onChange: (b: Bod
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 px-3 py-2">
         <Select className="field py-1" value={body.mime ?? ''} onChange={(v) => setMime(v || null)}>
-          {BODY_TYPES.map((b) => (
+          {BODY_TYPES.filter((b) => !ws || (b.mime !== 'application/x-www-form-urlencoded' && b.mime !== 'multipart/form-data')).map((b) => (
             <option key={b.label} value={b.mime ?? ''}>{b.label}</option>
           ))}
           {body.mime && !BODY_TYPES.some((b) => b.mime === body.mime) && <option value={body.mime}>{body.mime}</option>}

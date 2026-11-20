@@ -60,7 +60,12 @@ func (a *App) registerWS() {
 		if h.Get("User-Agent") == "" {
 			h.Set("User-Agent", "Zeno")
 		}
-		return nil, a.sockets.Connect(req.Str("id"), u.String(), h, client)
+		var store func([]string)
+		if req.Get("storeCookies") != false {
+			wsID := ws.Str("id")
+			store = func(set []string) { a.cookies.Store(wsID, target.String(), set) }
+		}
+		return nil, a.sockets.Connect(req.Str("id"), u.String(), h, client, store)
 	})
 	a.handle("wsSend", func(args Args) (any, error) {
 		ws, req, envID, err := reqOf(args)

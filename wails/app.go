@@ -20,9 +20,9 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/oauth2"
 	"github.com/chmenegatti/zeno/wails/internal/plugins"
 	"github.com/chmenegatti/zeno/wails/internal/store"
-	"github.com/chmenegatti/zeno/wails/internal/ws"
 	"github.com/chmenegatti/zeno/wails/internal/vault"
 	"github.com/chmenegatti/zeno/wails/internal/watch"
+	"github.com/chmenegatti/zeno/wails/internal/ws"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 

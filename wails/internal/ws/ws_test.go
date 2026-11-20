@@ -19,6 +19,7 @@ func TestEco(t *testing.T) {
 	var gotAuth string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotAuth = r.Header.Get("Authorization")
+		w.Header().Add("Set-Cookie", "sessao=nova; Path=/")
 		c, err := websocket.Accept(w, r, nil)
 		if err != nil {
 			return
@@ -43,8 +44,12 @@ func TestEco(t *testing.T) {
 		t.Fatal(err)
 	}
 	h := http.Header{"Authorization": {"Bearer x"}}
-	if err := m.Connect("req_1", "ws"+strings.TrimPrefix(srv.URL, "http"), h, client); err != nil {
+	var cookies []string
+	if err := m.Connect("req_1", "ws"+strings.TrimPrefix(srv.URL, "http"), h, client, func(s []string) { cookies = s }); err != nil {
 		t.Fatal(err)
+	}
+	if len(cookies) != 1 || !strings.HasPrefix(cookies[0], "sessao=nova") {
+		t.Errorf("cookies do handshake %v", cookies)
 	}
 	if !m.Open("req_1") || gotAuth != "Bearer x" {
 		t.Fatalf("aberto %v auth %q", m.Open("req_1"), gotAuth)

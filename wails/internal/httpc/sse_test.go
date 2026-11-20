@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -39,6 +40,19 @@ func TestSSEEmFluxo(t *testing.T) {
 	}
 	if firstAt.Sub(start) > 250*time.Millisecond {
 		t.Error("primeiro evento só chegou no fim")
+	}
+	// conexão caiu no meio: guarda o que chegou
+	srv3 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: 1\n\n")
+		w.(http.Flusher).Flush()
+		conn, _, _ := w.(http.Hijacker).Hijack()
+		conn.Close()
+	}))
+	defer srv3.Close()
+	rec = Send("req_sse3", vars.Prepared{Method: "GET", URL: srv3.URL}, CookieHooks{Event: func(SSEEvent) {}})
+	if rec.Get("status") != 200 || rec.Str("body") != "data: 1\n\n" || !strings.HasPrefix(rec.Str("streamEnd"), "erro") {
+		t.Fatalf("caiu: %v %q %v %v", rec.Get("status"), rec.Str("body"), rec.Get("streamEnd"), rec.Get("error"))
 	}
 	// cancelar no meio guarda o que chegou
 	srv2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

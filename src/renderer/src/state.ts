@@ -229,6 +229,7 @@ export const useStore = create<Store>((set, get) => ({
     if (act === 'close') return void api.wsClose(id)
     if (act === 'send') {
       if (state !== 'open') return get().notify('Conecte primeiro')
+      if (cur.req.body.fields) return get().notify('Formulário não vira mensagem de WebSocket: escolha JSON ou texto na aba Mensagem')
       await api.wsSend(cur.ws.id, cur.req, env, cur.req.body.text ?? '').catch((e: unknown) => log({ kind: 'error', data: e instanceof Error ? e.message : String(e) }))
       return
     }

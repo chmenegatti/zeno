@@ -562,12 +562,14 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 		if timer != nil {
 			timer.Stop()
 		}
+		// caiu no meio: guarda o que chegou e diz por que parou
 		data, err = readSSE(res.Body, start, cookies.Event)
 		if err != nil {
-			if !errors.Is(context.Cause(ctx), errCancel) {
-				return fail(err)
+			if errors.Is(context.Cause(ctx), errCancel) {
+				rec.Set("streamEnd", "cancelado")
+			} else {
+				rec.Set("streamEnd", "erro: "+unwrapURL(err).Error())
 			}
-			rec.Set("streamEnd", "cancelado")
 		}
 	} else if data, err = io.ReadAll(res.Body); err != nil {
 		return fail(err)

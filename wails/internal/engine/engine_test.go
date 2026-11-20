@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/cookies"
 	"github.com/chmenegatti/zeno/wails/internal/doc"
@@ -390,5 +391,24 @@ func TestIntrospectSemHistorico(t *testing.T) {
 	e.Store.Flush()
 	if raw, _ := os.ReadFile(e.Store.ResponsesFile("req_login")); len(raw) > 0 && strings.Contains(string(raw), "__schema") {
 		t.Error("introspecção foi pro histórico")
+	}
+}
+
+// sem interface (CLI): stream SSE sem fim respeita o timeout do workspace
+func TestSSESemInterfaceTemTimeout(t *testing.T) {
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: 1\n\n")
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+	}))
+	defer api.Close()
+	e, ws := setup(t, api.URL)
+	ws.Set("settings", doc.New("insecureTLS", false, "timeoutMs", int64(300)))
+	login, _ := doc.Find(ws, "req_login")
+	start := time.Now()
+	r, err := e.Execute(ws, login.Clone(), "", 0)
+	if err != nil || !strings.Contains(r.Map("response").Str("error"), "timeout") || time.Since(start) > 3*time.Second {
+		t.Fatalf("%v %v %v", err, r.Map("response").Get("error"), time.Since(start))
 	}
 }
