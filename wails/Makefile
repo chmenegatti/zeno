@@ -1,5 +1,5 @@
 # Zeno em Go + Wails (migração: #53). Precisa de Go, Node e, no Linux, libgtk-3-dev e libwebkit2gtk-4.1-dev.
-.PHONY: frontend build cli deb appimage run test vet
+.PHONY: frontend build cli deb rpm appimage run test vet
 
 TAGS = desktop,production,webkit2_41
 
@@ -20,6 +20,9 @@ cli:
 VERSION ?= $(shell node -p "require('../package.json').version")
 deb: build
 	sh packaging/linux/deb.sh build/zeno $(VERSION) build/zeno_$(VERSION)_amd64.deb
+
+rpm: build
+	sh packaging/linux/rpm.sh build/zeno $(VERSION) build/zeno-$(VERSION).x86_64.rpm
 
 appimage: build
 	sh packaging/linux/appimage.sh build/zeno $(VERSION) build/Zeno-$(VERSION)-x86_64.AppImage
