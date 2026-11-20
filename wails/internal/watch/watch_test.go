@@ -78,3 +78,16 @@ func TestVinculadoAdicionadoDepois(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(linked, "workspace.yaml"), []byte("id: w"), 0o644)
 	waitFor(t, &n, 1)
 }
+
+func TestRaizPorSymlink(t *testing.T) {
+	real, base := t.TempDir(), t.TempDir()
+	link := filepath.Join(base, "atalho")
+	if err := os.Symlink(real, link); err != nil {
+		t.Skip("sem symlink:", err)
+	}
+	var n atomic.Int32
+	w, _ := New([]string{link}, Options{Debounce: 50 * time.Millisecond, OnChange: func() { n.Add(1) }})
+	defer w.Close()
+	_ = os.WriteFile(filepath.Join(link, "workspace.yaml"), []byte("id: w"), 0o644)
+	waitFor(t, &n, 1)
+}

@@ -70,6 +70,10 @@ func New(roots []string, opt Options) (*Watcher, error) {
 // Add passa a vigiar mais pastas (ex.: workspace vinculado agora)
 func (w *Watcher) Add(roots ...string) {
 	for _, r := range roots {
+		// raiz por symlink (ex.: workspace vinculado por um atalho): vigia a pasta real
+		if real, err := filepath.EvalSymlinks(r); err == nil {
+			r = real
+		}
 		w.mu.Lock()
 		seen := w.roots[r]
 		w.roots[r] = true
