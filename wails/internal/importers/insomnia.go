@@ -35,9 +35,9 @@ func Dir() string {
 	return filepath.Join(home, ".config", "Insomnia")
 }
 
-var nedbFiles = []string{"Workspace", "RequestGroup", "Request", "Environment", "WebSocketRequest"}
+var nedbFiles = []string{"Workspace", "RequestGroup", "Request", "Environment", "WebSocketRequest", "GrpcRequest"}
 
-var typeFromExport = map[string]string{"workspace": "Workspace", "request_group": "RequestGroup", "request": "Request", "environment": "Environment", "websocket_request": "WebSocketRequest"}
+var typeFromExport = map[string]string{"workspace": "Workspace", "request_group": "RequestGroup", "request": "Request", "environment": "Environment", "websocket_request": "WebSocketRequest", "grpc_request": "GrpcRequest"}
 
 // ordered: registros por _id na ordem em que apareceram (como um Map do JavaScript)
 type ordered struct {
@@ -426,6 +426,36 @@ func Convert(docs []*Doc, insecureTLS bool) Result {
 				setDef(f, "scripts", insScripts(d))
 				f.Set("children", buildNodes(d.Str("_id"), where))
 				nodes = append(nodes, f)
+			case "GrpcRequest":
+				// gRPC (#5): host:porta vira grpc:// (grpcs:// se já vier assim); /pkg.Svc/Método vira serviço e método
+				u := strings.TrimSpace(str(d.Get("url")))
+				if !strings.HasPrefix(u, "grpc://") && !strings.HasPrefix(u, "grpcs://") {
+					u = "grpc://" + u
+				}
+				svc, method := "", ""
+				if pm := strings.TrimPrefix(str(d.Get("protoMethodName")), "/"); pm != "" {
+					svc, method, _ = strings.Cut(pm, "/")
+				}
+				r := doc.New("kind", "request", "id", d.Get("_id"), "name", name)
+				setDef(r, "description", orNil(d.Get("description")))
+				r.Set("method", "GET")
+				r.Set("url", u)
+				r.Set("params", []any{})
+				r.Set("headers", insKV(d.Get("metadata")))
+				body := doc.New("mime", nil)
+				if t := str(get(d, "body", "text")); strings.TrimSpace(t) != "" {
+					body = doc.New("mime", "application/json", "text", t)
+				}
+				r.Set("body", body)
+				r.Set("auth", doc.New("type", "inherit"))
+				if svc != "" {
+					r.Set("grpc", doc.New("service", svc, "method", method))
+				}
+				if truthy(d.Get("protoFileId")) {
+					w.warn(where + ": arquivo .proto do Insomnia não vem junto; use server reflection ou escolha o .proto")
+				}
+				r.Set("sortKey", sortKey(d))
+				nodes = append(nodes, r)
 			case "Request", "WebSocketRequest":
 				// WebSocket (#6): URL ws(s)://; a conexão é aberta pelo Zeno (as mensagens salvas do Insomnia ficam de fora)
 				r := doc.New("kind", "request", "id", d.Get("_id"), "name", name)

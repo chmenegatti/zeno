@@ -641,6 +641,7 @@ func (a *App) register() {
 	a.registerExport()
 	a.registerWS()
 	a.registerMock()
+	a.registerGrpc()
 
 }
 

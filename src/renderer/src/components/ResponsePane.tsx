@@ -8,7 +8,8 @@ import { ScriptResults } from './Scripts'
 import { Select } from './Select'
 import { SseEvents, WsPane } from './Streams'
 import { prepare } from '@shared/prepare'
-import { isEventStream, isWsUrl, parseSSE } from '@shared/stream'
+import { isEventStream, isGrpcUrl, isWsUrl, parseSSE } from '@shared/stream'
+import { GrpcPane } from './Grpc'
 
 type Section = 'body' | 'events' | 'headers' | 'tests' | 'timeline' | 'compare'
 
@@ -41,10 +42,17 @@ export function ResponsePane({ width }: { width: number }) {
   const report = id && res && res.id === history[0]?.id ? lastSend[id]?.scripts : undefined
   const failed = report ? report.tests.filter((t) => !t.ok).length + report.errors.length : 0
   // WebSocket: o painel é o log da conexão
-  const wsMode = useMemo(() => !!cur && isWsUrl(prepare(cur.ws, cur.req, cur.ancestors, envId).input.url), [cur, envId])
+  const modeUrl = useMemo(() => (cur ? prepare(cur.ws, cur.req, cur.ancestors, envId).input.url : ''), [cur, envId])
+  const wsMode = isWsUrl(modeUrl)
   const stream = !!res && !res.error && isEventStream(res.headers)
   const events = useMemo(() => (stream && res ? parseSSE(res.body) : []), [stream, res])
   const liveEvents = id && sending[id] ? (live[id] ?? []) : []
+  if (isGrpcUrl(modeUrl) && id)
+    return (
+      <section data-hk="response" className="flex shrink-0 flex-col border-l border-line bg-panel" style={{ width }}>
+        <GrpcPane reqId={id} />
+      </section>
+    )
   if (wsMode && id)
     return (
       <section data-hk="response" className="flex shrink-0 flex-col border-l border-line bg-panel" style={{ width }}>

@@ -1,7 +1,7 @@
 import type { InsomniaKey } from './hotkeys'
 import type { Example, CookieInfo, GitHubAccount, PluginInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, SendInput, OAuthTokenStatus, Workspace, WorkspaceDoc } from './types'
 
-import type { SSEEvent, WsEvent } from './stream'
+import type { GrpcEvent, GrpcMethod, SSEEvent, WsEvent } from './stream'
 export interface MockStatus {
   running: boolean
   port: number
@@ -87,6 +87,14 @@ export interface ZenoApi {
   onWsEvent(cb: (e: WsEvent) => void): () => void
   /** SSE (#6): cada evento de uma resposta text/event-stream, enquanto chega */
   onSseEvent(cb: (requestId: string, e: SSEEvent) => void): () => void
+  /** gRPC (#5): serviços pelo server reflection ou pelo .proto do request */
+  grpcDescribe(wsId: string, req: RequestDoc, envId: string | null): Promise<{ name: string; methods: GrpcMethod[] }[]>
+  /** abre a chamada (sem client streaming, manda o body como mensagem); passos por onGrpcEvent */
+  grpcStart(wsId: string, req: RequestDoc, envId: string | null): Promise<void>
+  grpcSend(wsId: string, req: RequestDoc, envId: string | null, text: string): Promise<void>
+  grpcCloseSend(requestId: string): Promise<void>
+  grpcCancel(requestId: string): Promise<void>
+  onGrpcEvent(cb: (e: GrpcEvent) => void): () => void
   /** mock server (#20): ligar/desligar o servidor local do workspace e ver as rotas */
   mockStatus(wsId: string): Promise<MockStatus>
   mockStart(wsId: string): Promise<MockStatus>

@@ -137,3 +137,15 @@ func TestInsomniaWebSocket(t *testing.T) {
 		t.Fatalf("%v", req)
 	}
 }
+
+func TestInsomniaGrpc(t *testing.T) {
+	r, err := ParseSources([]Source{{Name: "v4.json", Text: `{"_type":"export","__export_format":4,"resources":[{"_id":"wrk_a","_type":"workspace","name":"A"},{"_id":"greq_1","_type":"grpc_request","parentId":"wrk_a","name":"Produto","url":"localhost:50051","protoMethodName":"/loja.Loja/ObterProduto","body":{"text":"{\"id\":\"1\"}"},"metadata":[{"name":"x-t","value":"1"}],"protoFileId":"pf_1"}]}`}}, nil)
+	if err != nil || len(r.Workspaces) != 1 {
+		t.Fatal(err)
+	}
+	req, _ := doc.Find(r.Workspaces[0], "greq_1")
+	if req == nil || req.Str("url") != "grpc://localhost:50051" || req.Map("grpc").Str("service") != "loja.Loja" || req.Map("grpc").Str("method") != "ObterProduto" ||
+		req.Map("body").Str("text") != `{"id":"1"}` || len(req.List("headers")) != 1 || len(r.Warnings) != 1 {
+		t.Fatalf("%v %v", req, r.Warnings)
+	}
+}

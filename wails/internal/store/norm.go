@@ -148,6 +148,19 @@ func normExamples(v any) any {
 	return out
 }
 
+// normGrpc (#5): serviço/método escolhidos e o .proto (vazio = server reflection)
+func normGrpc(v any) any {
+	g, _ := v.(*Doc)
+	if g == nil || (g.Str("service") == "" && g.Str("method") == "" && g.Str("protoFile") == "") {
+		return undef
+	}
+	out := doc.New("service", g.Str("service"), "method", g.Str("method"))
+	if f := g.Str("protoFile"); f != "" {
+		out.Set("protoFile", f)
+	}
+	return out
+}
+
 // normRequest: mesmos campos e ordem de normRequest do Electron
 func normRequest(raw *Doc, fallback string) *Doc {
 	id := raw.Str("id")
@@ -185,6 +198,7 @@ func normRequest(raw *Doc, fallback string) *Doc {
 	r.Set("scripts", normScripts(raw.Get("scripts")))
 	r.Set("assertions", normAssertions(raw.Get("assertions")))
 	r.Set("examples", normExamples(raw.Get("examples")))
+	r.Set("grpc", normGrpc(raw.Get("grpc")))
 	// só o "desligado" é gravado; ausente = ligado
 	r.Set("sendCookies", undefIfNotFalse(raw.Get("sendCookies")))
 	r.Set("storeCookies", undefIfNotFalse(raw.Get("storeCookies")))

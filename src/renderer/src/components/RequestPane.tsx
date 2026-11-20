@@ -14,7 +14,8 @@ import { AssertionsEditor } from './Runner'
 import { editorTags, TemplateInput } from './Tags'
 import type { GraphQLCtx } from './GraphQLBody'
 import { maskSecrets } from '@shared/secret'
-import { isWsUrl } from '@shared/stream'
+import { isGrpcUrl, isWsUrl } from '@shared/stream'
+import { GrpcBar, GrpcButton, GrpcSendBar } from './Grpc'
 import { askSchedule, stopSend } from '../sendSchedule'
 import { parseCurl } from '@shared/curl'
 import { beautifyJson } from '@shared/format'
@@ -71,6 +72,9 @@ export function RequestPane() {
   const update = (patch: Partial<RequestDoc>) => useStore.getState().updateRequest({ ...req, ...patch })
   const isSending = !!sending[req.id]
   const wsMode = isWsUrl(preview?.input.url)
+  const grpcMode = isGrpcUrl(preview?.input.url)
+  // aba escondida no modo atual (params no gRPC, exemplos no WS/gRPC) cai na mensagem
+  const sec: Section = (grpcMode && section === 'params') || ((wsMode || grpcMode) && section === 'examples') ? 'body' : section
   /** substitui o request pelo que o curl descreve (nome só muda se ainda for o padrão) */
   const applyCurl = (cmd: string) => {
     const { showError, notify } = useStore.getState()
@@ -109,8 +113,8 @@ export function RequestPane() {
       </div>
 
       <div className="flex items-center gap-1.5 p-3">
-        {wsMode ? (
-          <span className="rounded-md bg-raised px-2 py-1 font-mono text-[12px] font-semibold text-tpurple" title="WebSocket (URL ws:// ou wss://)">WS</span>
+        {wsMode || grpcMode ? (
+          <span className="rounded-md bg-raised px-2 py-1 font-mono text-[12px] font-semibold text-tpurple" title={grpcMode ? 'gRPC (URL grpc:// ou grpcs:// com TLS)' : 'WebSocket (URL ws:// ou wss://)'}>{grpcMode ? 'gRPC' : 'WS'}</span>
         ) : (
           <MethodPicker value={req.method} onChange={(method) => update({ method })} />
         )}
@@ -119,17 +123,20 @@ export function RequestPane() {
         </div>
         {wsMode ? (
           <WsButton reqId={req.id} />
+        ) : grpcMode ? (
+          <GrpcButton reqId={req.id} />
         ) : isSending ? (
           <button className="btn w-[88px]" onClick={() => api.cancel(req.id)}>Cancelar</button>
         ) : (
           <button className="btn btn-accent w-[88px]" onClick={() => useStore.getState().sendActive()} title="Ctrl+Enter">Enviar</button>
         )}
-        {!wsMode && <SendOptions reqId={req.id} />}
+        {!wsMode && !grpcMode && <SendOptions reqId={req.id} />}
       </div>
 
       <div className="-mt-1.5 truncate px-3 pb-1.5 font-mono text-[11px] text-faint select-text" title={maskSecrets(preview?.input.url ?? '')}>
         → {maskSecrets(preview?.input.url ?? '') || '…'}
       </div>
+      {grpcMode && <GrpcBar ws={cur.ws} req={req} url={preview?.input.url ?? ''} envId={envId} onChange={update} />}
       <RequestVars req={req} />
       {warn && warn.warnings.length > 0 && (
         <div className="mx-3 mb-2 rounded-md border border-torange/30 bg-torange/10 px-2 py-1 text-[11.5px] text-torange">
@@ -139,28 +146,28 @@ export function RequestPane() {
 
       <div className="border-b border-line px-2 pb-1.5">
         <Segmented
-          value={section}
+          value={sec}
           onChange={setSection}
           options={[
-            { id: 'params', label: <>Params<Count n={req.params.length} /></> },
-            { id: 'headers', label: <>Headers<Count n={req.headers.length} /></> },
-            { id: 'body', label: <>{wsMode ? 'Mensagem' : 'Body'}{req.body.mime && <span className="ml-1 text-[10.5px] text-faint">{BODY_TYPES.find((b) => b.mime === req.body.mime)?.label ?? req.body.mime}</span>}</> },
+            ...(grpcMode ? [] : [{ id: 'params' as const, label: <>Params<Count n={req.params.length} /></> }]),
+            { id: 'headers', label: <>{grpcMode ? 'Metadata' : 'Headers'}<Count n={req.headers.length} /></> },
+            { id: 'body', label: <>{wsMode || grpcMode ? 'Mensagem' : 'Body'}{req.body.mime && <span className="ml-1 text-[10.5px] text-faint">{BODY_TYPES.find((b) => b.mime === req.body.mime)?.label ?? req.body.mime}</span>}</> },
             { id: 'auth', label: <>Auth<span className="ml-1 text-[10.5px] text-faint">{req.auth.type === 'inherit' ? '↑' : req.auth.type === 'none' ? '' : req.auth.type === 'oauth2' ? 'OAuth2' : AUTH_LABEL[req.auth.type]}</span></> },
             { id: 'scripts', label: <>Scripts{hasScripts(req.scripts) ? <span className="ml-1 text-[10.5px] text-tpurple">●</span> : ancestors.some((a) => hasScripts(a.scripts)) ? <span className="ml-1 text-[10.5px] text-faint">↑</span> : null}</> },
             { id: 'assertions', label: <>Asserções<Count n={req.assertions?.filter((a) => a.enabled).length ?? 0} /></> },
-            ...(wsMode ? [] : [{ id: 'examples' as const, label: <>Exemplos<Count n={req.examples?.length ?? 0} /></> }]),
+            ...(wsMode || grpcMode ? [] : [{ id: 'examples' as const, label: <>Exemplos<Count n={req.examples?.length ?? 0} /></> }]),
             { id: 'notes', label: 'Notas' }
           ]}
         />
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">
-        {section === 'params' && (
+        {sec === 'params' && (
           <div className="p-3">
             <KeyValueTable rows={req.params} onChange={(params) => update({ params })} />
           </div>
         )}
-        {section === 'headers' && (
+        {sec === 'headers' && (
           <div className="p-3">
             <KeyValueTable rows={req.headers} onChange={(headers) => update({ headers })} keyPlaceholder="Header" />
             <div className="mt-3 flex items-center gap-4 text-[11.5px] text-dim">
@@ -182,12 +189,12 @@ export function RequestPane() {
             )}
           </div>
         )}
-        {section === 'body' && <BodyEditor body={req.body} onChange={(body) => update({ body })} gql={{ wsId: cur.ws.id, req, envId }} ws={wsMode ? req.id : undefined} />}
-        {section === 'auth' && <AuthEditor auth={req.auth} inherited={effectiveAuth({ ...req, auth: { type: 'inherit' } }, ancestors)} onChange={(auth) => update({ auth })} oauthCtx={{ wsId: cur.ws.id, req, envId }} />}
-        {section === 'scripts' && <ScriptsEditor scripts={req.scripts} onChange={(scripts) => update({ scripts })} />}
-        {section === 'assertions' && <AssertionsEditor list={req.assertions ?? []} onChange={(assertions) => update({ assertions: assertions.length ? assertions : undefined })} />}
-        {section === 'examples' && <ExamplesEditor ws={cur.ws} req={req} onChange={(examples) => update({ examples })} />}
-        {section === 'notes' && (
+        {sec === 'body' && <BodyEditor body={req.body} onChange={(body) => update({ body })} gql={{ wsId: cur.ws.id, req, envId }} ws={wsMode ? req.id : undefined} grpc={grpcMode ? req.id : undefined} />}
+        {sec === 'auth' && <AuthEditor auth={req.auth} inherited={effectiveAuth({ ...req, auth: { type: 'inherit' } }, ancestors)} onChange={(auth) => update({ auth })} oauthCtx={{ wsId: cur.ws.id, req, envId }} />}
+        {sec === 'scripts' && <ScriptsEditor scripts={req.scripts} onChange={(scripts) => update({ scripts })} />}
+        {sec === 'assertions' && <AssertionsEditor list={req.assertions ?? []} onChange={(assertions) => update({ assertions: assertions.length ? assertions : undefined })} />}
+        {sec === 'examples' && <ExamplesEditor ws={cur.ws} req={req} onChange={(examples) => update({ examples })} />}
+        {sec === 'notes' && (
           <textarea className="h-full w-full resize-none bg-transparent p-3 outline-none" placeholder="Anotações sobre este request…" value={req.description ?? ''} onChange={(e) => update({ description: e.target.value })} />
         )}
       </div>
@@ -211,7 +218,7 @@ function WsButton({ reqId }: { reqId: string }) {
   )
 }
 
-function BodyEditor({ body, onChange, gql, ws }: { body: Body; onChange: (b: Body) => void; gql: GraphQLCtx; ws?: string }) {
+function BodyEditor({ body, onChange, gql, ws, grpc }: { body: Body; onChange: (b: Body) => void; gql: GraphQLCtx; ws?: string; grpc?: string }) {
   const wsOpen = useStore((s) => (ws ? s.wsState[ws] === 'open' : false))
   const isForm = body.mime === 'application/x-www-form-urlencoded' || body.mime === 'multipart/form-data'
   const setMime = (mime: string | null) => {
@@ -237,6 +244,7 @@ function BodyEditor({ body, onChange, gql, ws }: { body: Body; onChange: (b: Bod
         {body.mime === 'application/json' && <button className="btn btn-ghost py-1" onClick={format}>Formatar</button>}
       </div>
       {body.mime === null && <p className="px-3 text-faint">{ws ? 'Escolha um tipo (JSON, texto…) pra escrever a mensagem.' : 'Este request não envia body.'}</p>}
+      {grpc && <GrpcSendBar reqId={grpc} />}
       {ws && body.mime !== null && (
         <div className="flex items-center gap-2 border-t border-line px-3 py-1.5 text-[11.5px]">
           <span className="text-faint">{wsOpen ? 'Ctrl+Enter manda esta mensagem ({{ variáveis }} e tags resolvidas)' : 'Conecte pra mandar a mensagem'}</span>
