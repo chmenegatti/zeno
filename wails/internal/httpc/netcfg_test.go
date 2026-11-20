@@ -9,6 +9,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"math/big"
 	"net"
 	"net/http"
@@ -100,6 +101,7 @@ func (p *pki) issue(t *testing.T, cn string, client bool) (tls.Certificate, *x50
 	} else {
 		tpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
 		tpl.IPAddresses = []net.IP{net.ParseIP("127.0.0.1")}
+		tpl.DNSNames = []string{"origem.zeno.test"}
 	}
 	der, err := x509.CreateCertificate(rand.Reader, tpl, p.caCert, &key.PublicKey, p.caKey)
 	if err != nil {
@@ -201,5 +203,64 @@ func TestMatchHost(t *testing.T) {
 		if got := matchHost(c.pattern, c.host, c.port); got != c.want {
 			t.Errorf("matchHost(%q, %q, %q) = %v", c.pattern, c.host, c.port, got)
 		}
+	}
+}
+
+// proxy HTTPS que pede certificado de cliente: o certificado do destino não pode chegar nele
+func TestCertificadoDoDestinoNaoVaiProProxyHTTPS(t *testing.T) {
+	dir := t.TempDir()
+	ca := newPKI(t)
+	caFile := write(t, dir, "ca.pem", ca.caPEM)
+	clients := x509.NewCertPool()
+	clients.AddCert(ca.caCert)
+
+	// destino com mTLS
+	originCert, _, _ := ca.issue(t, "origem", false)
+	origin := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "olá %s", r.TLS.PeerCertificates[0].Subject.CommonName)
+	}))
+	origin.TLS = &tls.Config{Certificates: []tls.Certificate{originCert}, ClientAuth: tls.RequireAndVerifyClientCert, ClientCAs: clients}
+	origin.StartTLS()
+	defer origin.Close()
+
+	// proxy HTTPS (CONNECT) que pede certificado e anota se recebeu
+	proxyCert, _, _ := ca.issue(t, "proxy", false)
+	var proxyGotCert []bool
+	px := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		proxyGotCert = append(proxyGotCert, len(r.TLS.PeerCertificates) > 0)
+		if r.Method != http.MethodConnect {
+			http.Error(w, "só CONNECT", 405)
+			return
+		}
+		up, err := net.Dial("tcp", origin.Listener.Addr().String())
+		if err != nil {
+			http.Error(w, err.Error(), 502)
+			return
+		}
+		conn, _, _ := w.(http.Hijacker).Hijack()
+		conn.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
+		go func() { io.Copy(up, conn); up.Close() }()
+		io.Copy(conn, up)
+		conn.Close()
+	}))
+	px.TLS = &tls.Config{Certificates: []tls.Certificate{proxyCert}, ClientAuth: tls.RequestClientCert}
+	px.StartTLS()
+	defer px.Close()
+
+	_, cc, ck := ca.issue(t, "cliente", true)
+	certFile := write(t, dir, "c.pem", pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cc.Raw}))
+	kb, _ := x509.MarshalECPrivateKey(ck)
+	keyFile := write(t, dir, "c.key", pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: kb}))
+	_, port, _ := net.SplitHostPort(origin.Listener.Addr().String())
+
+	// destino por nome (localhost não passa por proxy); o certificado vale pra qualquer host, até o do proxy
+	p := prep("GET", "https://origem.zeno.test:"+port+"/")
+	p.Net = vars.Net{ProxyMode: "custom", ProxyURL: px.URL, CAFile: caFile, ClientCerts: []vars.ClientCert{{Host: "*.zeno.test", Cert: certFile, Key: keyFile}, {Host: "127.0.0.1", Cert: certFile, Key: keyFile}}}
+	rec := Send("px1", p, CookieHooks{})
+	if status(rec) != 200 || rec.Str("body") != "olá cliente" {
+		t.Fatalf("via proxy HTTPS: %v %v %q", status(rec), rec.Get("error"), rec.Str("body"))
+	}
+	if len(proxyGotCert) == 0 || proxyGotCert[0] {
+		t.Errorf("proxy recebeu certificado de cliente: %v", proxyGotCert)
 	}
 }

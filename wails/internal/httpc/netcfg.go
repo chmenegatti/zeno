@@ -4,8 +4,11 @@ package httpc
 // própria somada às do sistema e certificado de cliente (mTLS) escolhido pelo host de cada salto.
 
 import (
+	"bufio"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net"
@@ -14,15 +17,18 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/vars"
 	"golang.org/x/net/http/httpproxy"
 	"software.sslmate.com/src/go-pkcs12"
 )
 
-// proxyFunc: nil = sem proxy. used recebe o proxy de cada conexão (sem senha), pra linha do tempo.
+// proxyFunc: nil = sem proxy. used recebe o proxy de cada conexão (linha do tempo). Proxy HTTPS com
+// destino HTTPS vira túnel aberto pelo próprio Zeno (tunnel, dialTunnel), não pelo http.Transport, que
+// usaria o mesmo tls.Config (com o certificado de cliente do destino) no aperto de mão com o proxy.
 // Como no Go, requests pra localhost/loopback não passam pelo proxy.
-func proxyFunc(n vars.Net, used func(string)) (func(*http.Request) (*url.URL, error), error) {
+func proxyFunc(n vars.Net, used func(*url.URL), tunnel *tunnels) (func(*http.Request) (*url.URL, error), error) {
 	var cfg *httpproxy.Config
 	switch n.ProxyMode {
 	case "system":
@@ -52,7 +58,11 @@ func proxyFunc(n vars.Net, used func(string)) (func(*http.Request) (*url.URL, er
 	return func(r *http.Request) (*url.URL, error) {
 		u, err := f(r.URL)
 		if u != nil && used != nil {
-			used(u.Redacted())
+			used(u)
+		}
+		if u != nil && u.Scheme == "https" && r.URL.Scheme == "https" && tunnel != nil {
+			tunnel.set(canonicalAddr(r.URL), u)
+			return nil, err
 		}
 		return u, err
 	}, nil
@@ -103,6 +113,13 @@ type clientCerts struct {
 }
 
 func (c *clientCerts) setTarget(u *url.URL) {
+	if u.Scheme != "https" {
+		// destino sem TLS: nenhum certificado de cliente (nem pro proxy no caminho)
+		c.mu.Lock()
+		c.host, c.port = "", ""
+		c.mu.Unlock()
+		return
+	}
 	port := u.Port()
 	if port == "" {
 		port = map[string]string{"https": "443", "http": "80"}[u.Scheme]
@@ -164,4 +181,72 @@ func (c *clientCerts) get(*tls.CertificateRequestInfo) (*tls.Certificate, error)
 		return cert, nil
 	}
 	return &tls.Certificate{}, nil
+}
+
+func canonicalAddr(u *url.URL) string {
+	port := u.Port()
+	if port == "" {
+		port = map[string]string{"https": "443", "http": "80"}[u.Scheme]
+	}
+	return net.JoinHostPort(u.Hostname(), port)
+}
+
+// tunnels: destino (host:porta) → proxy HTTPS por onde ele sai
+type tunnels struct {
+	mu sync.Mutex
+	m  map[string]*url.URL
+}
+
+func (t *tunnels) set(addr string, proxy *url.URL) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.m == nil {
+		t.m = map[string]*url.URL{}
+	}
+	t.m[addr] = proxy
+}
+
+func (t *tunnels) get(addr string) *url.URL {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.m[addr]
+}
+
+// dialTunnel: TLS até o proxy (sem certificado de cliente, validado com as CAs do sistema + a própria)
+// e CONNECT pro destino; o TLS do destino é feito depois, pelo http.Transport, dentro do túnel
+func dialTunnel(ctx context.Context, proxy *url.URL, addr string, roots *x509.CertPool, insecure bool) (net.Conn, error) {
+	port := proxy.Port()
+	if port == "" {
+		port = "443"
+	}
+	d := &tls.Dialer{NetDialer: &net.Dialer{Timeout: 15 * time.Second}, Config: &tls.Config{ServerName: proxy.Hostname(), RootCAs: roots, InsecureSkipVerify: insecure}}
+	conn, err := d.DialContext(ctx, "tcp", net.JoinHostPort(proxy.Hostname(), port))
+	if err != nil {
+		return nil, fmt.Errorf("proxy %s: %w", proxy.Host, err)
+	}
+	req := "CONNECT " + addr + " HTTP/1.1\r\nHost: " + addr + "\r\n"
+	if proxy.User != nil {
+		pass, _ := proxy.User.Password()
+		req += "Proxy-Authorization: Basic " + base64.StdEncoding.EncodeToString([]byte(proxy.User.Username()+":"+pass)) + "\r\n"
+	}
+	if _, err := conn.Write([]byte(req + "\r\n")); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	br := bufio.NewReader(conn)
+	res, err := http.ReadResponse(br, &http.Request{Method: http.MethodConnect})
+	if err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("proxy %s: %w", proxy.Host, err)
+	}
+	res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		conn.Close()
+		return nil, fmt.Errorf("proxy %s recusou o túnel: %s", proxy.Host, res.Status)
+	}
+	if br.Buffered() > 0 {
+		conn.Close()
+		return nil, fmt.Errorf("proxy %s mandou dados antes do túnel", proxy.Host)
+	}
+	return conn, nil
 }

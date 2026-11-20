@@ -301,7 +301,9 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 	}
 
 	// rede do workspace: proxy, CA própria e certificado de cliente (#18)
-	proxy, err := proxyFunc(p.Net, func(s string) { proxyUsed = s })
+	certs := &clientCerts{list: p.Net.ClientCerts}
+	tun := &tunnels{}
+	proxy, err := proxyFunc(p.Net, func(u *url.URL) { proxyUsed = u.Redacted() }, tun)
 	if err != nil {
 		return fail(err)
 	}
@@ -309,7 +311,6 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 	if err != nil {
 		return fail(err)
 	}
-	certs := &clientCerts{list: p.Net.ClientCerts}
 
 	// TLS: verifica na mão pra registrar o erro mesmo quando o workspace aceita certificado inválido
 	var cur *conn
@@ -365,10 +366,15 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 	}
 	// uma conexão por envio (reaproveitada entre saltos pro mesmo host), HTTP/1.1; proxy só se o workspace pedir
 	tr := &http.Transport{
-		Proxy:               proxy,
-		TLSClientConfig:     tlsCfg,
-		TLSNextProto:        map[string]func(string, *tls.Conn) http.RoundTripper{},
-		DialContext:         (&net.Dialer{Timeout: 15 * time.Second}).DialContext,
+		Proxy:           proxy,
+		TLSClientConfig: tlsCfg,
+		TLSNextProto:    map[string]func(string, *tls.Conn) http.RoundTripper{},
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if px := tun.get(addr); px != nil {
+				return dialTunnel(ctx, px, addr, roots, p.InsecureTLS)
+			}
+			return (&net.Dialer{Timeout: 15 * time.Second}).DialContext(ctx, network, addr)
+		},
 		TLSHandshakeTimeout: 15 * time.Second,
 	}
 	defer tr.CloseIdleConnections()
