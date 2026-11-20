@@ -5,7 +5,7 @@ import { javascript } from '@codemirror/lang-javascript'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { tags as t } from '@lezer/highlight'
 import { search } from '@codemirror/search'
-import { autocompletion, startCompletion, type Completion, type CompletionContext } from '@codemirror/autocomplete'
+import { autocompletion, startCompletion, type Completion, type CompletionContext, type CompletionResult, type CompletionSource } from '@codemirror/autocomplete'
 import { matchVars, openVarAt, rootName } from '@shared/vars'
 import { TAG_CHOICES } from '@shared/tagdef'
 import { useMemo, useRef } from 'react'
@@ -183,7 +183,16 @@ function tagExtension(tags: { current: TagSupport | undefined }) {
     const options = choicesNow().filter((c) => c.keys.some((k) => k.startsWith(q))).map(tagOption)
     return options.length ? { from: word.from, options, filter: false } : null
   }
-  return [plugin, insert, autocompletion({ override: [source], icons: false })]
+  // override tira as sugestões da linguagem (ex.: campos do schema GraphQL): repassa elas também
+  const langSource = async (ctx: CompletionContext): Promise<CompletionResult | null> => {
+    for (const f of ctx.state.languageDataAt<CompletionSource>('autocomplete', ctx.pos)) {
+      if (typeof f !== 'function') continue
+      const r = await f(ctx)
+      if (r) return r
+    }
+    return null
+  }
+  return [plugin, insert, autocompletion({ override: [source, langSource], icons: false })]
 }
 
 // textos do CodeMirror em pt-BR (busca, dobra, autocomplete)

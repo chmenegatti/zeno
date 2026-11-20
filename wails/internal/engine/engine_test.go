@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/chmenegatti/zeno/wails/internal/oauth2"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -352,5 +353,42 @@ func TestOAuth2NoEnvio(t *testing.T) {
 	r, _ := e.Execute(ws, req, "", 0)
 	if gotAuth != "" || !strings.Contains(r.Map("response").Str("error"), "OAuth 2.0") {
 		t.Errorf("erro: enviado=%q %v", gotAuth, r.Map("response").Get("error"))
+	}
+}
+
+func TestIntrospectSemHistorico(t *testing.T) {
+	var gotBody, gotAuth, gotCT, gotCookie string
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		gotBody, gotAuth, gotCT, gotCookie = string(b), r.Header.Get("Authorization"), r.Header.Get("Content-Type"), r.Header.Get("Cookie")
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"data":{"__schema":{}}}`))
+	}))
+	defer api.Close()
+	e, ws := setup(t, api.URL)
+	login, _ := doc.Find(ws, "req_login")
+	req := login.Clone()
+	req.Set("method", "POST")
+	req.Set("auth", doc.New("type", "bearer", "token", "tk"))
+	req.Set("body", doc.New("mime", "application/json", "text", `{"query":"{ __schema { types { name } } }"}`))
+	r, err := e.Introspect(ws, req, "", false)
+	if err != nil || r.Get("status") != 200 || r.Str("body") != `{"data":{"__schema":{}}}` {
+		t.Fatalf("%v %v", r, err)
+	}
+	if !strings.Contains(gotBody, "__schema") || gotAuth != "Bearer tk" || gotCT != "application/json" {
+		t.Errorf("body %q auth %q ct %q", gotBody, gotAuth, gotCT)
+	}
+	// cookies do workspace vão, a menos que o request desligue
+	e.Cookies.Store(ws.Str("id"), api.URL, []string{"sessao=s1; Path=/"})
+	if _, err := e.Introspect(ws, req, "", false); err != nil || gotCookie != "sessao=s1" {
+		t.Fatalf("cookie %q %v", gotCookie, err)
+	}
+	req.Set("sendCookies", false)
+	if _, err := e.Introspect(ws, req, "", false); err != nil || gotCookie != "" {
+		t.Fatalf("sendCookies=false mandou %q %v", gotCookie, err)
+	}
+	e.Store.Flush()
+	if raw, _ := os.ReadFile(e.Store.ResponsesFile("req_login")); len(raw) > 0 && strings.Contains(string(raw), "__schema") {
+		t.Error("introspecção foi pro histórico")
 	}
 }

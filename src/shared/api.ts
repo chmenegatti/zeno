@@ -69,6 +69,8 @@ export interface ZenoApi {
   oauthCancel(): Promise<void>
   onOAuthWait(cb: (w: { message: string; url: string; code: string }) => void): () => void
   onOAuthDone(cb: () => void): () => void
+  /** GraphQL (#4): manda o request (body = consulta de introspecção) sem gravar histórico; interactive=false não abre login OAuth */
+  graphqlIntrospect(wsId: string, req: RequestDoc, envId: string | null, interactive: boolean): Promise<{ status: number; body: string; error?: string }>
   tagPreview(raw: string, send: boolean): Promise<{ value?: string; error?: string; at?: number }>
   responses(requestId: string): Promise<ResponseRecord[]>
   clearResponses(requestId: string): Promise<void>

@@ -245,6 +245,21 @@ func (a *App) register() {
 		}
 		return a.engine.Execute(ws, req, envID, 0)
 	})
+	// GraphQL (#4): introspecção do schema, sem gravar histórico
+	a.handle("graphqlIntrospect", func(args Args) (any, error) {
+		wsID, _ := Get[string](args, 0)
+		req, err := Get[*Doc](args, 1)
+		if err != nil {
+			return nil, err
+		}
+		envID, _ := Get[string](args, 2)
+		ws := st.Workspace(wsID)
+		if ws == nil {
+			return nil, errNoWorkspace
+		}
+		interactive, _ := Get[bool](args, 3)
+		return a.engine.Introspect(ws, req, envID, interactive)
+	})
 	// request pronto pra "Gerar código" (o código sai no renderer, com o httpsnippet)
 	a.handle("codeInput", func(args Args) (any, error) {
 		wsID, _ := Get[string](args, 0)

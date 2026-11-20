@@ -40,6 +40,8 @@
     "@codemirror/autocomplete": "^6.20.4",
     "@codemirror/lang-php": "^6.0.2",
     "@codemirror/legacy-modes": "^6.5.5",
+    "cm6-graphql": "^1.0.0",
+    "graphql": "^16.15.0",
     "httpsnippet": "^3.0.10"
   },
   "devDependencies": {

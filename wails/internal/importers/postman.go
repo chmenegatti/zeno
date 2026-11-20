@@ -213,7 +213,7 @@ func ConvertPostman(collection any, envs []any) Result {
 		case "graphql":
 			g := doc.New("query", str(get(b, "graphql", "query")), "variables", safeJSON(get(b, "graphql", "variables")))
 			text, _ := doc.MarshalIndent(g)
-			return doc.New("mime", "application/json", "text", string(text))
+			return doc.New("mime", "application/graphql", "text", string(text))
 		case "file":
 			w.warn(where + ": body de arquivo binário não importado")
 		}

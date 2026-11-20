@@ -36,6 +36,14 @@
       }
     },
     {
+      "name": "Produtos GraphQL",
+      "request": {
+        "method": "POST",
+        "body": { "mode": "graphql", "graphql": { "query": "query P($id: ID!) { produto(id: $id) { nome } }", "variables": "{\"id\": \"p-1\"}" } },
+        "url": "{{baseUrl}}/graphql"
+      }
+    },
+    {
       "name": "Login OAuth",
       "request": { "method": "POST", "auth": { "type": "oauth2" }, "url": "{{baseUrl}}/oauth" }
     }
