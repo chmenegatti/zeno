@@ -24,8 +24,10 @@ que mexe aqui, roda o `flatpak-builder-lint` e deixa o `zeno.flatpak` como artef
 - `--socket=wayland`, `--socket=fallback-x11`, `--share=ipc`, `--device=dri`: janela GTK/WebKit.
 - `--share=network`: é um cliente de API (inclui o mock server em `127.0.0.1` e o login OAuth).
 - `--talk-name=org.freedesktop.secrets`: a chave do cofre fica no chaveiro do sistema (Secret Service).
-- `--socket=ssh-auth`: push/pull por SSH na integração git usa as chaves do ssh-agent. O `git` vai no pacote
-  (módulo próprio no manifesto: o runtime GNOME não tem git; o `ssh` vem do runtime).
+- Integração git: o `git` vai no pacote (módulo próprio no manifesto: o runtime GNOME não tem git; o `ssh`
+  vem do runtime). Chaves em `~/.ssh` sem senha funcionam; pra usar o ssh-agent (chave com senha), o usuário
+  libera com `flatpak override --user --socket=ssh-auth com.cesarmenegatti.Zeno` (o Flathub só aceita
+  `--socket=ssh-auth` por exceção, então ficou fora do manifesto).
 - `--filesystem=home`: o seletor de pastas/arquivos do Wails v2 é o `GtkFileChooserDialog`, que não passa
   pelo portal; sem acesso à pasta pessoal não dá pra ligar workspaces a pastas do usuário, importar/exportar,
   escolher certificados, `.proto` ou usar `{% file %}`. O linter do Flathub trata isso como erro

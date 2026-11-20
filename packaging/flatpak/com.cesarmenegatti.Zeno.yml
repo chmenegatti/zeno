@@ -18,8 +18,6 @@ finish-args:
   - --filesystem=home
   # chave mestra do cofre no chaveiro do sistema (Secret Service: gnome-keyring, KWallet)
   - --talk-name=org.freedesktop.secrets
-  # integração git: push/pull por SSH com as chaves do ssh-agent
-  - --socket=ssh-auth
 
 modules:
   # a integração git do Zeno chama o `git`, que não vem no org.gnome.Platform (o ssh vem)
