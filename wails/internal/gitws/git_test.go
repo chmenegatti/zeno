@@ -160,3 +160,23 @@ func TestForaDeRepoEBranches(t *testing.T) {
 		t.Errorf("%+v", s2)
 	}
 }
+
+func TestRelTo(t *testing.T) {
+	dir := t.TempDir()
+	link := filepath.Join(t.TempDir(), "link")
+	if err := os.Symlink(dir, link); err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct{ dir, file, repoRel, want string }{
+		{dir, filepath.Join(dir, "api", "a.yaml"), "ws/api/a.yaml", "api/a.yaml"},
+		// pasta do workspace por link: compara pelo caminho real
+		{link, filepath.Join(dir, "api", "a.yaml"), "ws/api/a.yaml", "api/a.yaml"},
+		// Rel falha (no Windows: outro volume): não devolve vazio
+		{"relativo", filepath.Join(dir, "a.yaml"), "ws/a.yaml", "ws/a.yaml"},
+	}
+	for _, c := range cases {
+		if got := relTo(c.dir, c.file, c.repoRel); got != c.want {
+			t.Errorf("relTo(%q, %q) = %q, want %q", c.dir, c.file, got, c.want)
+		}
+	}
+}

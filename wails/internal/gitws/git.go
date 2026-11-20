@@ -139,13 +139,7 @@ func GetStatus(dir string) (Status, error) {
 		if xy[0] == 'R' || xy[0] == 'C' {
 			i++ // próximo registro é o nome antigo
 		}
-		rel, _ := filepath.Rel(dir, filepath.Join(root, repoRel))
-		// pasta do workspace pode ser um caminho com link: compara pelo real
-		if strings.HasPrefix(rel, "..") {
-			if real, err := filepath.EvalSymlinks(dir); err == nil {
-				rel, _ = filepath.Rel(real, filepath.Join(root, repoRel))
-			}
-		}
+		rel := relTo(dir, filepath.Join(root, filepath.FromSlash(repoRel)), repoRel)
 		files = append(files, File{Path: rel, Status: code(xy), Label: labelOf(dir, rel)})
 	}
 	sort.Slice(files, func(i, j int) bool { return files[i].Path < files[j].Path })
@@ -257,4 +251,22 @@ func AbortRebase(dir string) error {
 func Init(dir string) error {
 	_, err := Git(dir, "init")
 	return err
+}
+
+// relTo: caminho de file relativo à pasta do workspace. A pasta pode ser um link (compara pelo
+// caminho real) ou, no Windows, estar noutro volume que o git devolve (Rel falha): aí usa o caminho
+// relativo à raiz do repositório, que o git aceita igual em diff/commit.
+func relTo(dir, file, repoRel string) string {
+	rel, err := filepath.Rel(dir, file)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		if real, e := filepath.EvalSymlinks(dir); e == nil {
+			if r, e := filepath.Rel(real, file); e == nil && !strings.HasPrefix(r, "..") {
+				return filepath.ToSlash(r)
+			}
+		}
+		if err != nil {
+			return repoRel
+		}
+	}
+	return filepath.ToSlash(rel)
 }
