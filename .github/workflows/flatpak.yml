@@ -50,22 +50,29 @@ jobs:
           upload-artifact: true
           artifact-name: zeno-flatpak
 
-      - name: Linter do Flathub (repositório)
-        # sem o espelho de screenshots do Flathub, o lint do repo sempre acusa
-        # appstream-screenshots-not-mirrored-in-ostree: esse erro não conta aqui
-        run: |
-          flatpak-builder-lint --exceptions --user-exceptions packaging/flatpak/lint-exceptions.json repo repo > lint.json || true
-          cat lint.json
-          python3 - <<'PY'
-          import json, sys
-          errs = [e for e in json.load(open("lint.json")).get("errors", []) if e != "appstream-screenshots-not-mirrored-in-ostree"]
-          if errs:
-              sys.exit("erros do linter: " + ", ".join(errs))
-          PY
-
       - name: git e ssh no runtime (integração git do Zeno)
         run: |
           for b in git ssh; do
             p=$(find / -path "*/runtime/org.gnome.Platform/*/51/active/files/bin/$b" 2>/dev/null | head -1)
             echo "$b: ${p:-ausente no org.gnome.Platform}"
           done
+
+      - name: Linter do Flathub (repositório)
+        # sem o espelho de screenshots do Flathub, o lint do repo sempre acusa
+        # appstream-screenshots-not-mirrored-in-ostree: esse erro não conta aqui. As screenshots apontam pro
+        # main: enquanto não estiverem lá (PR que as adiciona), appstream-missing-screenshots também não conta
+        run: |
+          flatpak-builder-lint --exceptions --user-exceptions packaging/flatpak/lint-exceptions.json repo repo > lint.json || true
+          cat lint.json
+          shot=$(grep -o 'https://raw.githubusercontent.com/[^<]*' packaging/flatpak/com.cesarmenegatti.Zeno.metainfo.xml | head -1)
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$shot" || true)
+          echo "screenshot no main: HTTP $code"
+          SHOTS_PENDING=$([ "$code" = 200 ] && echo 0 || echo 1) python3 - <<'PY'
+          import json, os, sys
+          ok = {"appstream-screenshots-not-mirrored-in-ostree"}
+          if os.environ["SHOTS_PENDING"] == "1":
+              ok.add("appstream-missing-screenshots")
+          errs = [e for e in json.load(open("lint.json")).get("errors", []) if e not in ok]
+          if errs:
+              sys.exit("erros do linter: " + ", ".join(errs))
+          PY
