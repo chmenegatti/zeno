@@ -9,7 +9,11 @@ here=$(cd "$(dirname "$0")" && pwd)
 data=$(mktemp -d)
 node "$here/srv.mjs" >/dev/null 2>&1 &
 srv=$!
-trap 'kill $srv 2>/dev/null; rm -rf "$data"' EXIT
+# servidor gRPC de teste (#5)
+(cd "$here/.." && go build -o "$data/grpcsrv" ./e2e/grpcsrv) || exit 1
+"$data/grpcsrv" >/dev/null 2>&1 &
+gsrv=$!
+trap 'kill $srv $gsrv 2>/dev/null; rm -rf "$data"' EXIT
 sleep 1
 out=$(ZENO_NO_KEYRING=1 ZENO_DATA_DIR=$data ZENO_SCRIPT="$(cat "$here/e2e.js")" timeout 180 "$here/../build/zeno" 2>&1 | while IFS= read -r line; do
   case "$line" in

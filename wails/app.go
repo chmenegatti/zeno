@@ -16,6 +16,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/cookies"
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/engine"
+	"github.com/chmenegatti/zeno/wails/internal/grpcc"
 	"github.com/chmenegatti/zeno/wails/internal/keyring"
 	"github.com/chmenegatti/zeno/wails/internal/mock"
 	"github.com/chmenegatti/zeno/wails/internal/oauth2"
@@ -58,6 +59,7 @@ type App struct {
 	trim     memTrim
 	sockets  *ws.Manager
 	mocks    *mock.Manager
+	calls    *grpcc.Manager
 }
 
 func NewApp() *App {
@@ -84,6 +86,7 @@ func NewApp() *App {
 	a.engine = &engine.Engine{OAuth: oauth, Store: st, Cookies: a.cookies, Vault: a.vault, Plugins: a.plugins, Hooks: engine.Hooks{Emit: a.Emit, Ask: a.askPrompt}}
 	a.sockets = &ws.Manager{Emit: func(e ws.Event) { a.Emit("ws:event", e) }}
 	a.mocks = &mock.Manager{Workspace: st.WorkspaceSnapshot, OnHit: func(h mock.Hit) { a.Emit("mock:hit", h) }}
+	a.calls = &grpcc.Manager{Emit: func(e grpcc.Event) { a.Emit("grpc:event", e) }}
 	a.register()
 	return a
 }
@@ -111,6 +114,7 @@ func (a *App) shutdown(context.Context) {
 	a.store.Flush()
 	a.sockets.CloseAll()
 	a.mocks.StopAll()
+	a.calls.CancelAll()
 	if a.watcher != nil {
 		_ = a.watcher.Close()
 	}

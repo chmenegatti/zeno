@@ -21,6 +21,30 @@ export interface WsEvent {
   headers?: [string, string][]
 }
 
+export interface GrpcEvent {
+  reqId: string
+  kind: 'start' | 'headers' | 'sent' | 'message' | 'status' | 'error'
+  data?: string
+  at: number
+  code?: number
+  codeName?: string
+  metadata?: [string, string][]
+  method?: string
+  clientStream?: boolean
+}
+
+export interface GrpcMethod {
+  name: string
+  clientStream: boolean
+  serverStream: boolean
+  /** JSON de exemplo da mensagem de entrada */
+  input: string
+  inputType: string
+  outputType: string
+}
+
+export const isGrpcUrl = (url: string | undefined): boolean => /^grpcs?:\/\//i.test((url ?? '').trim())
+
 export const isWsUrl = (url: string | undefined): boolean => /^wss?:\/\//i.test((url ?? '').trim())
 
 export const isEventStream = (headers: [string, string][]): boolean =>

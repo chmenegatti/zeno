@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package loja;
+
+import "google/protobuf/timestamp.proto";
+
+// serviço de teste do Zeno (#5): unary, server, client e bidi streaming
+service Loja {
+  rpc ObterProduto(ProdutoReq) returns (Produto);
+  rpc Contar(ContarReq) returns (stream Numero);
+  rpc Somar(stream Numero) returns (Numero);
+  rpc Eco(stream Numero) returns (stream Numero);
+}
+
+enum Tipo {
+  COMUM = 0;
+  ESPECIAL = 1;
+}
+
+message ProdutoReq { string id = 1; }
+
+message Produto {
+  string id = 1;
+  string nome = 2;
+  repeated string tags = 3;
+  Tipo tipo = 4;
+  google.protobuf.Timestamp criado = 5;
+  string auth = 6;
+}
+
+message ContarReq { int32 ate = 1; }
+
+message Numero { int64 n = 1; }

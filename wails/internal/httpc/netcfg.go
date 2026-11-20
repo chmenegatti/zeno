@@ -255,18 +255,45 @@ func dialTunnel(ctx context.Context, proxy *url.URL, addr string, roots *x509.Ce
 // cliente, TLS inválido aceito ou não) pra quem não passa pelo Send, como o WebSocket. target é a
 // URL http(s) equivalente (escolhe o certificado de cliente).
 func NetClient(p vars.Prepared, target *url.URL) (*http.Client, error) {
-	certs := &clientCerts{list: p.Net.ClientCerts}
-	certs.setTarget(target)
 	tun := &tunnels{}
 	proxy, err := proxyFunc(p.Net, func(*url.URL) {}, tun)
 	if err != nil {
 		return nil, err
 	}
-	roots, err := rootCAs(p.Net.CAFile)
+	tlsCfg, roots, err := tlsFor(p, target)
 	if err != nil {
 		return nil, err
 	}
-	tlsCfg := &tls.Config{
+	tr := &http.Transport{
+		Proxy:           proxy,
+		TLSClientConfig: tlsCfg,
+		TLSNextProto:    map[string]func(string, *tls.Conn) http.RoundTripper{},
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if px := tun.get(addr); px != nil {
+				return dialTunnel(ctx, px, addr, roots, p.InsecureTLS)
+			}
+			return (&net.Dialer{Timeout: 15 * time.Second}).DialContext(ctx, network, addr)
+		},
+		TLSHandshakeTimeout: 15 * time.Second,
+	}
+	return &http.Client{Transport: tr}, nil
+}
+
+// TLSConfig (#5): TLS do workspace (CA própria, certificado de cliente do host de target, aceitar
+// inválido) pra conexões fora do HTTP, como o gRPC
+func TLSConfig(p vars.Prepared, target *url.URL) (*tls.Config, error) {
+	c, _, err := tlsFor(p, target)
+	return c, err
+}
+
+func tlsFor(p vars.Prepared, target *url.URL) (*tls.Config, *x509.CertPool, error) {
+	certs := &clientCerts{list: p.Net.ClientCerts}
+	certs.setTarget(target)
+	roots, err := rootCAs(p.Net.CAFile)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &tls.Config{
 		InsecureSkipVerify:   true,
 		GetClientCertificate: certs.get,
 		VerifyConnection: func(cs tls.ConnectionState) error {
@@ -283,18 +310,5 @@ func NetClient(p vars.Prepared, target *url.URL) (*http.Client, error) {
 			_, err := cs.PeerCertificates[0].Verify(x509.VerifyOptions{DNSName: cs.ServerName, Intermediates: inter, Roots: roots})
 			return err
 		},
-	}
-	tr := &http.Transport{
-		Proxy:           proxy,
-		TLSClientConfig: tlsCfg,
-		TLSNextProto:    map[string]func(string, *tls.Conn) http.RoundTripper{},
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			if px := tun.get(addr); px != nil {
-				return dialTunnel(ctx, px, addr, roots, p.InsecureTLS)
-			}
-			return (&net.Dialer{Timeout: 15 * time.Second}).DialContext(ctx, network, addr)
-		},
-		TLSHandshakeTimeout: 15 * time.Second,
-	}
-	return &http.Client{Transport: tr}, nil
+	}, roots, nil
 }

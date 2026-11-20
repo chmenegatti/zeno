@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { SendResult } from '@shared/api'
 import { findNode } from '@shared/tree'
 import { prepare } from '@shared/prepare'
-import { isWsUrl, type SSEEvent, type WsEvent } from '@shared/stream'
+import { isGrpcUrl, isWsUrl, type GrpcEvent, type SSEEvent, type WsEvent } from '@shared/stream'
 import type { AppState, Environment, PluginInfo, Folder, FolderDoc, RequestDoc, ResponseRecord, TreeNode, Workspace } from '@shared/types'
 
 const api = window.zeno
@@ -61,6 +61,11 @@ interface Store {
   /** WebSocket (#6): log da conexão e estado, por request (só na memória) */
   wsLog: Record<string, WsEvent[]>
   wsState: Record<string, 'connecting' | 'open' | 'closed'>
+  /** gRPC (#5): passos da chamada e estado (running; streaming = cliente ainda pode mandar) */
+  grpcLog: Record<string, GrpcEvent[]>
+  grpcState: Record<string, 'running' | 'streaming' | undefined>
+  /** invoca (ou, com envio aberto, manda o body como mais uma mensagem) */
+  grpcAction(id?: string, action?: 'start' | 'send' | 'closeSend' | 'cancel'): Promise<void>
   /** conecta (ou, conectado, manda o body como mensagem) */
   wsAction(id?: string, action?: 'connect' | 'send' | 'close'): Promise<void>
   /** envio agendado por request: atrasado (uma vez) ou repetindo */
@@ -157,6 +162,8 @@ export const useStore = create<Store>((set, get) => ({
   sendTimers: {},
   plugins: [],
   live: {},
+  grpcLog: {},
+  grpcState: {},
   wsLog: {},
   wsState: {},
 
@@ -170,6 +177,13 @@ export const useStore = create<Store>((set, get) => ({
     })
     api.onResponse((id, history) => set((s) => ({ responses: { ...s.responses, [id]: history } })))
     api.onSseEvent((id, e) => set((s) => ({ live: { ...s.live, [id]: [...(s.live[id] ?? []), e].slice(-LOG_MAX) } })))
+    api.onGrpcEvent((e) =>
+      set((s) => ({
+        grpcLog: { ...s.grpcLog, [e.reqId]: [...(s.grpcLog[e.reqId] ?? []), e].slice(-LOG_MAX) },
+        grpcState:
+          e.kind === 'start' ? { ...s.grpcState, [e.reqId]: e.clientStream ? 'streaming' : 'running' } : e.kind === 'status' ? { ...s.grpcState, [e.reqId]: undefined } : s.grpcState
+      }))
+    )
     api.onWsEvent((e) =>
       set((s) => ({
         wsLog: { ...s.wsLog, [e.reqId]: [...(s.wsLog[e.reqId] ?? []), e].slice(-LOG_MAX) },
@@ -244,6 +258,34 @@ export const useStore = create<Store>((set, get) => ({
     }
   },
 
+  async grpcAction(target, action) {
+    const s = get()
+    const cur = target ? findRequest(s, target) : activeRequest(s)
+    if (!cur) return
+    const id = cur.req.id
+    const env = cur.ws.id === activeWorkspace(s)?.id ? activeEnvId(s) : (s.app.activeEnv[cur.ws.id] ?? null)
+    const state = s.grpcState[id]
+    // Ctrl+Enter: invoca; com envio aberto, manda mais uma mensagem; rodando unary, nada
+    const act = action ?? (state === 'streaming' ? 'send' : state ? null : 'start')
+    if (!act) return
+    const fail = (e: unknown): void =>
+      set((st) => ({
+        grpcLog: { ...st.grpcLog, [id]: [...(st.grpcLog[id] ?? []), { reqId: id, kind: 'error' as const, data: e instanceof Error ? e.message : String(e), at: Date.now() }].slice(-LOG_MAX) }
+      }))
+    if (act === 'cancel') return void api.grpcCancel(id)
+    if (act === 'closeSend') return void api.grpcCloseSend(id).catch(fail)
+    if (act === 'send') return void (await api.grpcSend(cur.ws.id, cur.req, env, cur.req.body.text ?? '').catch(fail))
+    if (state) return
+    await saveNow(id).catch(() => undefined)
+    set((st) => ({ grpcState: { ...st.grpcState, [id]: 'running' } }))
+    try {
+      await api.grpcStart(cur.ws.id, cur.req, env)
+    } catch (e) {
+      fail(e)
+      set((st) => ({ grpcState: { ...st.grpcState, [id]: undefined } }))
+    }
+  },
+
   async sendActive(target) {
     const s = get()
     const cur = target ? findRequest(s, target) : activeRequest(s)
@@ -252,7 +294,9 @@ export const useStore = create<Store>((set, get) => ({
     // ws:// e wss://: conectar/mandar mensagem em vez de enviar HTTP
     const f = findNode(cur.ws, id)
     const env0 = cur.ws.id === activeWorkspace(s)?.id ? activeEnvId(s) : (s.app.activeEnv[cur.ws.id] ?? null)
-    if (isWsUrl(prepare(cur.ws, cur.req, f?.ancestors ?? [], env0).input.url)) return get().wsAction(id)
+    const url0 = prepare(cur.ws, cur.req, f?.ancestors ?? [], env0).input.url
+    if (isWsUrl(url0)) return get().wsAction(id)
+    if (isGrpcUrl(url0)) return get().grpcAction(id)
     await saveNow(id).catch(() => undefined)
     set((st) => ({ sending: { ...st.sending, [id]: true }, live: { ...st.live, [id]: [] } }))
     try {

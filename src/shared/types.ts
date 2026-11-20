@@ -86,6 +86,8 @@ export interface RequestDoc {
   storeCookies?: boolean
   /** respostas de exemplo (#20): o mock do workspace responde a rota com o padrão (ou o primeiro) */
   examples?: Example[]
+  /** gRPC (#5): URL grpc:// ou grpcs://; serviço/método e .proto (vazio = server reflection) */
+  grpc?: { service: string; method: string; protoFile?: string }
   sortKey: number
 }
 

@@ -160,6 +160,37 @@
     const off = await z.mockStop(wsId)
     ok('mock para', !off.running && (await send(m)).rec.status === 0)
   })
+  await safe('gRPC', async () => {
+    const r = await mk('grpc', { url: 'grpc://127.0.0.1:4778', auth: { type: 'bearer', token: '{{ token }}' }, body: { mime: 'application/json', text: '{"id": "{{ user }}"}' } })
+    const svcs = await z.grpcDescribe(wsId, r, null)
+    ok('gRPC reflection', svcs.length === 1 && svcs[0].name === 'loja.Loja' && svcs[0].methods.length === 4, JSON.stringify(svcs).slice(0, 200))
+    const evs = []
+    const off = z.onGrpcEvent((e) => e.reqId === r.id && evs.push(e))
+    const until = async (f) => { for (let i = 0; i < 50 && !f(); i++) await w(100) }
+    const call = async (method, patch = {}) => {
+      evs.length = 0
+      const req = { ...r, grpc: { service: 'loja.Loja', method }, ...patch }
+      await z.grpcStart(wsId, req, null)
+      return req
+    }
+    await call('ObterProduto')
+    await until(() => evs.some((e) => e.kind === 'status'))
+    const msg = JSON.parse(evs.find((e) => e.kind === 'message')?.data ?? '{}')
+    const st = evs.find((e) => e.kind === 'status')
+    ok('gRPC unary com variáveis e auth', msg.nome === 'Caneta ana' && msg.auth === 'Bearer tk-e2e' && st.code === 0 && st.codeName === 'OK', JSON.stringify(evs).slice(0, 400))
+    await call('Contar', { body: { mime: 'application/json', text: '{"ate": 3}' } })
+    await until(() => evs.some((e) => e.kind === 'status'))
+    const ms = evs.filter((e) => e.kind === 'message')
+    ok('gRPC server streaming com horário', ms.length === 3 && ms[2].at - ms[0].at >= 150, JSON.stringify(ms.map((m) => m.at)))
+    const s = await call('Somar')
+    await until(() => evs.some((e) => e.kind === 'start'))
+    await z.grpcSend(wsId, s, null, '{"n": 2}')
+    await z.grpcSend(wsId, s, null, '{"n": 5}')
+    await z.grpcCloseSend(r.id)
+    await until(() => evs.some((e) => e.kind === 'status'))
+    ok('gRPC client streaming', evs.filter((e) => e.kind === 'sent').length === 2 && /"7"/.test(evs.find((e) => e.kind === 'message')?.data ?? ''), JSON.stringify(evs).slice(0, 400))
+    off()
+  })
   await safe('redirect e cookies', async () => {
     const r = await mk('redirect', { url: '{{ base }}/redirect' })
     const { body, rec } = await send(r)
