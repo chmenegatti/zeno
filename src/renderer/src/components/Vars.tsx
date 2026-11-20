@@ -7,6 +7,7 @@ import { LockIcon } from './Secret'
 import { TemplateInput } from './Tags'
 import type { VarSupport } from './CodeEditor'
 import { api, activeEnvId, activeRequest, activeWorkspace, saveEnvironment, saveFolder, useStore } from '../state'
+import { Select } from './Select'
 
 /** abre o popover de edição ancorado no elemento */
 export function openVar(name: string, el: Element): void {
@@ -373,13 +374,13 @@ export function VarPopover() {
         </label>
         <label className="flex items-center gap-2 text-[11.5px]">
           <span className="text-dim">Salvar em</span>
-          <select className="field min-w-0 flex-1 py-0.5" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
+          <Select className="field min-w-0 flex-1 py-0.5" value={targetId} onChange={(v) => setTargetId(v)}>
             {targets.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.label}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         {err && <p className="text-[11.5px] text-tpink">{err}</p>}
         <div className="flex items-center gap-2 pt-1">

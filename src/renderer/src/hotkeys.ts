@@ -66,10 +66,13 @@ function editorFont(delta: number): void {
 function focusTarget(name: string, open = false): void {
   const el = document.querySelector<HTMLElement>(`[data-hk="${name}"]`)
   if (!el) return
-  const target = el.matches('input,select,textarea,[tabindex],.cm-content') ? el : el.querySelector<HTMLElement>('input,select,textarea,.cm-content,[tabindex]')
+  const sel = 'input,select,textarea,[role="combobox"],[tabindex],.cm-content'
+  const target = el.matches(sel) ? el : el.querySelector<HTMLElement>(sel)
   target?.focus()
   if (target instanceof HTMLInputElement) target.select()
   if (open && target instanceof HTMLSelectElement) target.showPicker?.()
+  // lista própria (Select): abre como o clique
+  if (open && target?.getAttribute('role') === 'combobox' && target.getAttribute('aria-expanded') !== 'true') target.click()
 }
 
 function current() {

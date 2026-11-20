@@ -17,6 +17,7 @@ import { GitButton } from './Git'
 import { copyAsCurl } from './Code'
 import { Chevron, FolderIcon, MethodBadge } from './ui'
 import { EnvVarList } from './Vars'
+import { Select } from './Select'
 
 const EXPANDED_KEY = 'zeno:expanded'
 
@@ -344,18 +345,18 @@ function EnvPicker({ ws }: { ws: Workspace }) {
   return (
     <div className="flex items-center gap-1 px-2 pb-2">
       <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: env?.color ?? 'var(--color-faint)' }} />
-      <select
+      <Select
         data-hk="env"
         className="field min-w-0 flex-1 py-1"
         value={current ?? ''}
-        onChange={(e) => useStore.getState().setApp({ activeEnv: { ...app.activeEnv, [ws.id]: e.target.value || null } })}
+        onChange={(v) => useStore.getState().setApp({ activeEnv: { ...app.activeEnv, [ws.id]: v || null } })}
         title="Ambiente (Ctrl+Shift+E)"
       >
         <option value="">Só base</option>
         {subs.map((e) => (
           <option key={e.id} value={e.id}>{e.name}</option>
         ))}
-      </select>
+      </Select>
       <button className="btn btn-ghost px-2" title="Editar ambientes" onClick={() => useStore.getState().openModal({ kind: 'env', id: ws.id })}>✎</button>
     </div>
   )

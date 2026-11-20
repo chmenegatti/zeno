@@ -4,6 +4,7 @@ import { findNode, sortNodes } from '@shared/tree'
 import { ASSERT_OPS, ASSERT_SOURCES, type Assertion, type RequestDoc, type RunReport, type RunStep, type TreeNode, type Workspace } from '@shared/types'
 import { activeEnvId, api, useStore } from '../state'
 import { MethodBadge, Modal } from './ui'
+import { Select } from './Select'
 
 // ---------- asserções ----------
 
@@ -38,15 +39,15 @@ export function AssertionsEditor({ list, onChange }: { list: Assertion[]; onChan
       {list.map((a, i) => (
         <div key={i} className={`group flex items-center gap-1.5 ${a.enabled ? '' : 'opacity-45'}`}>
           <input type="checkbox" className="accent-[var(--color-accent)]" checked={a.enabled} onChange={(e) => set(i, { enabled: e.target.checked })} title="Ativa" />
-          <select className="field w-[112px] py-1" value={a.source} onChange={(e) => set(i, { source: e.target.value as Assertion['source'] })}>
+          <Select className="field w-[112px] py-1" value={a.source} onChange={(v) => set(i, { source: v as Assertion['source'] })}>
             {ASSERT_SOURCES.map((s) => <option key={s} value={s}>{SOURCE_LABEL[s]}</option>)}
-          </select>
+          </Select>
           {(a.source === 'header' || a.source === 'json') && (
             <input className="field min-w-0 flex-1 font-mono text-[12px]" placeholder={a.source === 'json' ? '$.campo' : 'Content-Type'} value={a.path ?? ''} onChange={(e) => set(i, { path: e.target.value })} />
           )}
-          <select className="field w-[112px] py-1" value={a.op} onChange={(e) => set(i, { op: e.target.value as Assertion['op'] })}>
+          <Select className="field w-[112px] py-1" value={a.op} onChange={(v) => set(i, { op: v as Assertion['op'] })}>
             {OPS_FOR[a.source].map((o) => <option key={o} value={o}>{OP_LABEL[o]}</option>)}
-          </select>
+          </Select>
           {NO_VALUE.includes(a.op) ? (
             <span className="min-w-0 flex-1" />
           ) : (
@@ -145,10 +146,10 @@ export function RunModal({ ws, folderId, onClose }: { ws: Workspace; folderId: s
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1">
             <span className="text-[11px] text-faint">Ambiente</span>
-            <select className="field py-1" value={envId ?? ''} disabled={running} onChange={(e) => setEnvId(e.target.value || null)}>
+            <Select className="field py-1" value={envId ?? ''} disabled={running} onChange={(v) => setEnvId(v || null)}>
               <option value="">Só base</option>
               {subs.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-            </select>
+            </Select>
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-[11px] text-faint">Iterações</span>
