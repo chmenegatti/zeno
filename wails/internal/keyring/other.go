@@ -1,10 +1,10 @@
-//go:build !linux && !windows
+//go:build !linux && !windows && !(darwin && cgo)
 
 package keyring
 
 import "errors"
 
-// macOS (Keychain) entra com a distribuição nesse sistema (#83)
+// sistemas sem chaveiro suportado (Linux: Secret Service; Windows: DPAPI; macOS: Keychain)
 type unsupported struct{}
 
 func (unsupported) Available() (bool, string, bool) { return false, "indisponível", true }

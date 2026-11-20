@@ -27,13 +27,20 @@ type Protector interface {
 
 var iv = bytes.Repeat([]byte{' '}, 16)
 
-func deriveKey(password string) []byte {
-	return pbkdf2.Key([]byte(password), []byte("saltysalt"), 1, 16, sha1.New)
+func deriveKey(password string) []byte { return deriveKeyIter(password, 1) }
+
+// macOS usa 1003 iterações no OSCrypt; Linux, 1
+func deriveKeyIter(password string, iter int) []byte {
+	return pbkdf2.Key([]byte(password), []byte("saltysalt"), iter, 16, sha1.New)
 }
 
 // Encrypt: prefixo + AES-128-CBC/PKCS7
 func Encrypt(prefix, password string, plain []byte) []byte {
-	block, _ := aes.NewCipher(deriveKey(password))
+	return encryptKey(prefix, deriveKey(password), plain)
+}
+
+func encryptKey(prefix string, key, plain []byte) []byte {
+	block, _ := aes.NewCipher(key)
 	pad := aes.BlockSize - len(plain)%aes.BlockSize
 	buf := append(append([]byte{}, plain...), bytes.Repeat([]byte{byte(pad)}, pad)...)
 	out := make([]byte, len(buf))
@@ -43,10 +50,14 @@ func Encrypt(prefix, password string, plain []byte) []byte {
 
 // Decrypt: o contrário de Encrypt; erro se a senha não bate (padding inválido)
 func Decrypt(password string, data []byte) ([]byte, error) {
+	return decryptKey(deriveKey(password), data)
+}
+
+func decryptKey(key, data []byte) ([]byte, error) {
 	if len(data) < 3+aes.BlockSize || (len(data)-3)%aes.BlockSize != 0 {
 		return nil, errors.New("dado cifrado com tamanho inválido")
 	}
-	block, _ := aes.NewCipher(deriveKey(password))
+	block, _ := aes.NewCipher(key)
 	out := make([]byte, len(data)-3)
 	cipher.NewCBCDecrypter(block, iv).CryptBlocks(out, data[3:])
 	pad := int(out[len(out)-1])
