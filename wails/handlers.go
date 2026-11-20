@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"strings"
 	"time"
 
@@ -45,6 +46,24 @@ func pairs(l []any) [][2]string {
 		}
 	}
 	return out
+}
+
+// pasta de dados do Insomnia (mesma do Electron em cada sistema)
+func insomniaDir() string {
+	home, _ := os.UserHomeDir()
+	switch goruntime.GOOS {
+	case "darwin":
+		return filepath.Join(home, "Library", "Application Support", "Insomnia")
+	case "windows":
+		if d := os.Getenv("APPDATA"); d != "" {
+			return filepath.Join(d, "Insomnia")
+		}
+		return filepath.Join(home, "AppData", "Roaming", "Insomnia")
+	}
+	if d := os.Getenv("XDG_CONFIG_HOME"); d != "" {
+		return filepath.Join(d, "Insomnia")
+	}
+	return filepath.Join(home, ".config", "Insomnia")
 }
 
 // pasta de downloads do usuário (XDG no Linux), ou a pasta pessoal
@@ -274,6 +293,8 @@ func (a *App) register() {
 		switch act, _ := Get[string](args, 0); act {
 		case "quit":
 			runtime.Quit(a.ctx)
+		case "devtools":
+			// o inspetor do WebKit só existe em build de desenvolvimento (wails dev)
 		case "fullscreen":
 			if runtime.WindowIsFullscreen(a.ctx) {
 				runtime.WindowUnfullscreen(a.ctx)
@@ -282,6 +303,29 @@ func (a *App) register() {
 			}
 		}
 		return nil, nil
+	})
+	a.handle("pickFile", func(Args) (any, error) {
+		f, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{})
+		if err != nil || f == "" {
+			return nil, err
+		}
+		return f, nil
+	})
+	// atalhos personalizados do Insomnia (NeDB: vale o último registro)
+	a.handle("insomniaHotkeys", func(Args) (any, error) {
+		b, err := os.ReadFile(filepath.Join(insomniaDir(), "insomnia.Settings.db"))
+		if err != nil {
+			return nil, nil
+		}
+		var reg any
+		for _, line := range strings.Split(string(b), "\n") {
+			if v, err := doc.FromJSON([]byte(line)); err == nil {
+				if d, ok := v.(*Doc); ok && d.Has("hotKeyRegistry") {
+					reg = d.Get("hotKeyRegistry")
+				}
+			}
+		}
+		return reg, nil
 	})
 	a.handle("openDataDir", func(Args) (any, error) {
 		runtime.BrowserOpenURL(a.ctx, "file://"+filepath.ToSlash(st.Dir))
@@ -298,7 +342,6 @@ func (a *App) register() {
 	for _, c := range []string{"codeTargets", "pluginsList", "pluginsReload", "cookiesList"} {
 		a.handle(c, empty([]any{}))
 	}
-	a.handle("insomniaHotkeys", empty(nil))
 	a.handle("vaultStatus", empty(doc.New("available", false, "backend", "versão Go (fase 2)", "weak", true, "hasKey", false)))
 	a.handle("githubStatus", empty(doc.New("account", nil, "deviceAvailable", false)))
 	a.handle("tagPreview", empty(doc.New("error", "tags {% %} ainda não disponíveis na versão Go")))
