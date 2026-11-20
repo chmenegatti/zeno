@@ -242,6 +242,15 @@ func parse(sc string, u *url.URL, now time.Time) (*Doc, bool) {
 			sameSite = strings.ToLower(val)
 		}
 	}
+	// prefixos (como o tough-cookie, modo "silent": recusa sem erro)
+	secureOrigin := u.Scheme == "https" || u.Scheme == "wss"
+	lk := strings.ToLower(key)
+	if strings.HasPrefix(lk, "__secure-") && (!secure || !secureOrigin) {
+		return nil, false
+	}
+	if strings.HasPrefix(lk, "__host-") && (!secure || !secureOrigin || domainAttr != "" || pathAttr != "/") {
+		return nil, false
+	}
 	host := canonHost(u.Hostname())
 	hostOnly := true
 	domain := host

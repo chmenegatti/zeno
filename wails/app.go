@@ -12,7 +12,9 @@ import (
 	"sync"
 
 	"github.com/chmenegatti/zeno/wails/internal/cookies"
+	"github.com/chmenegatti/zeno/wails/internal/keyring"
 	"github.com/chmenegatti/zeno/wails/internal/store"
+	"github.com/chmenegatti/zeno/wails/internal/vault"
 	"github.com/chmenegatti/zeno/wails/internal/watch"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -36,6 +38,7 @@ type App struct {
 	ctx      context.Context
 	store    *store.Store
 	cookies  *cookies.Cookies
+	vault    *vault.Vault
 	mu       sync.RWMutex
 	handlers map[string]handler
 	watcher  *watch.Watcher
@@ -43,7 +46,8 @@ type App struct {
 
 func NewApp() *App {
 	st := store.New(store.DefaultDataDir())
-	a := &App{store: st, cookies: cookies.New(st.Dir), handlers: map[string]handler{}}
+	// "zeno": mesmo item do chaveiro que o Electron usa (application=zeno)
+	a := &App{store: st, cookies: cookies.New(st.Dir), vault: vault.New(st.Dir, keyring.System("zeno")), handlers: map[string]handler{}}
 	a.register()
 	return a
 }
