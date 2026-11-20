@@ -23,6 +23,8 @@ export default defineConfig({
         'form-data/lib/form_data': resolve(__dirname, 'src/renderer/src/shims/form-data.ts')
       }
     },
-    plugins: [react(), tailwindcss()]
+    plugins: [react(), tailwindcss()],
+    // minificado: menos JS pra carregar e compilar (no WebKitGTK da versão Go, ~memória parado)
+    build: { minify: true }
   }
 })

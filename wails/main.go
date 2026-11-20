@@ -53,10 +53,10 @@ func main() {
 		Height:           880,
 		MinWidth:         900,
 		MinHeight:        560,
-		AssetServer:      &assetserver.Options{Assets: assets},
+		AssetServer:      &assetserver.Options{Assets: assets, Handler: &app.bodies},
 		BackgroundColour: &options.RGBA{R: 0x00, G: 0x12, B: 0x1c, A: 255},
 		Menu:             appMenu(),
-		Linux:            &linux.Options{Icon: icon, ProgramName: "zeno", WindowIsTranslucent: false},
+		Linux:            &linux.Options{Icon: icon, ProgramName: "zeno", WindowIsTranslucent: false, WebviewGpuPolicy: gpuPolicy()},
 		OnStartup:        app.startup,
 		OnDomReady:       app.domReady,
 		OnShutdown:       app.shutdown,
@@ -65,4 +65,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+// gpuPolicy: no Linux, renderização em software por padrão. Medido (#79): ~30 MB a menos parado e filtro,
+// envio e rolagem mais rápidos que com a GPU (sem esperar o vsync do compositor). ZENO_GPU=ondemand|always
+// pra testar/diagnosticar.
+func gpuPolicy() linux.WebviewGpuPolicy {
+	switch os.Getenv("ZENO_GPU") {
+	case "ondemand":
+		return linux.WebviewGpuPolicyOnDemand
+	case "always":
+		return linux.WebviewGpuPolicyAlways
+	}
+	return linux.WebviewGpuPolicyNever
 }

@@ -89,6 +89,7 @@ sortKey: 0
 `)
 	st := store.New(dir)
 	st.Load()
+	t.Cleanup(st.Flush)
 	e := &Engine{Store: st, Cookies: cookies.New(dir), Vault: v}
 	return e, st.List()[0]
 }
@@ -118,6 +119,7 @@ func TestEnvioCompleto(t *testing.T) {
 		t.Errorf("testes: %s", b)
 	}
 	// segredo do cofre foi enviado, mas não ficou no histórico gravado
+	e.Store.Flush()
 	raw, _ := os.ReadFile(e.Store.ResponsesFile("req_me"))
 	if strings.Contains(string(raw), "chave-secreta\\r") || strings.Contains(string(raw), "X-Key: chave-secreta") {
 		t.Error("segredo no histórico")
