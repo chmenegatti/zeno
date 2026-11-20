@@ -2,6 +2,20 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [1.2.0](https://github.com/chmenegatti/zeno/compare/v1.1.0...v1.2.0) (2026-11-20)
+
+**Zeno em inglês.** A interface e as mensagens agora saem em inglês por padrão; quem prefere português escolhe em **Preferences › Language / Idioma** (a escolha vale também pras mensagens geradas pelo app). Na linha de comando, `ZENO_LANG=pt` mantém a saída em português.
+
+> **Atualizando de 1.1 ou anterior:** o app abre em inglês. Pra voltar ao português: Preferences › Language / Idioma › Português (Brasil).
+
+### Novidades
+
+* **Interface em inglês ou português**: todos os textos da interface, datas e horas no formato do idioma, nomes padrão de request/pasta/ambiente no idioma escolhido ([#136](https://github.com/chmenegatti/zeno/pull/136))
+* **Mensagens do app no idioma escolhido**: erros, avisos de envio, import/exportação, OAuth, rede, gRPC/WebSocket/mock, mensagens do `expect` dos scripts e toda a saída da CLI (`ZENO_LANG=pt` pra português) ([#137](https://github.com/chmenegatti/zeno/pull/137))
+* **Homebrew e Scoop**: `brew install --cask chmenegatti/tap/zeno` e `scoop bucket add zeno https://github.com/chmenegatti/scoop-bucket` ([#127](https://github.com/chmenegatti/zeno/pull/127))
+* **README e site em inglês** (português em `README.pt-BR.md` e `/zeno/pt/`) ([#126](https://github.com/chmenegatti/zeno/pull/126))
+
+
 ## [1.1.0](https://github.com/chmenegatti/zeno/compare/v1.0.0...v1.1.0) (2026-11-20)
 
 Além do REST: **GraphQL, WebSocket, SSE e gRPC**, **OAuth 2.0** completo, rede corporativa (proxy, CA própria e mTLS), **mock server** a partir de exemplos e **exportação** pro Insomnia e Postman.
