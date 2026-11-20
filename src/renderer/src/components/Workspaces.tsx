@@ -10,6 +10,7 @@ import { kl } from '../keys'
 import { Select } from './Select'
 import { MethodBadge, Segmented } from './ui'
 import { ExportDialog } from './ExportWorkspaces'
+import { locale, t } from '@shared/i18n'
 
 const COLORS = ['#00dbff', '#a44dff', '#00ffd4', '#d9ff65', '#ff8900', '#ff009e', '#5b8cff', '#8eaab8']
 
@@ -19,14 +20,27 @@ type Status = { git?: GitStatus | null; plain?: number; secrets?: number }
 const SECRET = /\$zeno\$v1\$/g
 
 function since(ms?: number): string {
-  if (!ms) return 'nunca aberto aqui'
+  if (!ms) return t('nunca aberto aqui')
   const m = Math.round((Date.now() - ms) / 60000)
-  if (m < 1) return 'aberto agora'
-  if (m < 60) return `aberto há ${m} min`
+  if (m < 1) return t('aberto agora')
+  if (m < 60) return t('aberto há {n} min', { n: m })
   const h = Math.round(m / 60)
-  if (h < 24) return `aberto há ${h} h`
+  if (h < 24) return t('aberto há {n} h', { n: h })
   const d = Math.round(h / 24)
-  return d < 30 ? `aberto há ${d} ${d === 1 ? 'dia' : 'dias'}` : `aberto em ${new Date(ms).toLocaleDateString('pt-BR')}`
+  if (d >= 30) return t('aberto em {date}', { date: new Date(ms).toLocaleDateString(locale()) })
+  return d === 1 ? t('aberto há 1 dia') : t('aberto há {n} dias', { n: d })
+}
+
+// mesmo cálculo, sem o "aberto" (selo do GitHub)
+function ago(ms: number): string {
+  const m = Math.round((Date.now() - ms) / 60000)
+  if (m < 1) return t('agora')
+  if (m < 60) return t('há {n} min', { n: m })
+  const h = Math.round(m / 60)
+  if (h < 24) return t('há {n} h', { n: h })
+  const d = Math.round(h / 24)
+  if (d >= 30) return t('em {date}', { date: new Date(ms).toLocaleDateString(locale()) })
+  return d === 1 ? t('há 1 dia') : t('há {n} dias', { n: d })
 }
 
 const norm = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -146,7 +160,7 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
     const r = await run(api.duplicateWorkspace(id))
     if (!r) return
     setWorkspaces(r.workspaces)
-    notify(`Duplicado: ${r.workspaces.find((w) => w.id === r.id)?.name ?? ''}`)
+    notify(t('Duplicado: {name}', { name: r.workspaces.find((w) => w.id === r.id)?.name ?? '' }))
   }
   const remove = async (ids: string[]): Promise<void> => {
     setConfirm(null)
@@ -160,7 +174,7 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
   }
   const create = (): void =>
     setAsk({
-      title: 'Novo workspace',
+      title: t('Novo workspace'),
       value: '',
       onOk: async (name) => {
         const list = await run(api.createWorkspace(name || 'Workspace'))
@@ -186,27 +200,27 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
   const copyCmd = (w: Workspace): void => {
     // vinculado: pela pasta; senão pelo id (nome pode repetir e a CLI pegaria o primeiro)
     void navigator.clipboard.writeText(w.location?.linked ? `zeno run "${w.location.dir}"` : `zeno run ${w.id}  # ${w.name}`)
-    notify('Comando copiado')
+    notify(t('Comando copiado'))
   }
 
   const actions = (w: Workspace): [string, () => void, string?][] => {
     const m = meta[w.id] ?? {}
     return [
-      ['Abrir', () => open(w.id), 'Enter'],
-      ['Renomear', () => setRenaming(w.id), 'F2'],
-      ['Duplicar', () => void duplicate(w.id)],
-      [m.pinned ? 'Desafixar' : 'Fixar no topo', () => setMeta([w.id], { pinned: !m.pinned })],
-      ['Grupo…', () => setAsk({ title: `Grupo de "${w.name}"`, value: m.group ?? '', onOk: (g) => setMeta([w.id], { group: g.trim() || undefined }) })],
-      ['Configurações…', () => openModal({ kind: 'workspace', id: w.id })],
+      [t('Abrir'), () => open(w.id), 'Enter'],
+      [t('Renomear'), () => setRenaming(w.id), 'F2'],
+      [t('Duplicar'), () => void duplicate(w.id)],
+      [m.pinned ? t('Desafixar') : t('Fixar no topo'), () => setMeta([w.id], { pinned: !m.pinned })],
+      [t('Grupo…'), () => setAsk({ title: t('Grupo de "{name}"', { name: w.name }), value: m.group ?? '', onOk: (g) => setMeta([w.id], { group: g.trim() || undefined }) })],
+      [t('Configurações…'), () => openModal({ kind: 'workspace', id: w.id })],
       ['Git…', () => openModal({ kind: 'git', id: w.id })],
-      ['Rodar workspace…', () => openModal({ kind: 'run', id: w.id })],
-      ['Exportar…', () => setExporting([w.id])],
-      ['Salvar no GitHub…', () => openModal({ kind: 'github', ids: [w.id] })],
-      ['Mover para pasta…', () => void run(api.moveWorkspace(w.id)).then((l) => l && setWorkspaces(l))],
-      ['Abrir a pasta', () => void run(api.openWorkspaceDir(w.id))],
-      ['Copiar comando zeno run', () => copyCmd(w)],
-      [m.archived ? 'Desarquivar' : 'Arquivar', () => setMeta([w.id], { archived: !m.archived })],
-      ['Excluir…', () => setConfirm({ ids: [w.id] }), 'Del']
+      [t('Rodar workspace…'), () => openModal({ kind: 'run', id: w.id })],
+      [t('Exportar…'), () => setExporting([w.id])],
+      [t('Salvar no GitHub…'), () => openModal({ kind: 'github', ids: [w.id] })],
+      [t('Mover para pasta…'), () => void run(api.moveWorkspace(w.id)).then((l) => l && setWorkspaces(l))],
+      [t('Abrir a pasta'), () => void run(api.openWorkspaceDir(w.id))],
+      [t('Copiar comando zeno run'), () => copyCmd(w)],
+      [m.archived ? t('Desarquivar') : t('Arquivar'), () => setMeta([w.id], { archived: !m.archived })],
+      [t('Excluir…'), () => setConfirm({ ids: [w.id] }), 'Del']
     ]
   }
 
@@ -218,8 +232,8 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
     return Math.max(1, cards.filter((c) => c.offsetTop === top).length)
   }
   const onKey = (e: React.KeyboardEvent): void => {
-    const t = e.target as HTMLElement
-    const inText = t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'
+    const el = e.target as HTMLElement
+    const inText = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'
     if (e.key === 'Escape') {
       if (menu || confirm || ask || renaming || exporting) return
       if (q) setQ('')
@@ -227,7 +241,7 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
       e.preventDefault()
       return
     }
-    if (inText && t !== search.current) return
+    if (inText && el !== search.current) return
     const cur = visible[focus]
     const move = (d: number): void => {
       e.preventDefault()
@@ -261,18 +275,18 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
     const active = w.id === app.activeWorkspaceId
     const picked = sel.has(w.id)
     const color = m.color ?? 'var(--color-line)'
-    const loc = w.location?.linked ? `⎇ ${w.location.dir}` : 'pasta de dados do Zeno'
+    const loc = w.location?.linked ? `⎇ ${w.location.dir}` : t('pasta de dados do Zeno')
     const info = (
       <>
-        <span>{c.requests} {c.requests === 1 ? 'request' : 'requests'}</span>
-        <span>{c.folders} {c.folders === 1 ? 'pasta' : 'pastas'}</span>
-        <span>{w.environments.length} {w.environments.length === 1 ? 'ambiente' : 'ambientes'}</span>
+        <span>{c.requests === 1 ? t('1 request') : t('{n} requests', { n: c.requests })}</span>
+        <span>{c.folders === 1 ? t('1 pasta') : t('{n} pastas', { n: c.folders })}</span>
+        <span>{w.environments.length === 1 ? t('1 ambiente') : t('{n} ambientes', { n: w.environments.length })}</span>
       </>
     )
     const badges = (
       <>
         {st?.git && (
-          <span className="rounded bg-raised px-1.5 py-0.5 font-mono text-[10.5px] text-dim" title={`git: ${st.git.files.length} mudança(s)${st.git.upstream ? ` · ${st.git.upstream}` : ''}`}>
+          <span className="rounded bg-raised px-1.5 py-0.5 font-mono text-[10.5px] text-dim" title={`${t('git: {n} mudança(s)', { n: st.git.files.length })}${st.git.upstream ? ` · ${st.git.upstream}` : ''}`}>
             ⎇ {st.git.branch ?? '?'}
             {st.git.files.length > 0 && <span className="text-torange"> ●{st.git.files.length}</span>}
             {st.git.ahead > 0 && <span className="text-tgreen"> ↑{st.git.ahead}</span>}
@@ -282,19 +296,19 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
         {gh[w.id] && (
           <span
             className={`rounded bg-raised px-1.5 py-0.5 text-[10.5px] ${gh[w.id].changed ? 'text-torange' : 'text-dim'}`}
-            title={`GitHub: sincronizado em ${new Date(gh[w.id].at).toLocaleString('pt-BR')}${gh[w.id].commit ? ` (commit ${gh[w.id].commit.slice(0, 7)})` : ''}${gh[w.id].changed ? ' · mudou desde então' : ''}`}
+            title={`${t('GitHub: sincronizado em {date}', { date: new Date(gh[w.id].at).toLocaleString(locale()) })}${gh[w.id].commit ? ` (commit ${gh[w.id].commit.slice(0, 7)})` : ''}${gh[w.id].changed ? ` · ${t('mudou desde então')}` : ''}`}
           >
-            ☁ {gh[w.id].changed ? '● mudou' : since(gh[w.id].at).replace('aberto ', '')}
+            ☁ {gh[w.id].changed ? `● ${t('mudou')}` : ago(gh[w.id].at)}
           </span>
         )}
-        {!!st?.secrets && <span className="rounded bg-raised px-1.5 py-0.5 text-[10.5px] text-tag" title="valores no cofre">🔒 {st.secrets}</span>}
+        {!!st?.secrets && <span className="rounded bg-raised px-1.5 py-0.5 text-[10.5px] text-tag" title={t('valores no cofre')}>🔒 {st.secrets}</span>}
         {!!st?.plain && (
-          <span className="rounded bg-raised px-1.5 py-0.5 text-[10.5px] text-torange" title="senhas/tokens em texto puro: proteja em Configurações › Cofre">
-            ⚠ {st.plain} em texto puro
+          <span className="rounded bg-raised px-1.5 py-0.5 text-[10.5px] text-torange" title={t('senhas/tokens em texto puro: proteja em Configurações › Cofre')}>
+            ⚠ {t('{n} em texto puro', { n: st.plain })}
           </span>
         )}
         {m.group && <span className="rounded border border-line px-1.5 py-0.5 text-[10.5px] text-dim">{m.group}</span>}
-        {m.archived && <span className="rounded border border-line px-1.5 py-0.5 text-[10.5px] text-faint">arquivado</span>}
+        {m.archived && <span className="rounded border border-line px-1.5 py-0.5 text-[10.5px] text-faint">{t('arquivado')}</span>}
       </>
     )
     const name =
@@ -344,11 +358,11 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
     const ring = i === focus ? 'ring-1 ring-accent/70' : ''
     const tools = (
       <div className="flex shrink-0 items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-        <input type="checkbox" className={picked || sel.size ? '' : 'opacity-0 group-hover:opacity-100'} checked={picked} onChange={() => setSel((s) => { const n = new Set(s); if (n.has(w.id)) n.delete(w.id); else n.add(w.id); return n })} title="Selecionar" />
-        <button className={`btn btn-ghost px-1 py-0 ${m.pinned ? 'text-accent' : 'text-faint opacity-0 group-hover:opacity-100'}`} title={m.pinned ? 'Desafixar' : 'Fixar no topo'} onClick={() => setMeta([w.id], { pinned: !m.pinned })}>
+        <input type="checkbox" className={picked || sel.size ? '' : 'opacity-0 group-hover:opacity-100'} checked={picked} onChange={() => setSel((s) => { const n = new Set(s); if (n.has(w.id)) n.delete(w.id); else n.add(w.id); return n })} title={t('Selecionar')} />
+        <button className={`btn btn-ghost px-1 py-0 ${m.pinned ? 'text-accent' : 'text-faint opacity-0 group-hover:opacity-100'}`} title={m.pinned ? t('Desafixar') : t('Fixar no topo')} onClick={() => setMeta([w.id], { pinned: !m.pinned })}>
           {m.pinned ? '★' : '☆'}
         </button>
-        <button className="btn btn-ghost px-1.5 py-0 text-faint" title="Ações" onClick={(e) => setMenu({ id: w.id, x: e.clientX, y: e.clientY })}>
+        <button className="btn btn-ghost px-1.5 py-0 text-faint" title={t('Ações')} onClick={(e) => setMenu({ id: w.id, x: e.clientX, y: e.clientY })}>
           ⋯
         </button>
       </div>
@@ -360,7 +374,7 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
           <div className="flex min-w-0 flex-1 items-center gap-2">{name}</div>
           <div className="hidden min-w-0 items-center gap-1.5 md:flex">{badges}</div>
           <div className="flex shrink-0 gap-2 text-[11.5px] text-faint">{info}</div>
-          <span className="w-[130px] shrink-0 truncate text-right text-[11px] text-faint">{active ? 'em uso' : since(m.lastUsed)}</span>
+          <span className="w-[130px] shrink-0 truncate text-right text-[11px] text-faint">{active ? t('em uso') : since(m.lastUsed)}</span>
           {tools}
         </div>
       )
@@ -370,12 +384,12 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
           <div className="flex min-w-0 flex-1 items-center gap-2">{name}</div>
           {tools}
         </div>
-        <p className="line-clamp-2 min-h-[2.6em] text-[12px] text-dim">{w.description || <span className="text-faint">sem descrição</span>}</p>
+        <p className="line-clamp-2 min-h-[2.6em] text-[12px] text-dim">{w.description || <span className="text-faint">{t('sem descrição')}</span>}</p>
         <div className="flex flex-wrap gap-x-2 text-[11.5px] text-faint">{info}</div>
         <div className="flex min-h-[22px] flex-wrap items-center gap-1.5">{badges}</div>
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-line/60 pt-2 text-[11px] text-faint">
           <span className="truncate" title={w.location?.dir}>{loc}</span>
-          <span className="shrink-0">{active ? 'em uso' : since(m.lastUsed)}</span>
+          <span className="shrink-0">{active ? t('em uso') : since(m.lastUsed)}</span>
         </div>
       </div>
     )
@@ -388,25 +402,25 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
         <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
           <span className="mr-1 text-[15px] font-semibold">Workspaces</span>
           <span className="text-faint">{workspaces.length - archivedCount}</span>
-          <input ref={search} className="field ml-2 min-w-[220px] flex-1" placeholder="Buscar workspace ou request…  ( / )" value={q} onChange={(e) => setQ(e.target.value)} />
-          <Select className="w-[180px] py-1" value={sort} onChange={(v) => setUi({ wsSort: v as Sort })} aria-label="Ordem">
-            <option value="manual">Ordem manual</option>
-            <option value="name">Nome</option>
-            <option value="recent">Usados recentemente</option>
+          <input ref={search} className="field ml-2 min-w-[220px] flex-1" placeholder={t('Buscar workspace ou request…  ( / )')} value={q} onChange={(e) => setQ(e.target.value)} />
+          <Select className="w-[180px] py-1" value={sort} onChange={(v) => setUi({ wsSort: v as Sort })} aria-label={t('Ordem')}>
+            <option value="manual">{t('Ordem manual')}</option>
+            <option value="name">{t('Nome')}</option>
+            <option value="recent">{t('Usados recentemente')}</option>
           </Select>
-          <Segmented value={view} onChange={(v) => setUi({ wsView: v })} options={[{ id: 'grid', label: '▦ Cartões' }, { id: 'list', label: '☰ Lista' }]} />
-          <button className="btn btn-accent" onClick={create}>＋ Novo</button>
-          <button className="btn" onClick={() => void link()}>Abrir pasta…</button>
-          <button className="btn" onClick={() => openModal({ kind: 'import' })}>⇣ Importar…</button>
-          <button className="btn" onClick={() => openModal({ kind: 'github' })} title="Salvar no GitHub ou baixar de lá">☁ GitHub…</button>
-          <button className="btn btn-ghost px-2" onClick={onClose} title="Fechar (Esc)">✕</button>
+          <Segmented value={view} onChange={(v) => setUi({ wsView: v })} options={[{ id: 'grid', label: `▦ ${t('Cartões')}` }, { id: 'list', label: `☰ ${t('Lista')}` }]} />
+          <button className="btn btn-accent" onClick={create}>＋ {t('Novo')}</button>
+          <button className="btn" onClick={() => void link()}>{t('Abrir pasta…')}</button>
+          <button className="btn" onClick={() => openModal({ kind: 'import' })}>⇣ {t('Importar…')}</button>
+          <button className="btn" onClick={() => openModal({ kind: 'github' })} title={t('Salvar no GitHub ou baixar de lá')}>☁ GitHub…</button>
+          <button className="btn btn-ghost px-2" onClick={onClose} title={t('Fechar (Esc)')}>✕</button>
         </div>
         {/* filtros por grupo e arquivados */}
         {(groups.length > 0 || archivedCount > 0) && (
           <div className="flex flex-wrap items-center gap-1.5 border-b border-line/60 px-4 py-2 text-[12px]">
             {groups.length > 0 && (
               <>
-                {[{ id: null as string | null, label: 'Todos' }, ...groups.map((g) => ({ id: g, label: g })), { id: '', label: 'Sem grupo' }].map((g) => (
+                {[{ id: null as string | null, label: t('Todos') }, ...groups.map((g) => ({ id: g, label: g })), { id: '', label: t('Sem grupo') }].map((g) => (
                   <button key={String(g.id)} className={`rounded-full border px-2.5 py-0.5 ${group === g.id ? 'border-accent text-accent' : 'border-line text-dim hover:text-ink'}`} onClick={() => setGroup(g.id)}>
                     {g.label}
                   </button>
@@ -416,7 +430,7 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
             <div className="flex-1" />
             {archivedCount > 0 && (
               <label className="flex items-center gap-1.5 text-dim">
-                <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> mostrar arquivados ({archivedCount})
+                <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> {t('mostrar arquivados ({n})', { n: archivedCount })}
               </label>
             )}
           </div>
@@ -424,29 +438,29 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
         {/* ações em lote */}
         {sel.size > 0 && (
           <div className="flex items-center gap-2 border-b border-line/60 bg-accent/5 px-4 py-1.5 text-[12px]">
-            <span>{sel.size} selecionado(s)</span>
-            <button className="btn btn-ghost py-0.5" onClick={() => setMeta([...sel], { pinned: true })}>★ Fixar</button>
-            <button className="btn btn-ghost py-0.5" onClick={() => setAsk({ title: `Grupo de ${sel.size} workspace(s)`, value: '', onOk: (g) => setMeta([...sel], { group: g.trim() || undefined }) })}>Grupo…</button>
-            <button className="btn btn-ghost py-0.5" onClick={() => (setMeta([...sel], (m) => ({ archived: !m.archived })), setSel(new Set()))}>Arquivar/desarquivar</button>
-            <button className="btn btn-ghost py-0.5" onClick={() => setExporting([...sel])}>⇡ Exportar…</button>
-            <button className="btn btn-ghost py-0.5" onClick={() => openModal({ kind: 'github', ids: [...sel] })}>☁ Salvar no GitHub…</button>
-            <button className="btn btn-ghost py-0.5 text-tpink" onClick={() => setConfirm({ ids: [...sel] })}>Excluir…</button>
+            <span>{t('{n} selecionado(s)', { n: sel.size })}</span>
+            <button className="btn btn-ghost py-0.5" onClick={() => setMeta([...sel], { pinned: true })}>★ {t('Fixar')}</button>
+            <button className="btn btn-ghost py-0.5" onClick={() => setAsk({ title: t('Grupo de {n} workspace(s)', { n: sel.size }), value: '', onOk: (g) => setMeta([...sel], { group: g.trim() || undefined }) })}>{t('Grupo…')}</button>
+            <button className="btn btn-ghost py-0.5" onClick={() => (setMeta([...sel], (m) => ({ archived: !m.archived })), setSel(new Set()))}>{t('Arquivar/desarquivar')}</button>
+            <button className="btn btn-ghost py-0.5" onClick={() => setExporting([...sel])}>⇡ {t('Exportar…')}</button>
+            <button className="btn btn-ghost py-0.5" onClick={() => openModal({ kind: 'github', ids: [...sel] })}>☁ {t('Salvar no GitHub…')}</button>
+            <button className="btn btn-ghost py-0.5 text-tpink" onClick={() => setConfirm({ ids: [...sel] })}>{t('Excluir…')}</button>
             <div className="flex-1" />
-            <button className="btn btn-ghost py-0.5" onClick={() => setSel(new Set(visible.map((w) => w.id)))}>Selecionar todos ({kl('Ctrl+A')})</button>
-            <button className="btn btn-ghost py-0.5" onClick={() => setSel(new Set())}>Limpar</button>
+            <button className="btn btn-ghost py-0.5" onClick={() => setSel(new Set(visible.map((w) => w.id)))}>{t('Selecionar todos ({key})', { key: kl('Ctrl+A') })}</button>
+            <button className="btn btn-ghost py-0.5" onClick={() => setSel(new Set())}>{t('Limpar')}</button>
           </div>
         )}
 
         <div className="min-h-0 flex-1 overflow-auto p-4">
           {workspaces.length === 0 ? (
             <div className="mx-auto mt-16 flex max-w-[460px] flex-col items-center gap-3 text-center">
-              <p className="text-[15px] font-semibold">Nenhum workspace ainda</p>
-              <p className="text-dim">Crie um do zero, traga do Insomnia, abra uma pasta com workspace.yaml (ex.: num repositório) ou baixe do GitHub.</p>
+              <p className="text-[15px] font-semibold">{t('Nenhum workspace ainda')}</p>
+              <p className="text-dim">{t('Crie um do zero, traga do Insomnia, abra uma pasta com workspace.yaml (ex.: num repositório) ou baixe do GitHub.')}</p>
               <div className="flex flex-wrap justify-center gap-2">
-                <button className="btn btn-accent" onClick={create}>＋ Novo workspace</button>
-                <button className="btn" onClick={() => openModal({ kind: 'import' })}>⇣ Importar do Insomnia…</button>
-                <button className="btn" onClick={() => void link()}>Abrir pasta…</button>
-                <button className="btn" onClick={() => openModal({ kind: 'github' })}>☁ Baixar do GitHub…</button>
+                <button className="btn btn-accent" onClick={create}>＋ {t('Novo workspace')}</button>
+                <button className="btn" onClick={() => openModal({ kind: 'import' })}>⇣ {t('Importar do Insomnia…')}</button>
+                <button className="btn" onClick={() => void link()}>{t('Abrir pasta…')}</button>
+                <button className="btn" onClick={() => openModal({ kind: 'github' })}>☁ {t('Baixar do GitHub…')}</button>
               </div>
             </div>
           ) : (
@@ -468,7 +482,7 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
                 </div>
               )}
               {visible.length === 0 ? (
-                <p className="mt-10 text-center text-faint">Nenhum workspace com esse filtro.</p>
+                <p className="mt-10 text-center text-faint">{t('Nenhum workspace com esse filtro.')}</p>
               ) : (
                 <div ref={grid} role="listbox" aria-multiselectable className={view === 'grid' ? 'grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-3' : 'flex flex-col gap-0.5'}>
                   {visible.map((w, i) => card(w, i))}
@@ -478,9 +492,9 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
           )}
         </div>
         <div className="flex items-center gap-3 border-t border-line px-4 py-1.5 text-[11px] text-faint">
-          <span>↑↓←→ navegar · Enter abrir · F2 renomear · Del excluir · espaço/Ctrl+clique selecionar · / buscar · Esc fechar</span>
+          <span>{t('↑↓←→ navegar · Enter abrir · F2 renomear · Del excluir · espaço/Ctrl+clique selecionar · / buscar · Esc fechar')}</span>
           <div className="flex-1" />
-          {canDrag ? <span>arraste pra reordenar</span> : sort === 'manual' && <span>limpe a busca e o filtro pra reordenar</span>}
+          {canDrag ? <span>{t('arraste pra reordenar')}</span> : sort === 'manual' && <span>{t('limpe a busca e o filtro pra reordenar')}</span>}
         </div>
       </div>
 
@@ -493,13 +507,13 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
               <div className="absolute min-w-[220px] rounded-lg border border-line bg-raised py-1 shadow-xl" style={{ left: Math.min(menu.x, window.innerWidth - 240), top: Math.min(menu.y, window.innerHeight - 480) }} onMouseDown={(e) => e.stopPropagation()}>
                 <div className="flex gap-1 px-3 py-1.5">
                   {COLORS.map((c) => (
-                    <button key={c} className="h-4 w-4 rounded-full border border-black/20" style={{ background: c }} title="Cor" onClick={() => (setMeta([w.id], { color: c }), setMenu(null))} />
+                    <button key={c} className="h-4 w-4 rounded-full border border-black/20" style={{ background: c }} title={t('Cor')} onClick={() => (setMeta([w.id], { color: c }), setMenu(null))} />
                   ))}
-                  <button className="h-4 w-4 rounded-full border border-line text-[9px] text-faint" title="Sem cor" onClick={() => (setMeta([w.id], { color: undefined }), setMenu(null))}>✕</button>
+                  <button className="h-4 w-4 rounded-full border border-line text-[9px] text-faint" title={t('Sem cor')} onClick={() => (setMeta([w.id], { color: undefined }), setMenu(null))}>✕</button>
                 </div>
                 <div className="my-1 border-t border-line" />
                 {actions(w).map(([label, fn, key]) => (
-                  <button key={label} className={`flex w-full items-center justify-between px-3 py-1.5 text-left hover:bg-line ${label.startsWith('Excluir') ? 'text-tpink' : ''}`} onClick={() => (setMenu(null), fn())}>
+                  <button key={label} className={`flex w-full items-center justify-between px-3 py-1.5 text-left hover:bg-line ${label === t('Excluir…') ? 'text-tpink' : ''}`} onClick={() => (setMenu(null), fn())}>
                     {label}
                     {key && <span className="text-[10.5px] text-faint">{key}</span>}
                   </button>
@@ -514,14 +528,14 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
       {confirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onMouseDown={() => setConfirm(null)}>
           <div className="w-[min(460px,92vw)] rounded-xl border border-line bg-panel p-4 shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
-            <p className="mb-2 font-semibold">Excluir {confirm.ids.length === 1 ? `"${ws(confirm.ids[0])?.name}"` : `${confirm.ids.length} workspaces`}?</p>
+            <p className="mb-2 font-semibold">{confirm.ids.length === 1 ? t('Excluir "{name}"?', { name: ws(confirm.ids[0])?.name ?? '' }) : t('Excluir {n} workspaces?', { n: confirm.ids.length })}</p>
             <p className="mb-4 text-[12.5px] text-dim">
-              {confirm.ids.some((id) => ws(id)?.location?.linked) && 'Workspace em pasta vinculada só sai da lista (os arquivos ficam). '}
-              {confirm.ids.some((id) => !ws(id)?.location?.linked) && 'Os da pasta de dados do Zeno têm os arquivos apagados. Se só quer tirar da frente, use Arquivar.'}
+              {confirm.ids.some((id) => ws(id)?.location?.linked) && `${t('Workspace em pasta vinculada só sai da lista (os arquivos ficam).')} `}
+              {confirm.ids.some((id) => !ws(id)?.location?.linked) && t('Os da pasta de dados do Zeno têm os arquivos apagados. Se só quer tirar da frente, use Arquivar.')}
             </p>
             <div className="flex justify-end gap-2">
-              <button className="btn" onClick={() => setConfirm(null)}>Cancelar</button>
-              <button autoFocus className="btn bg-tpink text-bg" onClick={() => void remove(confirm.ids)}>Excluir</button>
+              <button className="btn" onClick={() => setConfirm(null)}>{t('Cancelar')}</button>
+              <button autoFocus className="btn bg-tpink text-bg" onClick={() => void remove(confirm.ids)}>{t('Excluir')}</button>
             </div>
           </div>
         </div>
@@ -547,7 +561,7 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
               ))}
             </datalist>
             <div className="flex justify-end gap-2">
-              <button type="button" className="btn" onClick={() => setAsk(null)}>Cancelar</button>
+              <button type="button" className="btn" onClick={() => setAsk(null)}>{t('Cancelar')}</button>
               <button className="btn btn-accent">OK</button>
             </div>
           </form>

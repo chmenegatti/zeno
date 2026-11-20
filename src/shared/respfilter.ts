@@ -1,5 +1,6 @@
 // Filtro e navegação no body da resposta: JSONPath sobre o texto e caminho do JSON na posição do cursor.
 
+import { t } from './i18n'
 import { queryJson } from './assert'
 
 /** resultado do filtro JSONPath, já formatado; erro não apaga o body (quem chama decide) */
@@ -8,11 +9,11 @@ export function filterJson(text: string, path: string): { value: string; count: 
   try {
     doc = JSON.parse(text)
   } catch {
-    return { error: 'o body não é JSON válido' }
+    return { error: t('o body não é JSON válido') }
   }
   try {
     const { values, many } = queryJson(doc, path.startsWith('$') ? path : `$.${path}`)
-    if (!values.length) return { error: 'nada encontrado' }
+    if (!values.length) return { error: t('nada encontrado') }
     const out = many ? values : values[0]
     return { value: typeof out === 'string' ? out : JSON.stringify(out, null, 2), count: values.length }
   } catch (e) {

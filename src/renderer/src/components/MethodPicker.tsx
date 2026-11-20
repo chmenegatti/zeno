@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { METHODS } from '@shared/types'
 import { useStore } from '../state'
 import { kl } from '../keys'
+import { t, tk } from '@shared/i18n'
 
 /** cor de cada método (variáveis do tema) */
 const COLOR: Record<string, string> = {
@@ -14,13 +15,13 @@ const COLOR: Record<string, string> = {
   OPTIONS: 'var(--color-dim)'
 }
 const HINT: Record<string, string> = {
-  GET: 'buscar',
-  POST: 'criar',
-  PUT: 'substituir',
-  PATCH: 'alterar parte',
-  DELETE: 'apagar',
-  HEAD: 'só headers',
-  OPTIONS: 'o que o servidor aceita'
+  GET: tk('buscar§método'),
+  POST: tk('criar'),
+  PUT: tk('substituir'),
+  PATCH: tk('alterar parte'),
+  DELETE: tk('apagar'),
+  HEAD: tk('só headers'),
+  OPTIONS: tk('o que o servidor aceita')
 }
 
 export const methodColor = (m: string): string => COLOR[m] ?? 'var(--color-dim)'
@@ -94,7 +95,7 @@ export function MethodPicker({ value, onChange }: { value: string; onChange: (m:
         className="flex h-[30px] min-w-[96px] items-center justify-between gap-1.5 rounded-md border px-2.5 font-mono text-[12.5px] font-bold"
         style={{ color: c, borderColor: `color-mix(in srgb, ${c} 45%, transparent)`, background: `color-mix(in srgb, ${c} 12%, var(--color-bg))` }}
         onClick={() => setOpen(!open)}
-        title={`Método HTTP (${kl('Ctrl+Shift+L')})`}
+        title={t('Método HTTP ({key})', { key: kl('Ctrl+Shift+L') })}
       >
         <span className="max-w-[90px] truncate">{value}</span>
         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden style={{ transform: open ? 'rotate(180deg)' : undefined, transition: 'transform 120ms' }}>
@@ -116,7 +117,7 @@ export function MethodPicker({ value, onChange }: { value: string; onChange: (m:
               >
                 <span className="h-5 w-1 rounded-full" style={{ background: mc, opacity: i === sel || active ? 1 : 0.55 }} />
                 <span className="w-[64px] font-mono text-[12.5px] font-bold" style={{ color: mc }}>{m}</span>
-                <span className="flex-1 truncate text-[11.5px] text-faint">{HINT[m]}</span>
+                <span className="flex-1 truncate text-[11.5px] text-faint">{t(HINT[m])}</span>
                 {active && <span className="text-[11px]" style={{ color: mc }}>●</span>}
               </button>
             )
@@ -132,12 +133,12 @@ export function MethodPicker({ value, onChange }: { value: string; onChange: (m:
             <input
               data-custom="1"
               className="field min-w-0 flex-1 py-1 font-mono text-[12px] uppercase"
-              placeholder="outro método (PROPFIND…)"
+              placeholder={t('outro método (PROPFIND…)')}
               value={custom}
               onChange={(e) => setCustom(e.target.value.replace(/[^A-Za-z_-]/g, ''))}
               onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
             />
-            <button className="btn px-2 py-1 text-[11.5px]" disabled={!custom.trim()}>usar</button>
+            <button className="btn px-2 py-1 text-[11.5px]" disabled={!custom.trim()}>{t('usar')}</button>
           </form>
         </div>
       )}

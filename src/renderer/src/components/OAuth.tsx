@@ -5,11 +5,12 @@ import { useEffect, useState } from 'react'
 import type { OAuth2Auth, OAuthGrant, OAuthTokenStatus, RequestDoc } from '@shared/types'
 import { api, useStore } from '../state'
 import { Select } from './Select'
+import { t, tk } from '@shared/i18n'
 
 const GRANTS: { id: OAuthGrant; label: string }[] = [
   { id: 'authorization_code', label: 'Authorization code' },
   { id: 'client_credentials', label: 'Client credentials' },
-  { id: 'password', label: 'Senha (password)' },
+  { id: 'password', label: tk('Senha (password)') },
   { id: 'device_code', label: 'Device code' },
   { id: 'implicit', label: 'Implicit' }
 ]
@@ -26,30 +27,30 @@ export function OAuthFields({ auth, onChange, row, secretRow }: { auth: OAuth2Au
   return (
     <>
       <label className="flex items-center gap-3">
-        <span className="w-[90px] text-dim">Fluxo</span>
+        <span className="w-[90px] text-dim">{t('Fluxo')}</span>
         <Select className="field w-[240px] py-1" value={g} onChange={(v) => set({ grantType: v as OAuthGrant })}>
           {GRANTS.map((x) => (
-            <option key={x.id} value={x.id}>{x.label}</option>
+            <option key={x.id} value={x.id}>{t(x.label)}</option>
           ))}
         </Select>
       </label>
       {(g === 'authorization_code' || g === 'implicit' || g === 'device_code') &&
-        row(g === 'device_code' ? 'URL device' : 'URL de autorização', auth.authUrl ?? '', (v) => set({ authUrl: opt(v) }))}
-      {g !== 'implicit' && row('URL do token', auth.tokenUrl ?? '', (v) => set({ tokenUrl: opt(v) }))}
+        row(g === 'device_code' ? t('URL device') : t('URL de autorização'), auth.authUrl ?? '', (v) => set({ authUrl: opt(v) }))}
+      {g !== 'implicit' && row(t('URL do token'), auth.tokenUrl ?? '', (v) => set({ tokenUrl: opt(v) }))}
       {row('Client ID', auth.clientId ?? '', (v) => set({ clientId: opt(v) }))}
       {g !== 'implicit' && secretRow('Client secret', auth.clientSecret ?? '', (v) => set({ clientSecret: opt(v) }))}
       {g === 'password' && (
         <>
-          {row('Usuário', auth.username ?? '', (v) => set({ username: opt(v) }))}
-          {secretRow('Senha', auth.password ?? '', (v) => set({ password: opt(v) }))}
+          {row(t('Usuário'), auth.username ?? '', (v) => set({ username: opt(v) }))}
+          {secretRow(t('Senha'), auth.password ?? '', (v) => set({ password: opt(v) }))}
         </>
       )}
-      {row('Escopo', auth.scope ?? '', (v) => set({ scope: opt(v) }))}
+      {row(t('Escopo'), auth.scope ?? '', (v) => set({ scope: opt(v) }))}
       {row('Audience', auth.audience ?? '', (v) => set({ audience: opt(v) }))}
       {(g === 'authorization_code' || g === 'implicit') && row('Redirect', auth.redirectUri ?? '', (v) => set({ redirectUri: opt(v) }))}
       {(g === 'authorization_code' || g === 'implicit') && (
         <p className="pl-[102px] text-[11.5px] text-faint">
-          Vazio = <code>http://127.0.0.1:&lt;porta&gt;/callback</code>. Se o provedor exigir um retorno registrado, use <code>http://localhost:PORTA/caminho</code>.
+          {t('Vazio =')} <code>{t('http://127.0.0.1:<porta>/callback')}</code>. {t('Se o provedor exigir um retorno registrado, use')} <code>{t('http://localhost:PORTA/caminho')}</code>.
         </p>
       )}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-[102px] text-[12px] text-dim">
@@ -60,22 +61,22 @@ export function OAuthFields({ auth, onChange, row, secretRow }: { auth: OAuth2Au
         )}
         {g !== 'implicit' && (
           <label className="flex items-center gap-1.5">
-            <input type="checkbox" checked={auth.clientAuth === 'body'} onChange={(e) => set({ clientAuth: e.target.checked ? 'body' : undefined })} /> client ID/secret no corpo (não no header)
+            <input type="checkbox" checked={auth.clientAuth === 'body'} onChange={(e) => set({ clientAuth: e.target.checked ? 'body' : undefined })} /> {t('client ID/secret no corpo (não no header)')}
           </label>
         )}
       </div>
-      {row('Prefixo', auth.prefix ?? '', (v) => set({ prefix: opt(v) }))}
+      {row(t('Prefixo'), auth.prefix ?? '', (v) => set({ prefix: opt(v) }))}
     </>
   )
 }
 
 function expires(ms?: number): string {
-  if (!ms) return 'sem validade informada'
+  if (!ms) return t('sem validade informada')
   const s = Math.round((ms - Date.now()) / 1000)
-  if (s <= 0) return 'venceu'
-  if (s < 90) return `vence em ${s} s`
+  if (s <= 0) return t('venceu')
+  if (s < 90) return t('vence em {n} s', { n: s })
   const m = Math.round(s / 60)
-  return m < 120 ? `vence em ${m} min` : `vence em ${Math.round(m / 60)} h`
+  return m < 120 ? t('vence em {n} min', { n: m }) : t('vence em {n} h', { n: Math.round(m / 60) })
 }
 
 /** token da auth efetiva do request: status, obter/renovar e limpar */
@@ -104,16 +105,16 @@ export function OAuthTokenPanel({ wsId, req, envId }: { wsId: string; req: Reque
   return (
     <div className="ml-[102px] flex flex-wrap items-center gap-2 rounded-md border border-line/70 px-2.5 py-1.5 text-[12px]">
       <span className={st?.valid ? 'text-tgreen' : 'text-faint'}>
-        {st === undefined ? '…' : st ? `🔑 token ${st.valid ? 'válido' : 'vencido'}: ${expires(st.expiresAt)}${st.hasRefresh ? ' · renova sozinho' : ''}` : 'sem token: obtido no primeiro envio'}
+        {st === undefined ? '…' : st ? `🔑 ${st.valid ? t('token válido') : t('token vencido')}: ${expires(st.expiresAt)}${st.hasRefresh ? ` · ${t('renova sozinho')}` : ''}` : t('sem token: obtido no primeiro envio')}
       </span>
       <div className="flex-1" />
-      <button className="btn py-0.5 text-[12px]" disabled={busy} onClick={() => void get()}>{busy ? 'obtendo…' : st ? 'Obter de novo' : 'Obter token'}</button>
+      <button className="btn py-0.5 text-[12px]" disabled={busy} onClick={() => void get()}>{busy ? t('obtendo…') : st ? t('Obter de novo') : t('Obter token')}</button>
       {st && (
         <button className="btn btn-ghost py-0.5 text-[12px]" onClick={async () => { await run(api.oauthClear(wsId, req, envId)); setSt(null) }}>
-          Limpar
+          {t('Limpar')}
         </button>
       )}
-      <span className="w-full text-[11px] text-faint">O token fica em cache cifrado no cofre (não vai pro YAML) e entra no header de todos os requests que usam esta auth.</span>
+      <span className="w-full text-[11px] text-faint">{t('O token fica em cache cifrado no cofre (não vai pro YAML) e entra no header de todos os requests que usam esta auth.')}</span>
     </div>
   )
 }
@@ -136,14 +137,14 @@ export function OAuthWait() {
         <span className="text-[15px] font-semibold">OAuth 2.0</span>
         <p className="text-dim">{w.message}</p>
         {w.code && <span className="rounded-lg bg-raised px-4 py-2 font-mono text-[22px] tracking-widest text-accent">{w.code}</span>}
-        <p className="text-[11.5px] text-faint">Esperando a autorização… (até 5 minutos)</p>
+        <p className="text-[11.5px] text-faint">{t('Esperando a autorização… (até 5 minutos)')}</p>
         <div className="flex gap-2">
           {w.url && (
             <a className="btn" href={w.url}>
-              Abrir de novo no navegador
+              {t('Abrir de novo no navegador')}
             </a>
           )}
-          <button className="btn" onClick={() => void api.oauthCancel()}>Cancelar</button>
+          <button className="btn" onClick={() => void api.oauthCancel()}>{t('Cancelar')}</button>
         </div>
       </div>
     </div>

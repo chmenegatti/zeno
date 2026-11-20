@@ -1,17 +1,18 @@
 // Asserções sem código: status, header, JSONPath, body e tempo. Viram ScriptTest (mesma aba Testes dos scripts).
 
+import { t, tk } from './i18n'
 import type { Assertion, ResponseRecord, ScriptTest } from './types'
 
 export const OP_LABEL: Record<Assertion['op'], string> = {
   eq: '=',
   neq: '≠',
-  contains: 'contém',
-  notContains: 'não contém',
+  contains: tk('contém'),
+  notContains: tk('não contém'),
   lt: '<',
   gt: '>',
-  exists: 'existe',
-  notExists: 'não existe',
-  matches: 'casa regex'
+  exists: tk('existe'),
+  notExists: tk('não existe'),
+  matches: tk('casa regex')
 }
 
 export const SOURCE_LABEL: Record<Assertion['source'], string> = {
@@ -19,7 +20,7 @@ export const SOURCE_LABEL: Record<Assertion['source'], string> = {
   header: 'header',
   json: 'JSON',
   body: 'body',
-  time: 'tempo (ms)'
+  time: tk('tempo (ms)')
 }
 
 /** operadores que não usam valor */
@@ -34,7 +35,7 @@ export function parsePath(path: string): Seg[] {
   let i = 0
   const name = (): string => {
     const m = /^[^.[\]]+/.exec(p.slice(i))
-    if (!m) throw new Error(`JSONPath inválido: ${path}`)
+    if (!m) throw new Error(t('JSONPath inválido: {path}', { path }))
     i += m[0].length
     return m[0]
   }
@@ -58,19 +59,19 @@ export function parsePath(path: string): Seg[] {
           if (p[j] === '\\' && j + 1 < p.length) j++
           key += p[j++]
         }
-        if (p[j] !== q || p[j + 1] !== ']') throw new Error(`JSONPath inválido: ${path}`)
+        if (p[j] !== q || p[j + 1] !== ']') throw new Error(t('JSONPath inválido: {path}', { path }))
         out.push({ k: 'key', name: key })
         i = j + 2
         continue
       }
       const end = p.indexOf(']', i)
-      if (end < 0) throw new Error(`JSONPath inválido: ${path}`)
+      if (end < 0) throw new Error(t('JSONPath inválido: {path}', { path }))
       const inner = p.slice(i + 1, end).trim()
       i = end + 1
       if (inner === '*') out.push({ k: 'all' })
       else if (/^-?\d+$/.test(inner)) out.push({ k: 'idx', i: Number(inner) })
       else if (/^(['"]).*\1$/.test(inner)) out.push({ k: 'key', name: inner.slice(1, -1) })
-      else throw new Error(`JSONPath inválido: ${path}`)
+      else throw new Error(t('JSONPath inválido: {path}', { path }))
     } else out.push({ k: 'key', name: name() })
   }
   return out

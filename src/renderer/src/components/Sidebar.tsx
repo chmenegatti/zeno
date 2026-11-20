@@ -19,6 +19,7 @@ import { Chevron, FolderIcon, MethodBadge } from './ui'
 import { EnvVarList } from './Vars'
 import { Select } from './Select'
 import { kl } from '../keys'
+import { t } from '@shared/i18n'
 
 const EXPANDED_KEY = 'zeno:expanded'
 
@@ -80,9 +81,9 @@ export function Sidebar() {
       <aside className="flex w-[290px] shrink-0 flex-col border-r border-line bg-panel">
         <WorkspaceBar />
         <div className="flex flex-col gap-2 p-3">
-          <p className="text-dim">Nenhum workspace ainda.</p>
-          <button className="btn btn-accent" onClick={() => useStore.getState().openModal({ kind: 'import' })}>Importar (Insomnia, OpenAPI, Postman)</button>
-          <button className="btn" onClick={() => api.createWorkspace('Meu workspace').then((list) => { useStore.getState().setWorkspaces(list); useStore.getState().setApp({ activeWorkspaceId: list[0]?.id }) })}>Criar workspace vazio</button>
+          <p className="text-dim">{t('Nenhum workspace ainda.')}</p>
+          <button className="btn btn-accent" onClick={() => useStore.getState().openModal({ kind: 'import' })}>{t('Importar (Insomnia, OpenAPI, Postman)')}</button>
+          <button className="btn" onClick={() => api.createWorkspace(t('Meu workspace')).then((list) => { useStore.getState().setWorkspaces(list); useStore.getState().setApp({ activeWorkspaceId: list[0]?.id }) })}>{t('Criar workspace vazio')}</button>
         </div>
       </aside>
     )
@@ -188,9 +189,9 @@ export function Sidebar() {
       <EnvPicker ws={ws} />
       <EnvVarList ws={ws} />
       <div className="flex items-center gap-1.5 px-2 pb-2">
-        <input className="field min-w-0 flex-1" data-hk="search" placeholder={`Filtrar  (${kl('Ctrl+Shift+F')})`} value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setQuery('')} />
-        <button className="btn px-2" title={`Novo request (${kl('Ctrl+N')})`} onClick={() => createRequestIn(ws.id)}>＋</button>
-        <button className="btn px-2" title={`Nova pasta (${kl('Ctrl+Shift+N')})`} onClick={() => createFolderIn(ws.id)}>▤</button>
+        <input className="field min-w-0 flex-1" data-hk="search" placeholder={t('Filtrar  ({key})', { key: kl('Ctrl+Shift+F') })} value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setQuery('')} />
+        <button className="btn px-2" title={t('Novo request ({key})', { key: kl('Ctrl+N') })} onClick={() => createRequestIn(ws.id)}>＋</button>
+        <button className="btn px-2" title={t('Nova pasta ({key})', { key: kl('Ctrl+Shift+N') })} onClick={() => createFolderIn(ws.id)}>▤</button>
       </div>
       <div
         className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-6"
@@ -200,12 +201,12 @@ export function Sidebar() {
         }}
       >
         {!query && <Pinned ws={ws} active={app.activeRequestId} ids={app.pinned ?? []} />}
-        {visible.length ? renderNodes(visible, ws.id, 0) : <p className="px-3 py-6 text-center text-faint">{query ? 'Nada encontrado' : 'Vazio. Crie um request ou importe do Insomnia.'}</p>}
+        {visible.length ? renderNodes(visible, ws.id, 0) : <p className="px-3 py-6 text-center text-faint">{query ? t('Nada encontrado') : t('Vazio. Crie um request ou importe do Insomnia.')}</p>}
       </div>
       <div className="flex items-center gap-1 border-t border-line px-2 py-1.5 text-[11.5px]">
-        <button className="btn btn-ghost px-2 py-0.5 text-dim" title={`Preferências (${kl('Ctrl+,')})`} onClick={() => useStore.getState().openModal({ kind: 'prefs' })}>⚙ Preferências</button>
-        <button className="btn btn-ghost px-2 py-0.5 text-dim" title={`Atalhos de teclado (${kl('Ctrl+Shift+/')})`} onClick={() => useStore.getState().openModal({ kind: 'shortcuts' })}>⌨ Atalhos</button>
-        <button className="btn btn-ghost px-2 py-0.5 text-dim" title={`Cookies do workspace (${kl('Ctrl+K')})`} onClick={() => useStore.getState().openModal({ kind: 'cookies', id: ws.id })}>Cookies</button>
+        <button className="btn btn-ghost px-2 py-0.5 text-dim" title={t('Preferências ({key})', { key: kl('Ctrl+,') })} onClick={() => useStore.getState().openModal({ kind: 'prefs' })}>⚙ {t('Preferências')}</button>
+        <button className="btn btn-ghost px-2 py-0.5 text-dim" title={t('Atalhos de teclado ({key})', { key: kl('Ctrl+Shift+/') })} onClick={() => useStore.getState().openModal({ kind: 'shortcuts' })}>⌨ {t('Atalhos')}</button>
+        <button className="btn btn-ghost px-2 py-0.5 text-dim" title={t('Cookies do workspace ({key})', { key: kl('Ctrl+K') })} onClick={() => useStore.getState().openModal({ kind: 'cookies', id: ws.id })}>Cookies</button>
       </div>
       {menu && <ContextMenu menu={menu} ws={ws} onRename={setRenaming} />}
     </aside>
@@ -227,7 +228,7 @@ function Pinned({ ws, ids, active }: { ws: Workspace; ids: string[]; active?: st
   if (!list.length) return null
   return (
     <div className="mb-1 border-b border-line/70 pb-1">
-      <div className="px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-faint">Fixados</div>
+      <div className="px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-faint">{t('Fixados')}</div>
       {list.map((n) => (
         <div
           key={n.id}
@@ -236,7 +237,7 @@ function Pinned({ ws, ids, active }: { ws: Workspace; ids: string[]; active?: st
         >
           <MethodBadge method={n.method} className="w-[30px] shrink-0 text-right" />
           <span className="flex-1 truncate">{n.name}</span>
-          <button className="invisible px-1 text-faint hover:text-ink group-hover:visible" title="Desafixar" onClick={(e) => { e.stopPropagation(); togglePin(n.id) }}>×</button>
+          <button className="invisible px-1 text-faint hover:text-ink group-hover:visible" title={t('Desafixar')} onClick={(e) => { e.stopPropagation(); togglePin(n.id) }}>×</button>
         </div>
       ))}
     </div>
@@ -248,19 +249,19 @@ function ContextMenu({ menu, ws, onRename }: { menu: Menu; ws: Workspace; onRena
   const parentId = n?.kind === 'folder' ? n.id : ws.id
   const items: [string, () => void][] = []
   if (!n || n.kind === 'folder') {
-    items.push(['Novo request', () => createRequestIn(parentId)])
-    items.push(['Nova pasta', () => createFolderIn(parentId)])
+    items.push([t('Novo request'), () => createRequestIn(parentId)])
+    items.push([t('Nova pasta'), () => createFolderIn(parentId)])
   }
   if (n?.kind === 'folder') {
-    items.push(['Rodar pasta…', () => useStore.getState().openModal({ kind: 'run', id: ws.id, folderId: n.id })])
-    items.push(['Configurar pasta…', () => useStore.getState().openModal({ kind: 'folder', id: n.id })])
+    items.push([t('Rodar pasta…'), () => useStore.getState().openModal({ kind: 'run', id: ws.id, folderId: n.id })])
+    items.push([t('Configurar pasta…'), () => useStore.getState().openModal({ kind: 'folder', id: n.id })])
   }
-  if (!n) items.push(['Rodar workspace…', () => useStore.getState().openModal({ kind: 'run', id: ws.id })])
+  if (!n) items.push([t('Rodar workspace…'), () => useStore.getState().openModal({ kind: 'run', id: ws.id })])
   if (n?.kind === 'request') {
     const pinned = useStore.getState().app.pinned ?? []
-    items.push([pinned.includes(n.id) ? 'Desafixar' : 'Fixar no topo', () => togglePin(n.id)])
-    items.push(['Copiar como cURL', () => copyAsCurl(n.id)])
-    items.push(['Gerar código…', () => useStore.getState().openModal({ kind: 'code', id: n.id })])
+    items.push([pinned.includes(n.id) ? t('Desafixar') : t('Fixar no topo'), () => togglePin(n.id)])
+    items.push([t('Copiar como cURL'), () => copyAsCurl(n.id)])
+    items.push([t('Gerar código…'), () => useStore.getState().openModal({ kind: 'code', id: n.id })])
     // ações de plugins (requestActions)
     for (const p of useStore.getState().plugins.filter((x) => x.enabled))
       p.requestActions.forEach((a, i) =>
@@ -272,14 +273,14 @@ function ContextMenu({ menu, ws, onRename }: { menu: Menu; ws: Workspace; onRena
       )
   }
   if (n) {
-    items.push(['Renomear', () => onRename(n.id)])
-    items.push(['Duplicar', () => duplicateNode(n.id)])
-    items.push(['Excluir', () => deleteNode(n)])
+    items.push([t('Renomear'), () => onRename(n.id)])
+    items.push([t('Duplicar'), () => duplicateNode(n.id)])
+    items.push([t('Excluir'), () => deleteNode(n)])
   }
   return (
     <div className="fixed z-40 min-w-[180px] rounded-lg border border-line bg-raised py-1 shadow-xl" style={{ left: menu.x, top: Math.min(menu.y, window.innerHeight - items.length * 30 - 12) }}>
       {items.map(([label, fn]) => (
-        <button key={label} className={`block w-full px-3 py-1.5 text-left hover:bg-line ${label === 'Excluir' ? 'text-tpink' : ''}`} onClick={fn}>
+        <button key={label} className={`block w-full px-3 py-1.5 text-left hover:bg-line ${label === t('Excluir') ? 'text-tpink' : ''}`} onClick={fn}>
           {label}
         </button>
       ))}
@@ -296,15 +297,15 @@ function WorkspaceBar() {
   return (
     <div className="relative flex items-center gap-1 p-2">
       <button className="btn flex min-w-0 flex-1 items-center justify-between gap-2 text-left" onClick={(e) => { e.stopPropagation(); setOpen(!open) }}>
-        <span className="truncate font-semibold">{ws?.name ?? 'Nenhum workspace'}</span>
+        <span className="truncate font-semibold">{ws?.name ?? t('Nenhum workspace')}</span>
         <span className="text-faint">▾</span>
       </button>
       {ws && <GitButton ws={ws} />}
-      {ws && <button className="btn btn-ghost px-2" title="Configurações do workspace" onClick={() => openModal({ kind: 'workspace', id: ws.id })}>⚙</button>}
+      {ws && <button className="btn btn-ghost px-2" title={t('Configurações do workspace')} onClick={() => openModal({ kind: 'workspace', id: ws.id })}>⚙</button>}
       {open && (
         <div className="absolute left-2 right-2 top-[42px] z-40 max-h-[60vh] overflow-auto rounded-lg border border-line bg-raised py-1 shadow-xl" onMouseLeave={() => setOpen(false)}>
           <button className="flex w-full items-center justify-between px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); openModal({ kind: 'workspaces' }) }}>
-            <span>▦ Gerenciar workspaces…</span>
+            <span>▦ {t('Gerenciar workspaces…')}</span>
             <span className="text-[10.5px] text-faint">{kl('Ctrl+Shift+O')}</span>
           </button>
           <div className="my-1 border-t border-line" />
@@ -318,24 +319,24 @@ function WorkspaceBar() {
           <div className="my-1 border-t border-line" />
           <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => {
             setOpen(false)
-            openModal({ kind: 'prompt', title: 'Novo workspace', value: '', onOk: async (name) => {
+            openModal({ kind: 'prompt', title: t('Novo workspace'), value: '', onOk: async (name) => {
               const list = await useStore.getState().run(api.createWorkspace(name || 'Workspace'))
               if (!list) return
               useStore.getState().setWorkspaces(list)
               const created = list.find((w) => w.name === (name || 'Workspace') && !workspaces.some((o) => o.id === w.id))
               if (created) setApp({ activeWorkspaceId: created.id, activeRequestId: undefined })
             } })
-          }}>＋ Novo workspace</button>
+          }}>＋ {t('Novo workspace')}</button>
           <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={async () => {
             setOpen(false)
             const r = await useStore.getState().run(api.linkWorkspace())
             if (!r) return
             useStore.getState().setWorkspaces(r.workspaces)
             setApp({ activeWorkspaceId: r.id, activeRequestId: undefined })
-          }}>Abrir workspace de uma pasta…</button>
-          <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); openModal({ kind: 'import' }) }}>⇣ Importar (Insomnia, OpenAPI, Postman)…</button>
-          <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); openModal({ kind: 'github' }) }}>☁ Salvar no GitHub…</button>
-          <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); api.openDataDir() }}>Abrir pasta de dados</button>
+          }}>{t('Abrir workspace de uma pasta…')}</button>
+          <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); openModal({ kind: 'import' }) }}>⇣ {t('Importar (Insomnia, OpenAPI, Postman)…')}</button>
+          <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); openModal({ kind: 'github' }) }}>☁ {t('Salvar no GitHub…')}</button>
+          <button className="block w-full px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); api.openDataDir() }}>{t('Abrir pasta de dados')}</button>
         </div>
       )}
     </div>
@@ -357,14 +358,14 @@ function EnvPicker({ ws }: { ws: Workspace }) {
         className="field min-w-0 flex-1 py-1"
         value={current ?? ''}
         onChange={(v) => useStore.getState().setApp({ activeEnv: { ...app.activeEnv, [ws.id]: v || null } })}
-        title={`Ambiente (${kl('Ctrl+Shift+E')})`}
+        title={t('Ambiente ({key})', { key: kl('Ctrl+Shift+E') })}
       >
-        <option value="">Só base</option>
+        <option value="">{t('Só base')}</option>
         {subs.map((e) => (
           <option key={e.id} value={e.id}>{e.name}</option>
         ))}
       </Select>
-      <button className="btn btn-ghost px-2" title="Editar ambientes" onClick={() => useStore.getState().openModal({ kind: 'env', id: ws.id })}>✎</button>
+      <button className="btn btn-ghost px-2" title={t('Editar ambientes')} onClick={() => useStore.getState().openModal({ kind: 'env', id: ws.id })}>✎</button>
     </div>
   )
 }

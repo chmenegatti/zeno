@@ -4,6 +4,7 @@
 import { restoreFormData } from './shims/hide-formdata'
 import { availableTargets, HTTPSnippet, type HarRequest } from 'httpsnippet'
 import type { SendInput } from '@shared/types'
+import { t, tk } from '@shared/i18n'
 
 restoreFormData()
 
@@ -19,17 +20,17 @@ export interface CodeTarget {
 }
 
 /** nomes em português onde faz sentido; resto como o httpsnippet chama */
-const TITLE: Record<string, string> = { shell: 'Shell', http: 'HTTP bruto', node: 'Node.js', javascript: 'JavaScript', csharp: 'C#', objc: 'Objective-C' }
+const TITLE: Record<string, string> = { shell: 'Shell', http: tk('HTTP bruto'), node: 'Node.js', javascript: 'JavaScript', csharp: 'C#', objc: 'Objective-C' }
 
 /** mais usadas primeiro; o resto em ordem alfabética */
 const ORDER = ['shell', 'javascript', 'node', 'python', 'go', 'java', 'csharp', 'php', 'ruby', 'kotlin', 'swift', 'rust', 'powershell', 'http']
 
 export function codeTargets(): CodeTarget[] {
   const rank = (k: string): number => (ORDER.includes(k) ? ORDER.indexOf(k) : ORDER.length)
-  return [...availableTargets()].sort((a, b) => rank(a.key) - rank(b.key) || a.title.localeCompare(b.title)).map((t) => ({
-    key: t.key,
-    title: TITLE[t.key] ?? t.title,
-    clients: t.clients.map((c) => ({ key: c.key, title: c.title, link: c.link }))
+  return [...availableTargets()].sort((a, b) => rank(a.key) - rank(b.key) || a.title.localeCompare(b.title)).map((tg) => ({
+    key: tg.key,
+    title: TITLE[tg.key] ? t(TITLE[tg.key]) : tg.title,
+    clients: tg.clients.map((c) => ({ key: c.key, title: c.title, link: c.link }))
   }))
 }
 
@@ -67,6 +68,6 @@ export function toHar(input: SendInput): HarRequest {
 /** indentação de 2 espaços (Go fica com tab, padrão do gofmt; o editor mostra tab com largura 2) */
 export function snippet(target: string, client: string, input: SendInput): string {
   const out = new HTTPSnippet(toHar(input)).convert(target as never, client, { indent: '  ' })
-  if (typeof out !== 'string') throw new Error(`não há gerador para ${target}/${client}`)
+  if (typeof out !== 'string') throw new Error(t('não há gerador para {target}/{client}', { target, client }))
   return out
 }

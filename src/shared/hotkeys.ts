@@ -1,7 +1,12 @@
 // Atalhos de teclado: mesmo padrão do Insomnia (Linux/Windows), sobrescrevíveis pelo usuário.
 // Combinação em texto: "Ctrl+Shift+E", "Ctrl+=", "F5". Ctrl também casa com Cmd no macOS.
 
+import { tk } from './i18n'
+
 export type HotkeyGroup = 'Interface' | 'Request' | 'Ambientes'
+
+/** nome do grupo pra mostrar (o grupo é id): renderize com t() */
+export const HOTKEY_GROUP_LABEL: Record<HotkeyGroup, string> = { Interface: tk('Interface'), Request: tk('Request'), Ambientes: tk('Ambientes') }
 
 export interface HotkeyDef {
   id: string
@@ -20,41 +25,41 @@ export interface HotkeyDef {
 
 export const HOTKEYS: HotkeyDef[] = [
   // interface
-  { id: 'zoomIn', label: 'Aumentar zoom', group: 'Interface', keys: ['Ctrl+='], global: true },
-  { id: 'zoomOut', label: 'Diminuir zoom', group: 'Interface', keys: ['Ctrl+-'], global: true },
-  { id: 'zoomReset', label: 'Zoom 100%', group: 'Interface', keys: ['Ctrl+0'], global: true },
-  { id: 'editorFontUp', label: 'Aumentar fonte dos editores', group: 'Interface', keys: ['Ctrl+Shift+='], global: true },
-  { id: 'editorFontDown', label: 'Diminuir fonte dos editores', group: 'Interface', keys: ['Ctrl+Shift+-'], global: true },
-  { id: 'sidebarToggle', label: 'Mostrar/esconder lateral', group: 'Interface', keys: ['Ctrl+\\'] },
-  { id: 'sidebarFilter', label: 'Filtrar a lateral', group: 'Interface', keys: ['Ctrl+Shift+F'], notInEditor: true },
-  { id: 'quickSwitch', label: 'Paleta de comandos', group: 'Interface', keys: ['Ctrl+P'] },
-  { id: 'focusUrl', label: 'Focar a URL', group: 'Interface', keys: ['Ctrl+L'], notInEditor: true },
-  { id: 'focusResponse', label: 'Focar a resposta', group: 'Interface', keys: ["Ctrl+'"] },
-  { id: 'showShortcuts', label: 'Atalhos de teclado', group: 'Interface', keys: ['Ctrl+Shift+/'], global: true },
-  { id: 'showPreferences', label: 'Preferências', group: 'Interface', keys: ['Ctrl+,'], global: true },
-  { id: 'workspaces', label: 'Gerenciar workspaces', group: 'Interface', keys: ['Ctrl+Shift+O'] },
-  { id: 'workspaceSettings', label: 'Configurações do workspace', group: 'Interface', keys: ['Ctrl+Shift+,'] },
-  { id: 'fullscreen', label: 'Tela cheia', group: 'Interface', keys: ['F11'], global: true },
-  { id: 'devtools', label: 'Ferramentas de desenvolvedor', group: 'Interface', keys: ['Ctrl+Alt+I', 'Ctrl+Shift+I'], global: true },
-  { id: 'quit', label: 'Sair', group: 'Interface', keys: ['Ctrl+Q'], global: true },
+  { id: 'zoomIn', label: tk('Aumentar zoom'), group: 'Interface', keys: ['Ctrl+='], global: true },
+  { id: 'zoomOut', label: tk('Diminuir zoom'), group: 'Interface', keys: ['Ctrl+-'], global: true },
+  { id: 'zoomReset', label: tk('Zoom 100%'), group: 'Interface', keys: ['Ctrl+0'], global: true },
+  { id: 'editorFontUp', label: tk('Aumentar fonte dos editores'), group: 'Interface', keys: ['Ctrl+Shift+='], global: true },
+  { id: 'editorFontDown', label: tk('Diminuir fonte dos editores'), group: 'Interface', keys: ['Ctrl+Shift+-'], global: true },
+  { id: 'sidebarToggle', label: tk('Mostrar/esconder lateral'), group: 'Interface', keys: ['Ctrl+\\'] },
+  { id: 'sidebarFilter', label: tk('Filtrar a lateral'), group: 'Interface', keys: ['Ctrl+Shift+F'], notInEditor: true },
+  { id: 'quickSwitch', label: tk('Paleta de comandos'), group: 'Interface', keys: ['Ctrl+P'] },
+  { id: 'focusUrl', label: tk('Focar a URL'), group: 'Interface', keys: ['Ctrl+L'], notInEditor: true },
+  { id: 'focusResponse', label: tk('Focar a resposta'), group: 'Interface', keys: ["Ctrl+'"] },
+  { id: 'showShortcuts', label: tk('Atalhos de teclado'), group: 'Interface', keys: ['Ctrl+Shift+/'], global: true },
+  { id: 'showPreferences', label: tk('Preferências'), group: 'Interface', keys: ['Ctrl+,'], global: true },
+  { id: 'workspaces', label: tk('Gerenciar workspaces'), group: 'Interface', keys: ['Ctrl+Shift+O'] },
+  { id: 'workspaceSettings', label: tk('Configurações do workspace'), group: 'Interface', keys: ['Ctrl+Shift+,'] },
+  { id: 'fullscreen', label: tk('Tela cheia'), group: 'Interface', keys: ['F11'], global: true },
+  { id: 'devtools', label: tk('Ferramentas de desenvolvedor'), group: 'Interface', keys: ['Ctrl+Alt+I', 'Ctrl+Shift+I'], global: true },
+  { id: 'quit', label: tk('Sair'), group: 'Interface', keys: ['Ctrl+Q'], global: true },
   // request
-  { id: 'send', label: 'Enviar request', group: 'Request', keys: ['Ctrl+Enter', 'Ctrl+R', 'F5'] },
-  { id: 'sendOptions', label: 'Opções de envio (atrasar, repetir)', group: 'Request', keys: ['Ctrl+Shift+Enter'] },
-  { id: 'beautify', label: 'Formatar JSON do editor', group: 'Request', keys: ['Ctrl+Shift+F'], global: true, onlyInEditor: true },
-  { id: 'cookies', label: 'Cookies do workspace', group: 'Request', keys: ['Ctrl+K'] },
-  { id: 'togglePin', label: 'Fixar/desafixar request', group: 'Request', keys: ['Ctrl+Shift+P'] },
-  { id: 'save', label: 'Salvar agora', group: 'Request', keys: ['Ctrl+S'] },
-  { id: 'newRequest', label: 'Novo request', group: 'Request', keys: ['Ctrl+N', 'Ctrl+Alt+N'] },
-  { id: 'newFolder', label: 'Nova pasta', group: 'Request', keys: ['Ctrl+Shift+N'] },
-  { id: 'duplicate', label: 'Duplicar request', group: 'Request', keys: ['Ctrl+D'], notInEditor: true },
-  { id: 'delete', label: 'Excluir request', group: 'Request', keys: ['Ctrl+Shift+Backspace'], notInText: true },
-  { id: 'methodMenu', label: 'Trocar método HTTP', group: 'Request', keys: ['Ctrl+Shift+L'] },
-  { id: 'history', label: 'Histórico de respostas', group: 'Request', keys: ['Ctrl+Shift+H'] },
-  { id: 'generateCode', label: 'Gerar código', group: 'Request', keys: ['Ctrl+Shift+G'] },
+  { id: 'send', label: tk('Enviar request'), group: 'Request', keys: ['Ctrl+Enter', 'Ctrl+R', 'F5'] },
+  { id: 'sendOptions', label: tk('Opções de envio (atrasar, repetir)'), group: 'Request', keys: ['Ctrl+Shift+Enter'] },
+  { id: 'beautify', label: tk('Formatar JSON do editor'), group: 'Request', keys: ['Ctrl+Shift+F'], global: true, onlyInEditor: true },
+  { id: 'cookies', label: tk('Cookies do workspace'), group: 'Request', keys: ['Ctrl+K'] },
+  { id: 'togglePin', label: tk('Fixar/desafixar request'), group: 'Request', keys: ['Ctrl+Shift+P'] },
+  { id: 'save', label: tk('Salvar agora'), group: 'Request', keys: ['Ctrl+S'] },
+  { id: 'newRequest', label: tk('Novo request'), group: 'Request', keys: ['Ctrl+N', 'Ctrl+Alt+N'] },
+  { id: 'newFolder', label: tk('Nova pasta'), group: 'Request', keys: ['Ctrl+Shift+N'] },
+  { id: 'duplicate', label: tk('Duplicar request'), group: 'Request', keys: ['Ctrl+D'], notInEditor: true },
+  { id: 'delete', label: tk('Excluir request'), group: 'Request', keys: ['Ctrl+Shift+Backspace'], notInText: true },
+  { id: 'methodMenu', label: tk('Trocar método HTTP'), group: 'Request', keys: ['Ctrl+Shift+L'] },
+  { id: 'history', label: tk('Histórico de respostas'), group: 'Request', keys: ['Ctrl+Shift+H'] },
+  { id: 'generateCode', label: tk('Gerar código'), group: 'Request', keys: ['Ctrl+Shift+G'] },
   // ambientes
-  { id: 'envEditor', label: 'Editar ambientes', group: 'Ambientes', keys: ['Ctrl+E'] },
-  { id: 'envSwitch', label: 'Trocar ambiente', group: 'Ambientes', keys: ['Ctrl+Shift+E'] },
-  { id: 'showValues', label: 'Mostrar valor das variáveis', group: 'Ambientes', keys: ['Alt+Shift+U'], global: true }
+  { id: 'envEditor', label: tk('Editar ambientes'), group: 'Ambientes', keys: ['Ctrl+E'] },
+  { id: 'envSwitch', label: tk('Trocar ambiente'), group: 'Ambientes', keys: ['Ctrl+Shift+E'] },
+  { id: 'showValues', label: tk('Mostrar valor das variáveis'), group: 'Ambientes', keys: ['Alt+Shift+U'], global: true }
 ]
 
 export interface KeyLike {
@@ -86,7 +91,6 @@ function eventKeys(e: KeyLike): string[] {
   if (e.key && e.key !== 'Unidentified' && e.key !== 'Dead') out.add(keyName(e.key))
   return [...out]
 }
-
 
 
 export function parseCombo(combo: string): { ctrl: boolean; shift: boolean; alt: boolean; key: string } {
@@ -213,7 +217,6 @@ export function fromInsomnia(registry: Record<string, { macKeys?: InsomniaKey[];
   }
   return out
 }
-
 
 
 /** combinação pra mostrar: no macOS com os símbolos (⌘⇧E); Ctrl também casa com Cmd lá */

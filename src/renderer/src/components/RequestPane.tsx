@@ -23,24 +23,25 @@ import { Select } from './Select'
 import { kl } from '../keys'
 import { newOAuth2, OAuthFields, OAuthTokenPanel } from './OAuth'
 import { ExamplesEditor } from './Mock'
+import { t, tk } from '@shared/i18n'
 
 const GraphQLBody = lazy(() => import('./GraphQLBody'))
 
 type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'assertions' | 'notes' | 'examples'
 
 const BODY_TYPES: { mime: string | null; label: string }[] = [
-  { mime: null, label: 'Sem body' },
+  { mime: null, label: tk('Sem body') },
   { mime: 'application/json', label: 'JSON' },
   { mime: 'application/xml', label: 'XML' },
-  { mime: 'text/plain', label: 'Texto' },
+  { mime: 'text/plain', label: tk('Texto') },
   { mime: 'application/x-www-form-urlencoded', label: 'Form URL-encoded' },
   { mime: 'multipart/form-data', label: 'Multipart' },
   { mime: 'application/graphql', label: 'GraphQL' }
 ]
 
 const AUTH_LABEL: Record<AuthType, string> = {
-  inherit: 'Herdar da pasta',
-  none: 'Sem auth',
+  inherit: tk('Herdar da pasta'),
+  none: tk('Sem auth'),
   basic: 'Basic',
   bearer: 'Bearer token',
   apikey: 'API key',
@@ -62,8 +63,8 @@ export function RequestPane() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 text-faint">
         <div className="text-3xl text-line">◇</div>
-        <p>Escolha um request na lateral</p>
-        <p className="text-[12px]">Ctrl+N novo · Ctrl+P buscar · Ctrl+E ambiente · Ctrl+Enter enviar</p>
+        <p>{t('Escolha um request na lateral')}</p>
+        <p className="text-[12px]">{t('Ctrl+N novo · Ctrl+P buscar · Ctrl+E ambiente · Ctrl+Enter enviar')}</p>
       </div>
     )
   }
@@ -81,7 +82,8 @@ export function RequestPane() {
     try {
       const p = parseCurl(cmd)
       update({
-        name: req.name === 'Novo request' ? p.name : req.name,
+        // nome padrão nas duas línguas (criado antes ou depois de trocar o idioma)
+        name: req.name === 'Novo request' || req.name === 'New request' ? p.name : req.name,
         method: p.method,
         url: p.url,
         params: p.params,
@@ -90,8 +92,8 @@ export function RequestPane() {
         auth: p.auth
       })
       const notes = [...p.warnings]
-      if (p.insecure && !cur.ws.settings.insecureTLS) notes.push('o curl usa -k: ative "Aceitar certificado TLS inválido" nas configurações do workspace')
-      notify(notes.length ? `curl importado. ${notes.join('; ')}` : 'curl importado')
+      if (p.insecure && !cur.ws.settings.insecureTLS) notes.push(t('o curl usa -k: ative "Aceitar certificado TLS inválido" nas configurações do workspace'))
+      notify(notes.length ? t('curl importado. {notes}', { notes: notes.join('; ') }) : t('curl importado'))
     } catch (e) {
       showError(e)
     }
@@ -109,12 +111,12 @@ export function RequestPane() {
           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
         />
         {ancestors.length > 0 && <span className="truncate text-[11.5px] text-faint">{ancestors.map((a) => a.name).join(' / ')}</span>}
-        <button className="btn btn-ghost px-2 py-0.5 font-mono text-[11.5px]" title="Gerar código (cURL, Go, JavaScript, Python)" onClick={() => useStore.getState().openModal({ kind: 'code', id: req.id })}>{'</>'}</button>
+        <button className="btn btn-ghost px-2 py-0.5 font-mono text-[11.5px]" title={t('Gerar código (cURL, Go, JavaScript, Python)')} onClick={() => useStore.getState().openModal({ kind: 'code', id: req.id })}>{'</>'}</button>
       </div>
 
       <div className="flex items-center gap-1.5 p-3">
         {wsMode || grpcMode ? (
-          <span className="rounded-md bg-raised px-2 py-1 font-mono text-[12px] font-semibold text-tpurple" title={grpcMode ? 'gRPC (URL grpc:// ou grpcs:// com TLS)' : 'WebSocket (URL ws:// ou wss://)'}>{grpcMode ? 'gRPC' : 'WS'}</span>
+          <span className="rounded-md bg-raised px-2 py-1 font-mono text-[12px] font-semibold text-tpurple" title={grpcMode ? t('gRPC (URL grpc:// ou grpcs:// com TLS)') : t('WebSocket (URL ws:// ou wss://)')}>{grpcMode ? 'gRPC' : 'WS'}</span>
         ) : (
           <MethodPicker value={req.method} onChange={(method) => update({ method })} />
         )}
@@ -126,9 +128,9 @@ export function RequestPane() {
         ) : grpcMode ? (
           <GrpcButton reqId={req.id} />
         ) : isSending ? (
-          <button className="btn w-[88px]" onClick={() => api.cancel(req.id)}>Cancelar</button>
+          <button className="btn w-[88px]" onClick={() => api.cancel(req.id)}>{t('Cancelar')}</button>
         ) : (
-          <button className="btn btn-accent w-[88px]" onClick={() => useStore.getState().sendActive()} title="Ctrl+Enter">Enviar</button>
+          <button className="btn btn-accent w-[88px]" onClick={() => useStore.getState().sendActive()} title="Ctrl+Enter">{t('Enviar')}</button>
         )}
         {!wsMode && !grpcMode && <SendOptions reqId={req.id} />}
       </div>
@@ -151,12 +153,12 @@ export function RequestPane() {
           options={[
             ...(grpcMode ? [] : [{ id: 'params' as const, label: <>Params<Count n={req.params.length} /></> }]),
             { id: 'headers', label: <>{grpcMode ? 'Metadata' : 'Headers'}<Count n={req.headers.length} /></> },
-            { id: 'body', label: <>{wsMode || grpcMode ? 'Mensagem' : 'Body'}{req.body.mime && <span className="ml-1 text-[10.5px] text-faint">{BODY_TYPES.find((b) => b.mime === req.body.mime)?.label ?? req.body.mime}</span>}</> },
-            { id: 'auth', label: <>Auth<span className="ml-1 text-[10.5px] text-faint">{req.auth.type === 'inherit' ? '↑' : req.auth.type === 'none' ? '' : req.auth.type === 'oauth2' ? 'OAuth2' : AUTH_LABEL[req.auth.type]}</span></> },
+            { id: 'body', label: <>{wsMode || grpcMode ? t('Mensagem') : 'Body'}{req.body.mime && <span className="ml-1 text-[10.5px] text-faint">{t(BODY_TYPES.find((b) => b.mime === req.body.mime)?.label ?? req.body.mime)}</span>}</> },
+            { id: 'auth', label: <>Auth<span className="ml-1 text-[10.5px] text-faint">{req.auth.type === 'inherit' ? '↑' : req.auth.type === 'none' ? '' : req.auth.type === 'oauth2' ? 'OAuth2' : t(AUTH_LABEL[req.auth.type])}</span></> },
             { id: 'scripts', label: <>Scripts{hasScripts(req.scripts) ? <span className="ml-1 text-[10.5px] text-tpurple">●</span> : ancestors.some((a) => hasScripts(a.scripts)) ? <span className="ml-1 text-[10.5px] text-faint">↑</span> : null}</> },
-            { id: 'assertions', label: <>Asserções<Count n={req.assertions?.filter((a) => a.enabled).length ?? 0} /></> },
-            ...(wsMode || grpcMode ? [] : [{ id: 'examples' as const, label: <>Exemplos<Count n={req.examples?.length ?? 0} /></> }]),
-            { id: 'notes', label: 'Notas' }
+            { id: 'assertions', label: <>{t('Asserções')}<Count n={req.assertions?.filter((a) => a.enabled).length ?? 0} /></> },
+            ...(wsMode || grpcMode ? [] : [{ id: 'examples' as const, label: <>{t('Exemplos')}<Count n={req.examples?.length ?? 0} /></> }]),
+            { id: 'notes', label: t('Notas') }
           ]}
         />
       </div>
@@ -171,19 +173,19 @@ export function RequestPane() {
           <div className="p-3">
             <KeyValueTable rows={req.headers} onChange={(headers) => update({ headers })} keyPlaceholder="Header" />
             <div className="mt-3 flex items-center gap-4 text-[11.5px] text-dim">
-              <label className="flex items-center gap-1.5" title="Manda os cookies guardados do workspace que valem pra esta URL">
+              <label className="flex items-center gap-1.5" title={t('Manda os cookies guardados do workspace que valem pra esta URL')}>
                 <input type="checkbox" checked={req.sendCookies !== false} onChange={(e) => update({ sendCookies: e.target.checked ? undefined : false })} />
-                Enviar cookies
+                {t('Enviar cookies')}
               </label>
-              <label className="flex items-center gap-1.5" title="Guarda os Set-Cookie da resposta no jar do workspace">
+              <label className="flex items-center gap-1.5" title={t('Guarda os Set-Cookie da resposta no jar do workspace')}>
                 <input type="checkbox" checked={req.storeCookies !== false} onChange={(e) => update({ storeCookies: e.target.checked ? undefined : false })} />
-                Guardar cookies da resposta
+                {t('Guardar cookies da resposta')}
               </label>
-              <button className="btn btn-ghost px-1.5 py-0 text-[11.5px]" onClick={() => useStore.getState().openModal({ kind: 'cookies', id: cur.ws.id })}>ver cookies ({kl('Ctrl+K')})</button>
+              <button className="btn btn-ghost px-1.5 py-0 text-[11.5px]" onClick={() => useStore.getState().openModal({ kind: 'cookies', id: cur.ws.id })}>{t('ver cookies ({key})', { key: kl('Ctrl+K') })}</button>
             </div>
             {ancestors.some((a) => a.headers.length) && (
               <div className="mt-3 text-[11.5px] text-faint">
-                Herdados das pastas:{' '}
+                {t('Herdados das pastas:')}{' '}
                 {ancestors.flatMap((a) => a.headers.filter((h) => h.enabled).map((h) => <code key={a.id + h.name} className="mr-2">{h.name}</code>))}
               </div>
             )}
@@ -195,7 +197,7 @@ export function RequestPane() {
         {sec === 'assertions' && <AssertionsEditor list={req.assertions ?? []} onChange={(assertions) => update({ assertions: assertions.length ? assertions : undefined })} />}
         {sec === 'examples' && <ExamplesEditor ws={cur.ws} req={req} onChange={(examples) => update({ examples })} />}
         {sec === 'notes' && (
-          <textarea className="h-full w-full resize-none bg-transparent p-3 outline-none" placeholder="Anotações sobre este request…" value={req.description ?? ''} onChange={(e) => update({ description: e.target.value })} />
+          <textarea className="h-full w-full resize-none bg-transparent p-3 outline-none" placeholder={t('Anotações sobre este request…')} value={req.description ?? ''} onChange={(e) => update({ description: e.target.value })} />
         )}
       </div>
     </section>
@@ -207,13 +209,13 @@ function WsButton({ reqId }: { reqId: string }) {
   const { wsAction } = useStore.getState()
   if (state === 'open')
     return (
-      <button className="btn w-[104px]" onClick={() => void wsAction(reqId, 'close')} title="Fecha a conexão">
-        Desconectar
+      <button className="btn w-[104px]" onClick={() => void wsAction(reqId, 'close')} title={t('Fecha a conexão')}>
+        {t('Desconectar')}
       </button>
     )
   return (
     <button className="btn btn-accent w-[104px]" disabled={state === 'connecting'} onClick={() => void wsAction(reqId, 'connect')} title="Ctrl+Enter">
-      {state === 'connecting' ? 'Conectando…' : 'Conectar'}
+      {state === 'connecting' ? t('Conectando…') : t('Conectar')}
     </button>
   )
 }
@@ -229,7 +231,7 @@ function BodyEditor({ body, onChange, gql, ws, grpc }: { body: Body; onChange: (
     try {
       onChange({ ...body, text: JSON.stringify(JSON.parse(body.text ?? ''), null, 2) })
     } catch {
-      useStore.getState().showError('JSON inválido')
+      useStore.getState().showError(t('JSON inválido'))
     }
   }
   return (
@@ -237,20 +239,20 @@ function BodyEditor({ body, onChange, gql, ws, grpc }: { body: Body; onChange: (
       <div className="flex items-center gap-2 px-3 py-2">
         <Select className="field py-1" value={body.mime ?? ''} onChange={(v) => setMime(v || null)}>
           {BODY_TYPES.filter((b) => !ws || (b.mime !== 'application/x-www-form-urlencoded' && b.mime !== 'multipart/form-data')).map((b) => (
-            <option key={b.label} value={b.mime ?? ''}>{b.label}</option>
+            <option key={b.label} value={b.mime ?? ''}>{t(b.label)}</option>
           ))}
           {body.mime && !BODY_TYPES.some((b) => b.mime === body.mime) && <option value={body.mime}>{body.mime}</option>}
         </Select>
-        {body.mime === 'application/json' && <button className="btn btn-ghost py-1" onClick={format}>Formatar</button>}
+        {body.mime === 'application/json' && <button className="btn btn-ghost py-1" onClick={format}>{t('Formatar')}</button>}
       </div>
-      {body.mime === null && <p className="px-3 text-faint">{ws ? 'Escolha um tipo (JSON, texto…) pra escrever a mensagem.' : 'Este request não envia body.'}</p>}
+      {body.mime === null && <p className="px-3 text-faint">{ws ? t('Escolha um tipo (JSON, texto…) pra escrever a mensagem.') : t('Este request não envia body.')}</p>}
       {grpc && <GrpcSendBar reqId={grpc} />}
       {ws && body.mime !== null && (
         <div className="flex items-center gap-2 border-t border-line px-3 py-1.5 text-[11.5px]">
-          <span className="text-faint">{wsOpen ? 'Ctrl+Enter manda esta mensagem ({{ variáveis }} e tags resolvidas)' : 'Conecte pra mandar a mensagem'}</span>
+          <span className="text-faint">{wsOpen ? t('Ctrl+Enter manda esta mensagem ({{ variáveis }} e tags resolvidas)') : t('Conecte pra mandar a mensagem')}</span>
           <div className="flex-1" />
           <button className="btn btn-accent py-0.5 text-[12px]" disabled={!wsOpen} onClick={() => void useStore.getState().wsAction(ws, 'send')}>
-            ↑ Enviar mensagem
+            ↑ {t('Enviar mensagem')}
           </button>
         </div>
       )}
@@ -265,7 +267,7 @@ function BodyEditor({ body, onChange, gql, ws, grpc }: { body: Body; onChange: (
         </div>
       )}
       {body.mime === 'application/graphql' && (
-        <Suspense fallback={<p className="px-3 text-faint">carregando editor GraphQL…</p>}>
+        <Suspense fallback={<p className="px-3 text-faint">{t('carregando editor GraphQL…')}</p>}>
           <GraphQLBody text={body.text ?? ''} onChange={(text) => onChange({ ...body, text })} ctx={gql} tags={editorTags} />
         </Suspense>
       )}
@@ -278,7 +280,7 @@ function BodyEditor({ body, onChange, gql, ws, grpc }: { body: Body; onChange: (
             <div className="flex items-center gap-2 border-t border-line px-2 py-1">
               <button
                 className="btn btn-ghost px-2 py-0.5 text-[11.5px]"
-                title={`Organiza o JSON com indentação (${kl('Ctrl+Shift+F')} no editor); mantém {{ variáveis }} e {% tags %}`}
+                title={t('Organiza o JSON com indentação ({key} no editor); mantém {{ variáveis }} e {% tags %}', { key: kl('Ctrl+Shift+F') })}
                 onClick={() => {
                   const text = body.text ?? ''
                   if (!text.trim()) return
@@ -286,14 +288,14 @@ function BodyEditor({ body, onChange, gql, ws, grpc }: { body: Body; onChange: (
                     const out = beautifyJson(text)
                     if (out !== text) onChange({ ...body, text: out })
                   } catch {
-                    useStore.getState().notify('Só dá pra formatar JSON válido')
+                    useStore.getState().notify(t('Só dá pra formatar JSON válido'))
                   }
                 }}
               >
-                {'{ }'} Formatar JSON
+                {'{ }'} {t('Formatar JSON')}
               </button>
               <div className="flex-1" />
-              <span className="text-[11px] text-faint">{(body.text ?? '').length} caracteres</span>
+              <span className="text-[11px] text-faint">{t('{n} caracteres', { n: (body.text ?? '').length })}</span>
             </div>
           )}
         </div>
@@ -326,36 +328,36 @@ export function AuthEditor({ auth, inherited, onChange, allowInherit = true, oau
   return (
     <div className="flex flex-col gap-2.5 p-3">
       <Select className="field w-[200px] py-1" value={auth.type} onChange={(v) => setType(v as AuthType)}>
-        {(Object.keys(AUTH_LABEL) as AuthType[]).filter((t) => allowInherit || t !== 'inherit').map((t) => (
-          <option key={t} value={t}>{AUTH_LABEL[t]}</option>
+        {(Object.keys(AUTH_LABEL) as AuthType[]).filter((a) => allowInherit || a !== 'inherit').map((a) => (
+          <option key={a} value={a}>{t(AUTH_LABEL[a])}</option>
         ))}
       </Select>
-      {auth.type === 'inherit' && <p className="text-faint">Usando da pasta: <span className="text-dim">{inherited ? AUTH_LABEL[inherited.type] : 'sem auth'}</span></p>}
+      {auth.type === 'inherit' && <p className="text-faint">{t('Usando da pasta:')} <span className="text-dim">{inherited ? t(AUTH_LABEL[inherited.type]) : t('sem auth')}</span></p>}
       {auth.type === 'inherit' && inherited?.type === 'oauth2' && oauthCtx && <OAuthTokenPanel {...oauthCtx} />}
       {auth.type === 'oauth2' && (
         <>
           <OAuthFields auth={auth} onChange={onChange} row={row} secretRow={secretRow} />
-          {oauthCtx ? <OAuthTokenPanel {...oauthCtx} /> : <p className="pl-[102px] text-[11.5px] text-faint">O token é obtido no primeiro envio de um request desta pasta (ou pelo botão na aba Auth do request).</p>}
+          {oauthCtx ? <OAuthTokenPanel {...oauthCtx} /> : <p className="pl-[102px] text-[11.5px] text-faint">{t('O token é obtido no primeiro envio de um request desta pasta (ou pelo botão na aba Auth do request).')}</p>}
         </>
       )}
       {auth.type === 'basic' && (
         <>
-          {row('Usuário', auth.username, (username) => onChange({ ...auth, username }))}
-          {secretRow('Senha', auth.password, (password) => onChange({ ...auth, password }))}
+          {row(t('Usuário'), auth.username, (username) => onChange({ ...auth, username }))}
+          {secretRow(t('Senha'), auth.password, (password) => onChange({ ...auth, password }))}
         </>
       )}
       {auth.type === 'bearer' && (
         <>
           {secretRow('Token', auth.token, (token) => onChange({ ...auth, token }))}
-          {row('Prefixo', auth.prefix ?? '', (prefix) => onChange({ ...auth, prefix: prefix || undefined }))}
+          {row(t('Prefixo'), auth.prefix ?? '', (prefix) => onChange({ ...auth, prefix: prefix || undefined }))}
         </>
       )}
       {auth.type === 'apikey' && (
         <>
-          {row('Nome', auth.key, (key) => onChange({ ...auth, key }))}
-          {secretRow('Valor', auth.value, (value) => onChange({ ...auth, value }))}
+          {row(t('Nome'), auth.key, (key) => onChange({ ...auth, key }))}
+          {secretRow(t('Valor'), auth.value, (value) => onChange({ ...auth, value }))}
           <label className="flex items-center gap-3">
-            <span className="w-[90px] text-dim">Enviar em</span>
+            <span className="w-[90px] text-dim">{t('Enviar em')}</span>
             <Select className="field py-1" value={auth.addTo} onChange={(v) => onChange({ ...auth, addTo: v as 'header' | 'query' })}>
               <option value="header">Header</option>
               <option value="query">Query string</option>
@@ -376,11 +378,11 @@ function SendOptions({ reqId }: { reqId: string }) {
   const selRef = useRef(0)
   selRef.current = sel
   const items: [string, () => void][] = [
-    ['Enviar agora', () => useStore.getState().sendActive()],
-    ['Enviar depois de…', () => askSchedule(reqId, 'delay')],
-    ['Repetir a cada…', () => askSchedule(reqId, 'repeat')]
+    [t('Enviar agora'), () => useStore.getState().sendActive()],
+    [t('Enviar depois de…'), () => askSchedule(reqId, 'delay')],
+    [t('Repetir a cada…'), () => askSchedule(reqId, 'repeat')]
   ]
-  if (timer) items.push([timer.mode === 'delay' ? 'Cancelar envio agendado' : 'Parar repetição', () => stopSend(reqId)])
+  if (timer) items.push([timer.mode === 'delay' ? t('Cancelar envio agendado') : t('Parar repetição'), () => stopSend(reqId)])
   useEffect(() => {
     if (!open) return
     selRef.current = 0
@@ -413,7 +415,7 @@ function SendOptions({ reqId }: { reqId: string }) {
     <div className="relative">
       <button
         className={`btn px-1.5 ${timer ? 'text-accent' : ''}`}
-        title={`Opções de envio (${kl('Ctrl+Shift+Enter')})`}
+        title={t('Opções de envio ({key})', { key: kl('Ctrl+Shift+Enter') })}
         onClick={(e) => {
           e.stopPropagation()
           setOpen(!open)

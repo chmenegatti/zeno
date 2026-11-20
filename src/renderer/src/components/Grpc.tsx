@@ -6,6 +6,7 @@ import type { GrpcEvent, GrpcMethod } from '@shared/stream'
 import type { RequestDoc, Workspace } from '@shared/types'
 import { api, useStore } from '../state'
 import { Select } from './Select'
+import { locale, t } from '@shared/i18n'
 
 type Svc = { name: string; methods: GrpcMethod[] }
 
@@ -56,39 +57,39 @@ export function GrpcBar({ ws, req, url, envId, onChange }: { ws: Workspace; req:
         {svcs ? (
           <>
             <Select className="field max-w-[260px] py-1 font-mono text-[11.5px]" value={g.service} onChange={(v) => onChange({ grpc: { ...g, service: v, method: svcs.find((s) => s.name === v)?.methods[0]?.name ?? '' } })}>
-              {!svc && <option value={g.service}>{g.service || '(serviço)'}</option>}
+              {!svc && <option value={g.service}>{g.service || t('(serviço)')}</option>}
               {svcs.map((s) => (
                 <option key={s.name} value={s.name}>{s.name}</option>
               ))}
             </Select>
             <Select className="field max-w-[220px] py-1 font-mono text-[11.5px]" value={g.method} onChange={(v) => onChange({ grpc: { ...g, method: v } })}>
-              {!method && <option value={g.method}>{g.method || '(método)'}</option>}
+              {!method && <option value={g.method}>{g.method || t('(método)')}</option>}
               {(svc?.methods ?? []).map((m) => (
                 <option key={m.name} value={m.name}>{m.name}</option>
               ))}
             </Select>
           </>
         ) : (
-          <span className="font-mono text-[11.5px] text-dim">{g.service ? `${g.service}/${g.method}` : 'serviço e método: clique em Descobrir'}</span>
+          <span className="font-mono text-[11.5px] text-dim">{g.service ? `${g.service}/${g.method}` : t('serviço e método: clique em Descobrir')}</span>
         )}
         {method && <span className="rounded bg-raised px-1.5 py-0.5 text-[10.5px] text-tpurple">{kindOf(method)}</span>}
-        <button className="btn btn-ghost py-0.5 text-[12px]" disabled={busy} onClick={() => void discover()} title={g.protoFile ? 'Lê os serviços do arquivo .proto' : 'Pergunta ao servidor (server reflection)'}>
-          {busy ? 'descobrindo…' : svcs ? '↻ Descobrir' : 'Descobrir'}
+        <button className="btn btn-ghost py-0.5 text-[12px]" disabled={busy} onClick={() => void discover()} title={g.protoFile ? t('Lê os serviços do arquivo .proto') : t('Pergunta ao servidor (server reflection)')}>
+          {busy ? t('descobrindo…') : svcs ? `↻ ${t('Descobrir')}` : t('Descobrir')}
         </button>
         {method && (
-          <button className="btn btn-ghost py-0.5 text-[12px]" title={`Preenche a mensagem com os campos de ${method.inputType}`} onClick={() => onChange({ body: { mime: 'application/json', text: method.input } })}>
-            Exemplo de mensagem
+          <button className="btn btn-ghost py-0.5 text-[12px]" title={t('Preenche a mensagem com os campos de {type}', { type: method.inputType })} onClick={() => onChange({ body: { mime: 'application/json', text: method.input } })}>
+            {t('Exemplo de mensagem')}
           </button>
         )}
         <div className="flex-1" />
         {g.protoFile ? (
           <span className="flex min-w-0 items-center gap-1 text-[11.5px] text-dim">
             <span className="truncate font-mono" title={g.protoFile}>📄 {g.protoFile.split(/[\\/]/).pop()}</span>
-            <button className="btn btn-ghost px-1 py-0 text-[11px]" title="Voltar pro server reflection" onClick={() => onChange({ grpc: { ...g, protoFile: undefined } })}>✕</button>
+            <button className="btn btn-ghost px-1 py-0 text-[11px]" title={t('Voltar pro server reflection')} onClick={() => onChange({ grpc: { ...g, protoFile: undefined } })}>✕</button>
           </span>
         ) : (
-          <button className="btn btn-ghost py-0.5 text-[11.5px] text-dim" onClick={() => void pick()} title="Sem server reflection: escolha o .proto (imports relativos à pasta dele)">
-            usar .proto…
+          <button className="btn btn-ghost py-0.5 text-[11.5px] text-dim" onClick={() => void pick()} title={t('Sem server reflection: escolha o .proto (imports relativos à pasta dele)')}>
+            {t('usar .proto…')}
           </button>
         )}
       </div>
@@ -103,12 +104,12 @@ export function GrpcButton({ reqId }: { reqId: string }) {
   if (state)
     return (
       <button className="btn w-[104px]" onClick={() => void grpcAction(reqId, 'cancel')}>
-        Cancelar
+        {t('Cancelar')}
       </button>
     )
   return (
     <button className="btn btn-accent w-[104px]" onClick={() => void grpcAction(reqId, 'start')} title="Ctrl+Enter">
-      Invocar
+      {t('Invocar')}
     </button>
   )
 }
@@ -120,13 +121,13 @@ export function GrpcSendBar({ reqId }: { reqId: string }) {
   return (
     <div className="flex items-center gap-2 border-t border-line px-3 py-1.5 text-[11.5px]">
       <span className="text-faint">
-        {state === 'streaming' ? 'Stream aberto: Ctrl+Enter manda esta mensagem; Finalizar fecha o envio' : 'Invocar manda esta mensagem (JSON); client streaming abre o stream pra mandar várias'}
+        {state === 'streaming' ? t('Stream aberto: Ctrl+Enter manda esta mensagem; Finalizar fecha o envio') : t('Invocar manda esta mensagem (JSON); client streaming abre o stream pra mandar várias')}
       </span>
       <div className="flex-1" />
       {state === 'streaming' && (
         <>
-          <button className="btn btn-accent py-0.5 text-[12px]" onClick={() => void grpcAction(reqId, 'send')}>↑ Enviar mensagem</button>
-          <button className="btn py-0.5 text-[12px]" onClick={() => void grpcAction(reqId, 'closeSend')}>Finalizar envio</button>
+          <button className="btn btn-accent py-0.5 text-[12px]" onClick={() => void grpcAction(reqId, 'send')}>↑ {t('Enviar mensagem')}</button>
+          <button className="btn py-0.5 text-[12px]" onClick={() => void grpcAction(reqId, 'closeSend')}>{t('Finalizar envio')}</button>
         </>
       )}
     </div>
@@ -135,7 +136,7 @@ export function GrpcSendBar({ reqId }: { reqId: string }) {
 
 const time = (ms: number): string => {
   const d = new Date(ms)
-  return `${d.toLocaleTimeString('pt-BR')}.${String(d.getMilliseconds()).padStart(3, '0')}`
+  return `${d.toLocaleTimeString(locale(), { hour12: false })}.${String(d.getMilliseconds()).padStart(3, '0')}`
 }
 
 export function GrpcPane({ reqId }: { reqId: string }) {
@@ -164,18 +165,18 @@ export function GrpcPane({ reqId }: { reqId: string }) {
             state ? 'bg-tblue/15 text-tblue' : !last ? 'bg-raised text-dim' : last.code === 0 ? 'bg-tgreen/15 text-tgreen' : 'bg-tpink/15 text-tpink'
           }`}
         >
-          {state ? (state === 'streaming' ? 'STREAM ABERTO' : 'CHAMANDO…') : last ? `${last.code} ${last.codeName}` : 'SEM CHAMADA'}
+          {state ? (state === 'streaming' ? t('STREAM ABERTO') : t('CHAMANDO…')) : last ? `${last.code} ${last.codeName}` : t('SEM CHAMADA')}
         </span>
         {start && last && <span className="text-dim">{last.at - start.at} ms</span>}
-        <span className="text-[12px] text-dim">{msgs} mensagem(ns)</span>
+        <span className="text-[12px] text-dim">{t('{n} mensagem(ns)', { n: msgs })}</span>
         <div className="flex-1" />
         <label className="flex items-center gap-1 text-[11.5px] text-dim">
-          <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} /> chamadas anteriores
+          <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} /> {t('chamadas anteriores')}
         </label>
-        <button className="btn btn-ghost px-1.5 py-0.5 text-[11.5px]" onClick={() => useStore.setState((s) => ({ grpcLog: { ...s.grpcLog, [reqId]: [] } }))}>limpar</button>
+        <button className="btn btn-ghost px-1.5 py-0.5 text-[11.5px]" onClick={() => useStore.setState((s) => ({ grpcLog: { ...s.grpcLog, [reqId]: [] } }))}>{t('limpar')}</button>
       </div>
       <div ref={box} className="min-h-0 flex-1 overflow-auto border-t border-line font-mono text-[12px]" data-grpc-log>
-        {shown.length === 0 && <p className="p-3 font-sans text-faint">Descubra o serviço, escolha o método e Invocar (Ctrl+Enter). O log fica só enquanto o app está aberto.</p>}
+        {shown.length === 0 && <p className="p-3 font-sans text-faint">{t('Descubra o serviço, escolha o método e Invocar (Ctrl+Enter). O log fica só enquanto o app está aberto.')}</p>}
         {shown.map((e, i) => (
           <GrpcLine key={i} e={e} />
         ))}
@@ -197,7 +198,7 @@ function GrpcLine({ e }: { e: GrpcEvent }) {
   const [icon, cls] = look[e.kind]
   const text =
     e.kind === 'start'
-      ? `${e.method}${e.clientStream ? ' (stream do cliente aberto)' : ''}`
+      ? `${e.method}${e.clientStream ? ` (${t('stream do cliente aberto')})` : ''}`
       : e.kind === 'headers'
         ? meta
         : e.kind === 'status'

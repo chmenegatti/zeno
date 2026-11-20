@@ -23,8 +23,14 @@ export function getLang(): Lang {
 }
 
 export function t(pt: string, vars?: Record<string, string | number>): string {
-  const s = current === 'en' ? (EN[pt] ?? pt) : pt
+  // 'Sair§conta': mesma palavra em português com outro sentido em inglês; o § e o contexto não aparecem
+  const s = current === 'en' ? (EN[pt] ?? strip(pt)) : strip(pt)
   return vars ? s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m)) : s
+}
+
+function strip(pt: string): string {
+  const i = pt.indexOf('§')
+  return i < 0 ? pt : pt.slice(0, i)
 }
 
 /** marca um texto como chave sem traduzir agora (constantes de módulo): renderize com t(valor) */

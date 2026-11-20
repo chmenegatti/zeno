@@ -5,6 +5,8 @@
 //   {% prompt 'Título', 'Rótulo', 'padrão', 'chave', false %}   {% jsonpath '{{ json }}', '$.a.b' %}
 //   argumentos aceitam {{ variáveis }}; o request do {% response %} pode ser id ou nome ("Pasta / Nome")
 
+import { t, tk } from './i18n'
+
 export type ResponseField = 'body' | 'raw' | 'header' | 'url'
 export type Trigger = 'never' | 'no-history' | 'when-expired' | 'always'
 
@@ -43,53 +45,53 @@ const opts = (...ids: string[]): { id: string; label: string }[] => ids.map((id)
 export const FN_SPECS: Record<FnName, { label: string; args: ArgSpec[]; badge: (a: string[]) => string }> = {
   timestamp: {
     label: 'Timestamp',
-    args: [{ label: 'Formato', kind: 'select', options: [{ id: 'millis', label: 'milissegundos (Date.now)' }, { id: 'unix', label: 'segundos (unix)' }, { id: 'iso', label: 'ISO 8601' }], def: 'millis' }],
+    args: [{ label: tk('Formato'), kind: 'select', options: [{ id: 'millis', label: tk('milissegundos (Date.now)') }, { id: 'unix', label: tk('segundos (unix)') }, { id: 'iso', label: 'ISO 8601' }], def: 'millis' }],
     badge: (a) => `Timestamp ${a[0] || 'millis'}`
   },
   faker: {
-    label: 'Dado falso (faker)',
-    args: [{ label: 'Tipo', kind: 'select', options: [], def: 'randomEmail' }],
+    label: tk('Dado falso (faker)'),
+    args: [{ label: tk('Tipo'), kind: 'select', options: [], def: 'randomEmail' }],
     badge: (a) => `Faker · ${(a[0] || '').replace(/^random/, '')}`
   },
   hash: {
     label: 'Hash',
     args: [
-      { label: 'Algoritmo', kind: 'select', options: opts('md5', 'sha1', 'sha256', 'sha512'), def: 'sha256' },
-      { label: 'Saída', kind: 'select', options: opts('hex', 'base64'), def: 'hex' },
-      { label: 'Texto', kind: 'textarea', def: '', placeholder: 'texto ou {{ variavel }}' }
+      { label: tk('Algoritmo'), kind: 'select', options: opts('md5', 'sha1', 'sha256', 'sha512'), def: 'sha256' },
+      { label: tk('Saída'), kind: 'select', options: opts('hex', 'base64'), def: 'hex' },
+      { label: tk('Texto'), kind: 'textarea', def: '', placeholder: tk('texto ou {{ variavel }}') }
     ],
     badge: (a) => `Hash ${a[0] || 'sha256'} · ${short(a[2])}`
   },
   base64: {
     label: 'Base64',
     args: [
-      { label: 'Ação', kind: 'select', options: [{ id: 'encode', label: 'codificar' }, { id: 'decode', label: 'decodificar' }], def: 'encode' },
-      { label: 'Tipo', kind: 'select', options: [{ id: 'normal', label: 'normal' }, { id: 'url', label: 'URL-safe' }], def: 'normal' },
-      { label: 'Texto', kind: 'textarea', def: '', placeholder: '{{ usuario }}:{{ senha }}' }
+      { label: tk('Ação'), kind: 'select', options: [{ id: 'encode', label: tk('codificar') }, { id: 'decode', label: tk('decodificar') }], def: 'encode' },
+      { label: tk('Tipo'), kind: 'select', options: [{ id: 'normal', label: 'normal' }, { id: 'url', label: 'URL-safe' }], def: 'normal' },
+      { label: tk('Texto'), kind: 'textarea', def: '', placeholder: tk('{{ usuario }}:{{ senha }}') }
     ],
     badge: (a) => `Base64 ${a[0] === 'decode' ? 'decode' : 'encode'} · ${short(a[2])}`
   },
   file: {
-    label: 'Conteúdo de arquivo',
-    args: [{ label: 'Caminho', kind: 'text', def: '', placeholder: '/home/eu/chave.pem ou ~/dados.json' }],
-    badge: (a) => `Arquivo · ${(a[0] || '?').split(/[\\/]/).pop()}`
+    label: tk('Conteúdo de arquivo'),
+    args: [{ label: tk('Caminho'), kind: 'text', def: '', placeholder: tk('/home/eu/chave.pem ou ~/dados.json') }],
+    badge: (a) => t('Arquivo · {name}', { name: (a[0] || '?').split(/[\\/]/).pop() ?? '?' })
   },
   prompt: {
-    label: 'Perguntar ao enviar',
+    label: tk('Perguntar ao enviar'),
     args: [
-      { label: 'Título', kind: 'text', def: 'Valor', placeholder: 'Código 2FA' },
-      { label: 'Rótulo', kind: 'text', def: '', placeholder: 'Digite o código do app' },
-      { label: 'Valor padrão', kind: 'text', def: '' },
-      { label: 'Chave (lembra o valor entre tags com a mesma chave)', kind: 'text', def: '' },
-      { label: 'Esconder o que é digitado', kind: 'select', options: [{ id: 'false', label: 'não' }, { id: 'true', label: 'sim (senha)' }], def: 'false' }
+      { label: tk('Título'), kind: 'text', def: 'Valor', placeholder: tk('Código 2FA') },
+      { label: tk('Rótulo'), kind: 'text', def: '', placeholder: tk('Digite o código do app') },
+      { label: tk('Valor padrão'), kind: 'text', def: '' },
+      { label: tk('Chave (lembra o valor entre tags com a mesma chave)'), kind: 'text', def: '' },
+      { label: tk('Esconder o que é digitado'), kind: 'select', options: [{ id: 'false', label: tk('não') }, { id: 'true', label: tk('sim (senha)') }], def: 'false' }
     ],
-    badge: (a) => `Perguntar · ${a[0] || 'valor'}`
+    badge: (a) => t('Perguntar · {title}', { title: a[0] || t('valor') })
   },
   jsonpath: {
-    label: 'JSONPath sobre texto',
+    label: tk('JSONPath sobre texto'),
     args: [
-      { label: 'JSON', kind: 'textarea', def: '', placeholder: '{{ usuario_json }}' },
-      { label: 'Filtro', kind: 'text', def: '$.', placeholder: '$.id' }
+      { label: 'JSON', kind: 'textarea', def: '', placeholder: tk('{{ usuario_json }}') },
+      { label: tk('Filtro'), kind: 'text', def: '$.', placeholder: '$.id' }
     ],
     badge: (a) => `JSONPath · ${a[1] || '$'}`
   }
@@ -106,17 +108,17 @@ export function fnArgs(tag: FnName, args: string[]): string[] {
 }
 
 export const TRIGGERS: { id: Trigger; label: string; hint: string }[] = [
-  { id: 'never', label: 'Nunca', hint: 'usa a última resposta; nunca reenvia' },
-  { id: 'no-history', label: 'Sem histórico', hint: 'reenvia só se ainda não houver resposta' },
-  { id: 'when-expired', label: 'Quando expirar', hint: 'reenvia quando a última resposta passar da idade máxima' },
-  { id: 'always', label: 'Sempre', hint: 'reenvia o request toda vez' }
+  { id: 'never', label: tk('Nunca'), hint: tk('usa a última resposta; nunca reenvia') },
+  { id: 'no-history', label: tk('Sem histórico'), hint: tk('reenvia só se ainda não houver resposta') },
+  { id: 'when-expired', label: tk('Quando expirar'), hint: tk('reenvia quando a última resposta passar da idade máxima') },
+  { id: 'always', label: tk('Sempre'), hint: tk('reenvia o request toda vez') }
 ]
 
 export const FIELDS: { id: ResponseField; label: string }[] = [
-  { id: 'body', label: 'Atributo do body' },
-  { id: 'raw', label: 'Body inteiro' },
+  { id: 'body', label: tk('Atributo do body') },
+  { id: 'raw', label: tk('Body inteiro') },
   { id: 'header', label: 'Header' },
-  { id: 'url', label: 'URL do request' }
+  { id: 'url', label: tk('URL do request') }
 ]
 
 export function parseArgs(tag: string): { name: string; args: string[] } {
@@ -200,19 +202,19 @@ export function buildTag(t: TagDef): string {
 
 /** sugestões de tag no autocomplete (editores e campos); edit = abre o editor logo após inserir */
 export const TAG_CHOICES: { label: string; detail: string; keys: string[]; raw: string; edit?: boolean }[] = [
-  { label: 'Resposta ⇒ Atributo do body', detail: 'JSONPath', keys: ['response', 'resposta', 'body'], raw: "{% response 'body', '', '', 'never' %}", edit: true },
-  { label: 'Resposta ⇒ Body inteiro', detail: 'raw', keys: ['response', 'resposta', 'raw'], raw: "{% response 'raw', '', '', 'never' %}", edit: true },
-  { label: 'Resposta ⇒ Header', detail: 'header', keys: ['response', 'resposta', 'header'], raw: "{% response 'header', '', '', 'never' %}", edit: true },
-  { label: 'Resposta ⇒ URL', detail: 'url', keys: ['response', 'resposta', 'url'], raw: "{% response 'url', '', '', 'never' %}", edit: true },
+  { label: tk('Resposta ⇒ Atributo do body'), detail: 'JSONPath', keys: ['response', 'resposta', 'body'], raw: "{% response 'body', '', '', 'never' %}", edit: true },
+  { label: tk('Resposta ⇒ Body inteiro'), detail: 'raw', keys: ['response', 'resposta', 'raw'], raw: "{% response 'raw', '', '', 'never' %}", edit: true },
+  { label: tk('Resposta ⇒ Header'), detail: 'header', keys: ['response', 'resposta', 'header'], raw: "{% response 'header', '', '', 'never' %}", edit: true },
+  { label: tk('Resposta ⇒ URL'), detail: 'url', keys: ['response', 'resposta', 'url'], raw: "{% response 'url', '', '', 'never' %}", edit: true },
   { label: 'UUID', detail: 'v4', keys: ['uuid'], raw: "{% uuid 'v4' %}" },
-  { label: 'Agora', detail: 'ISO', keys: ['now', 'agora'], raw: '{% now %}' },
+  { label: tk('Agora'), detail: 'ISO', keys: ['now', 'agora'], raw: '{% now %}' },
   { label: 'Timestamp', detail: 'millis/unix/iso', keys: ['timestamp', 'unix'], raw: "{% timestamp 'millis' %}", edit: true },
-  { label: 'Dado falso', detail: 'faker', keys: ['faker', 'fake', 'random', 'email'], raw: "{% faker 'randomEmail' %}", edit: true },
+  { label: tk('Dado falso'), detail: 'faker', keys: ['faker', 'fake', 'random', 'email'], raw: "{% faker 'randomEmail' %}", edit: true },
   { label: 'Hash', detail: 'md5/sha', keys: ['hash', 'sha', 'md5'], raw: "{% hash 'sha256', 'hex', '' %}", edit: true },
   { label: 'Base64', detail: 'encode/decode', keys: ['base64', 'b64'], raw: "{% base64 'encode', 'normal', '' %}", edit: true },
-  { label: 'Arquivo', detail: 'conteúdo', keys: ['file', 'arquivo'], raw: "{% file '' %}", edit: true },
-  { label: 'Perguntar ao enviar', detail: 'prompt', keys: ['prompt', 'perguntar'], raw: "{% prompt 'Valor', '', '', '', false %}", edit: true },
-  { label: 'JSONPath', detail: 'sobre texto', keys: ['jsonpath'], raw: "{% jsonpath '', '$.' %}", edit: true }
+  { label: tk('Arquivo'), detail: tk('conteúdo'), keys: ['file', 'arquivo'], raw: "{% file '' %}", edit: true },
+  { label: tk('Perguntar ao enviar'), detail: 'prompt', keys: ['prompt', 'perguntar'], raw: "{% prompt 'Valor', '', '', '', false %}", edit: true },
+  { label: 'JSONPath', detail: tk('sobre texto'), keys: ['jsonpath'], raw: "{% jsonpath '', '$.' %}", edit: true }
 ]
 
 /** request referenciado por id ou nome ("Login", "Auth / Login"); null = não achou ou ambíguo */

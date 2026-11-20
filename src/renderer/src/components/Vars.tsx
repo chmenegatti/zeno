@@ -8,6 +8,7 @@ import { TemplateInput } from './Tags'
 import type { VarSupport } from './CodeEditor'
 import { api, activeEnvId, activeRequest, activeWorkspace, saveEnvironment, saveFolder, useStore } from '../state'
 import { Select } from './Select'
+import { t } from '@shared/i18n'
 
 /** abre o popover de edição ancorado no elemento */
 export function openVar(name: string, el: Element): void {
@@ -32,8 +33,8 @@ export function pillInfo(name: string, info: VarInfo | undefined, showValues: bo
   const enc = info ? isEncrypted(info.value) : false
   const masked = enc || isSecret(name)
   const title = info
-    ? `${name} = ${enc ? '🔒 criptografado' : isSecret(name) ? MASK : value}\n(${info.source.label}) — clique pra editar`
-    : `${name} não definida — clique pra criar`
+    ? `${name} = ${enc ? `🔒 ${t('criptografado')}` : isSecret(name) ? MASK : value}\n(${info.source.label}) — ${t('clique pra editar')}`
+    : t('{name} não definida — clique pra criar', { name })
   // Alt+Shift+U: mostra o valor no lugar do nome (secreto continua mascarado)
   let text = name
   if (showValues && info) text = masked ? `${name}: ${MASK}` : value === undefined || value === '' ? `${name}: ∅` : value.length > 48 ? `${value.slice(0, 48)}…` : value
@@ -99,7 +100,7 @@ export function UrlField({ value, onChange, onEnter, onCurl }: { value: string; 
   return (
     <TemplateInput
       className="text-[12.5px]"
-      placeholder="https://api.exemplo.com/recurso, {{ base_url }}/recurso ou cole um curl"
+      placeholder={t('https://api.exemplo.com/recurso, {{ base_url }}/recurso ou cole um curl')}
       value={value}
       onChange={onChange}
       onPaste={(e) => {
@@ -126,7 +127,7 @@ export function RequestVars({ req }: { req: RequestDoc }) {
   if (!refs.length) return null
   return (
     <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2">
-      <span className="text-[11px] text-faint">variáveis</span>
+      <span className="text-[11px] text-faint">{t('variáveis')}</span>
       {refs.map((n) => (
         <VarBadge key={n} name={n} />
       ))}
@@ -159,15 +160,15 @@ export function EnvVarList({ ws }: { ws: Workspace }) {
     <div className="mx-2 mb-2 rounded-md border border-line/70">
       <div className="flex items-center gap-1 px-2 py-1">
         <button className="flex flex-1 items-center gap-1 text-left text-[11.5px] text-dim hover:text-ink" onClick={toggle}>
-          <span className="text-[9px]">{open ? '▾' : '▸'}</span> Variáveis <span className="text-faint">{vars.length}</span>
+          <span className="text-[9px]">{open ? '▾' : '▸'}</span> {t('Variáveis')} <span className="text-faint">{vars.length}</span>
         </button>
-        <button className="btn btn-ghost px-1.5 py-0 text-[12px]" title="Nova variável" onClick={(e) => openVar('', e.currentTarget)}>
+        <button className="btn btn-ghost px-1.5 py-0 text-[12px]" title={t('Nova variável')} onClick={(e) => openVar('', e.currentTarget)}>
           ＋
         </button>
       </div>
       {open && (
         <div className="flex max-h-[132px] flex-wrap gap-1 overflow-y-auto px-2 pb-2">
-          {vars.length ? vars.map((v) => <VarBadge key={v.name} name={v.name} />) : <span className="text-[11.5px] text-faint">nenhuma</span>}
+          {vars.length ? vars.map((v) => <VarBadge key={v.name} name={v.name} />) : <span className="text-[11.5px] text-faint">{t('nenhuma')}</span>}
         </div>
       )}
     </div>
@@ -202,10 +203,10 @@ export function VarPopover() {
     if (!ws) return []
     const list: Target[] = []
     const sub = ws.environments.find((e) => e.id === envId && e.parentId !== null)
-    if (sub) list.push({ id: sub.id, label: `Ambiente ${sub.name}`, source: envSource(sub) })
+    if (sub) list.push({ id: sub.id, label: t('Ambiente {name}', { name: sub.name }), source: envSource(sub) })
     const base = ws.environments.find((e) => e.parentId === null)
-    if (base) list.push({ id: base.id, label: 'Base (todos os ambientes)', source: envSource(base) })
-    for (const f of [...ancestors].reverse()) list.push({ id: f.id, label: `Pasta ${f.name}`, source: { kind: 'folder', folderId: f.id, label: f.name } })
+    if (base) list.push({ id: base.id, label: t('Base (todos os ambientes)'), source: envSource(base) })
+    for (const f of [...ancestors].reverse()) list.push({ id: f.id, label: t('Pasta {name}', { name: f.name }), source: { kind: 'folder', folderId: f.id, label: f.name } })
     return list
   }, [ws, envId, ancestors])
 
@@ -262,9 +263,9 @@ export function VarPopover() {
 
   const save = async () => {
     const key = name.trim()
-    if (!/^[A-Za-z_$][\w$-]*$/.test(key)) return setErr('Nome inválido (letras, números, _ e -)')
-    const target = targets.find((t) => t.id === targetId)
-    if (!target) return setErr('Escolha onde salvar')
+    if (!/^[A-Za-z_$][\w$-]*$/.test(key)) return setErr(t('Nome inválido (letras, números, _ e -)'))
+    const target = targets.find((x) => x.id === targetId)
+    if (!target) return setErr(t('Escolha onde salvar'))
     // mantém tipo original (número, objeto…) quando o valor era JSON
     let parsed: unknown = value
     if (locked && info) {
@@ -272,7 +273,7 @@ export function VarPopover() {
       parsed = secret ? info.value : await useStore.getState().run(api.vaultReveal(info.value as string))
       if (parsed === undefined) return
     } else if (secret) {
-      if (!value) return setErr('Valor vazio')
+      if (!value) return setErr(t('Valor vazio'))
       const tok = await useStore.getState().run(api.vaultEncrypt(value))
       if (!tok) return
       parsed = tok
@@ -320,20 +321,20 @@ export function VarPopover() {
         }}
       >
         {isNew ? (
-          <input autoFocus className="field font-mono text-[12px]" placeholder="nome_da_variavel" value={name} onChange={(e) => setName(e.target.value)} />
+          <input autoFocus className="field font-mono text-[12px]" placeholder={t('nome_da_variavel')} value={name} onChange={(e) => setName(e.target.value)} />
         ) : (
           <div className="flex items-baseline gap-2">
             <span className="font-mono font-semibold text-tblue">{edit.name}</span>
-            <span className="text-[11px] text-faint">{info ? `de ${info.source.label}` : 'não definida'}</span>
+            <span className="text-[11px] text-faint">{info ? t('de {source}', { source: info.source.label }) : t('não definida')}</span>
           </div>
         )}
-        {info && info.shadowed.length > 0 && <p className="text-[11px] text-faint">sobrescreve: {info.shadowed.map((s) => s.label).join(', ')}</p>}
+        {info && info.shadowed.length > 0 && <p className="text-[11px] text-faint">{t('sobrescreve:')} {info.shadowed.map((s) => s.label).join(', ')}</p>}
         <div className="flex items-start gap-1">
           {locked ? (
             <input
               className="field min-w-0 flex-1 font-mono text-[12px]"
               type="password"
-              placeholder="criptografado — digite pra trocar"
+              placeholder={t('criptografado — digite pra trocar')}
               value={value}
               onChange={(e) => {
                 setValue(e.target.value)
@@ -347,18 +348,18 @@ export function VarPopover() {
             <input
               className="field min-w-0 flex-1 font-mono text-[12px]"
               type={show ? 'text' : 'password'}
-              placeholder="valor"
+              placeholder={t('valor')}
               value={value}
               onChange={(e) => setValue(e.target.value)}
               autoFocus={!isNew}
               spellCheck={false}
             />
           )}
-          <button type="button" className="btn btn-ghost px-2" title={show ? 'Esconder' : 'Mostrar'} onClick={() => (locked ? reveal() : setShow(!show))}>
+          <button type="button" className="btn btn-ghost px-2" title={show ? t('Esconder') : t('Mostrar')} onClick={() => (locked ? reveal() : setShow(!show))}>
             {show && !locked ? '◉' : '◎'}
           </button>
         </div>
-        <label className="flex items-center gap-2 text-[11.5px]" title="Cifra com AES-256-GCM; a chave fica no chaveiro do sistema. No YAML vai só o valor cifrado.">
+        <label className="flex items-center gap-2 text-[11.5px]" title={t('Cifra com AES-256-GCM; a chave fica no chaveiro do sistema. No YAML vai só o valor cifrado.')}>
           <input
             type="checkbox"
             className="[--cb:var(--color-tpurple)]"
@@ -369,15 +370,15 @@ export function VarPopover() {
             }}
           />
           <span className={`inline-flex items-center gap-1 ${secret ? 'text-tpurple' : 'text-dim'}`}>
-            <LockIcon /> secreta (guardar criptografada no cofre)
+            <LockIcon /> {t('secreta (guardar criptografada no cofre)')}
           </span>
         </label>
         <label className="flex items-center gap-2 text-[11.5px]">
-          <span className="text-dim">Salvar em</span>
+          <span className="text-dim">{t('Salvar em')}</span>
           <Select className="field min-w-0 flex-1 py-0.5" value={targetId} onChange={(v) => setTargetId(v)}>
-            {targets.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.label}
+            {targets.map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.label}
               </option>
             ))}
           </Select>
@@ -385,15 +386,15 @@ export function VarPopover() {
         {err && <p className="text-[11.5px] text-tpink">{err}</p>}
         <div className="flex items-center gap-2 pt-1">
           {info && (
-            <button type="button" className="btn btn-ghost px-2 text-[12px] text-tpink" onClick={remove} title={`Remover de ${info.source.label}`}>
-              remover
+            <button type="button" className="btn btn-ghost px-2 text-[12px] text-tpink" onClick={remove} title={t('Remover de {source}', { source: info.source.label })}>
+              {t('remover')}
             </button>
           )}
           <div className="flex-1" />
           <button type="button" className="btn" onClick={() => useStore.setState({ varEdit: null })}>
-            Cancelar
+            {t('Cancelar')}
           </button>
-          <button className="btn btn-accent">Salvar</button>
+          <button className="btn btn-accent">{t('Salvar')}</button>
         </div>
       </form>
     </div>

@@ -31,7 +31,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 - **Migração sem dor.** Importa as coleções do Insomnia direto da pasta dele, incluindo ambientes e encadeamento de tokens.
 - **Local primeiro.** Sem conta, sem telemetria, sem sincronização obrigatória.
 - **Leve.** Feito em Go, com a janela no navegador do próprio sistema: pacote de 8 a 24 MB e cerca de 220 MB de memória com o app parado.
-- **Do seu jeito.** 20 temas, atalhos iguais aos do Insomnia (e editáveis), paleta de comandos e plugins no formato do Insomnia.
+- **Do seu jeito.** Interface em inglês ou português, 20 temas, atalhos iguais aos do Insomnia (e editáveis), paleta de comandos e plugins no formato do Insomnia.
 
 <table>
   <tr>
