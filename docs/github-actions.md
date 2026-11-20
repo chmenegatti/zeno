@@ -6,7 +6,7 @@ O `zeno run` roda uma pasta ou um workspace inteiro e sai com código `≠ 0` qu
 
 Deixe o workspace numa pasta do projeto (com o `workspace.yaml`), por exemplo `api/`. A CLI roda direto dela, sem pasta de dados do Zeno, e não altera os YAML: o que os scripts gravam (um token, por exemplo) vale só durante a execução.
 
-Segredos cifrados do cofre (`$zeno$v1$…`) não abrem no CI, porque a chave fica no chaveiro da sua máquina. Passe esses valores com `--var`, a partir dos *secrets* do repositório.
+Segredos cifrados do cofre (`$zeno$v1$…`) não abrem no CI, porque a chave fica no chaveiro da sua máquina. Passe esses valores com `--var`, a partir dos *secrets* do repositório, sempre por uma variável de ambiente do passo (`env:`) e entre aspas (`--var "token=$API_TOKEN"`): colocar `${{ secrets.… }}` direto no `run:` deixa o valor virar código do shell.
 
 ## Com o binário em Go (`zeno-cli`)
 
@@ -27,7 +27,9 @@ jobs:
           go-version: stable
       - run: go install github.com/chmenegatti/zeno/wails/cmd/zeno-cli@main
       # sobe a API do projeto antes, se for testar local (docker compose up -d, npm start &…)
-      - run: zeno-cli run ./api Smoke --env CI --var token=${{ secrets.API_TOKEN }} --junit zeno-junit.xml
+      - run: zeno-cli run ./api Smoke --env CI --var "token=$API_TOKEN" --junit zeno-junit.xml
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -57,7 +59,9 @@ Enquanto a versão em Go não sai num release, dá pra usar a CLI do app atual c
         with:
           node-version: 22
       - run: cd zeno && npm ci && npx electron-vite build
-      - run: node zeno/out/main/cli.js run ./api Smoke --var token=${{ secrets.API_TOKEN }} --junit zeno-junit.xml
+      - run: node zeno/out/main/cli.js run ./api Smoke --var "token=$API_TOKEN" --junit zeno-junit.xml
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
 ```
 
 As opções e os códigos de saída são os mesmos.
