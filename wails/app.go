@@ -42,12 +42,14 @@ type App struct {
 	mu       sync.RWMutex
 	handlers map[string]handler
 	watcher  *watch.Watcher
+	prompts  prompts
 }
 
 func NewApp() *App {
 	st := store.New(store.DefaultDataDir())
 	// "zeno": mesmo item do chaveiro que o Electron usa (application=zeno)
 	a := &App{store: st, cookies: cookies.New(st.Dir), vault: vault.New(st.Dir, keyring.System("zeno")), handlers: map[string]handler{}}
+	a.prompts = prompts{waiting: map[int]chan *promptAnswer{}, memory: map[string]string{}}
 	a.register()
 	return a
 }

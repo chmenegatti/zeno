@@ -60,7 +60,7 @@ func TestPrepareHerdaAuthEHeaders(t *testing.T) {
 		"body", doc.New("mime", "application/json", "text", `{"x":1}`),
 		"auth", doc.New("type", "inherit"),
 	)
-	p := Prepare(ws, req, []*Doc{folder}, "dev")
+	p := Prepare(ws, req, []*Doc{folder}, "dev", nil)
 	if p.URL != "http://api.local/itens?q=a+b" {
 		t.Errorf("URL = %q", p.URL)
 	}
@@ -70,5 +70,14 @@ func TestPrepareHerdaAuthEHeaders(t *testing.T) {
 	}
 	if p.BodyKind != "text" || p.Text != `{"x":1}` || p.TimeoutMs != 5000 {
 		t.Errorf("body/timeout: %+v", p)
+	}
+}
+
+func TestTagsResolvidas(t *testing.T) {
+	ws := doc.New("settings", doc.New(), "environments", []any{})
+	req := doc.New("id", "r", "method", "GET", "url", "http://h/{% uuid 'v4' %}/{% now %}", "body", doc.New("mime", nil), "auth", doc.New("type", "none"))
+	p := Prepare(ws, req, nil, "", map[string]string{"{% uuid 'v4' %}": "U"})
+	if p.URL != "http://h/U/{% now %}" || len(p.Unsupported) != 1 || p.Unsupported[0] != "{% now %}" {
+		t.Errorf("%q %v", p.URL, p.Unsupported)
 	}
 }

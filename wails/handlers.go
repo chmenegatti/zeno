@@ -18,8 +18,6 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/filename"
 	"github.com/chmenegatti/zeno/wails/internal/httpc"
 	"github.com/chmenegatti/zeno/wails/internal/protect"
-	"github.com/chmenegatti/zeno/wails/internal/vars"
-	"github.com/chmenegatti/zeno/wails/internal/vault"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -204,7 +202,7 @@ func (a *App) register() {
 		return list(st.DeleteEnvironment(id))
 	})
 
-	// ---------- envio (protótipo; completo na fase 2, #60) ----------
+	// ---------- envio ----------
 	a.handle("send", func(args Args) (any, error) {
 		wsID, _ := Get[string](args, 0)
 		req, err := Get[*Doc](args, 1)
@@ -216,42 +214,24 @@ func (a *App) register() {
 		if ws == nil {
 			return nil, errNoWorkspace
 		}
-		_, anc := doc.Find(ws, req.Str("id"))
-		// segredos do cofre abertos só aqui, só pro envio
-		openWS, openReq, openAnc, secrets, err := a.openForSend(ws, req, anc)
-		if err != nil {
-			return nil, err
-		}
-		p := vars.Prepare(openWS, openReq, openAnc, envID)
-		// cookie jar do workspace, respeitando "mandar/guardar cookies" do request
-		var hooks httpc.CookieHooks
-		if req.Get("sendCookies") != false {
-			hooks.Header = func(u string) string { return a.cookies.Header(wsID, u) }
-		}
-		if req.Get("storeCookies") != false {
-			hooks.Store = func(u string, set []string) { a.cookies.Store(wsID, u, set) }
-		}
-		rec := httpc.Send(req.Str("id"), p, hooks)
-		vault.RedactTimeline(rec, secrets)
-		history := st.AddResponse(rec)
-		// o body vai uma vez só, no histórico: a interface só lê id e erro de "response"
-		// (JSON de 2,7 MB: 6,6 MB pela ponte com o body duplicado, 222 ms; metade sem ele)
-		resp := rec
-		if len(history) > 0 {
-			if h, ok := history[0].(*Doc); ok && h.Str("id") == rec.Str("id") {
-				resp = h.Clone()
-				resp.Set("body", "")
-			}
-		}
-		warnings := []string{}
-		for _, t := range p.Unsupported {
-			warnings = append(warnings, "tag ainda não disponível na versão Go: "+t)
-		}
-		missing := p.Missing
-		if missing == nil {
-			missing = []string{}
-		}
-		return doc.New("response", resp, "history", history, "missing", missing, "warnings", warnings), nil
+		return a.execute(ws, req, envID, 0)
+	})
+	a.handle("tagPreview", func(args Args) (any, error) {
+		raw, _ := Get[string](args, 0)
+		send, _ := Get[bool](args, 1)
+		return a.tagPreview(raw, send), nil
+	})
+	a.handle("promptReply", func(args Args) (any, error) {
+		id, _ := Get[int](args, 0)
+		ans, _ := Get[*promptAnswer](args, 1)
+		a.promptReply(id, ans)
+		return nil, nil
+	})
+	a.handle("promptForget", func(Args) (any, error) {
+		a.prompts.mu.Lock()
+		a.prompts.memory = map[string]string{}
+		a.prompts.mu.Unlock()
+		return nil, nil
 	})
 	a.handle("cancel", func(args Args) (any, error) {
 		id, _ := Get[string](args, 0)
@@ -408,7 +388,6 @@ func (a *App) register() {
 		a.handle(c, empty([]any{}))
 	}
 	a.handle("githubStatus", empty(doc.New("account", nil, "deviceAvailable", false)))
-	a.handle("tagPreview", empty(doc.New("error", "tags {% %} ainda não disponíveis na versão Go")))
 }
 
 // workspace vinculado ou movido: o watcher passa a vigiar a pasta nova
