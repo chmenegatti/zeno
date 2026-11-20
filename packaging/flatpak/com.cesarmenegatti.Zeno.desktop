@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Zeno
+GenericName=API Client
+Comment=Desktop API client for REST, GraphQL, gRPC and WebSocket
+Comment[pt_BR]=Cliente de API desktop para REST, GraphQL, gRPC e WebSocket
+Exec=zeno
+Icon=com.cesarmenegatti.Zeno
+Terminal=false
+StartupNotify=true
+StartupWMClass=zeno
+Categories=Development;
+Keywords=api;http;rest;graphql;grpc;websocket;insomnia;postman;

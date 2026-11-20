@@ -1,0 +1,63 @@
+name: Flatpak
+
+# Monta o pacote do Flathub (packaging/flatpak) do mesmo jeito que o buildbot do Flathub: offline, só com as
+# fontes declaradas no manifesto (app na tag, go-sources.json e node-sources.json). Roda o linter do
+# Flathub e deixa o .flatpak como artefato.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['packaging/flatpak/**', '.github/workflows/flatpak.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flatpak-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flatpak:
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Metainfo (AppStream)
+        run: appstreamcli validate --no-net --explain packaging/flatpak/com.cesarmenegatti.Zeno.metainfo.xml
+
+      - name: Linter do Flathub (manifesto)
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.flatpak.Builder
+          flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest packaging/flatpak/com.cesarmenegatti.Zeno.yml
+
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: packaging/flatpak/com.cesarmenegatti.Zeno.yml
+          bundle: zeno.flatpak
+          cache-key: flatpak-builder-${{ hashFiles('packaging/flatpak/*.json') }}
+          upload-artifact: true
+          artifact-name: zeno-flatpak
+
+      - name: Linter do Flathub (repositório)
+        # sem o espelho de screenshots do Flathub, o lint do repo sempre acusa
+        # appstream-screenshots-not-mirrored-in-ostree: esse erro não conta aqui
+        run: |
+          flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo repo > lint.json || true
+          cat lint.json
+          python3 - <<'PY'
+          import json, sys
+          errs = [e for e in json.load(open("lint.json")).get("errors", []) if e != "appstream-screenshots-not-mirrored-in-ostree"]
+          if errs:
+              sys.exit("erros do linter: " + ", ".join(errs))
+          PY
+
+      - name: git e ssh no runtime (integração git do Zeno)
+        run: |
+          for b in git ssh; do
+            p=$(find / -path "*/runtime/org.gnome.Platform/*/51/active/files/bin/$b" 2>/dev/null | head -1)
+            echo "$b: ${p:-ausente no org.gnome.Platform}"
+          done

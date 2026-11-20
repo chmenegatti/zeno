@@ -1,0 +1,57 @@
+id: com.cesarmenegatti.Zeno
+runtime: org.gnome.Platform
+runtime-version: '51'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.golang
+  - org.freedesktop.Sdk.Extension.node24
+command: zeno
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # seletor de pastas/arquivos do Wails é o GtkFileChooserDialog (não usa portal): os workspaces ligados a
+  # pastas do usuário, import/export, certificados (mTLS), arquivos .proto e a tag {% file %} precisam ler e
+  # gravar fora do sandbox
+  - --filesystem=home
+  # chave mestra do cofre no chaveiro do sistema (Secret Service: gnome-keyring, KWallet)
+  - --talk-name=org.freedesktop.secrets
+
+modules:
+  - name: zeno
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/golang/bin:/usr/lib/sdk/node24/bin
+      env:
+        # tudo offline: módulos Go em wails/vendor e pacotes npm no cache em flatpak-node/
+        GOFLAGS: -mod=vendor
+        GOPROXY: 'off'
+        GOTOOLCHAIN: local
+        GOPATH: /run/build/zeno/go
+        CGO_ENABLED: '1'
+        XDG_CACHE_HOME: /run/build/zeno/flatpak-node/cache
+        npm_config_cache: /run/build/zeno/flatpak-node/npm-cache
+        npm_config_offline: 'true'
+    build-commands:
+      - npm ci --offline --no-audit --no-fund
+      # interface (Vite) + binário com WebKitGTK 4.1, igual ao `make build` do wails/Makefile
+      - make -C wails build
+      - install -Dm755 wails/build/zeno -t /app/bin
+      - install -Dm644 com.cesarmenegatti.Zeno.desktop -t /app/share/applications
+      - install -Dm644 com.cesarmenegatti.Zeno.metainfo.xml -t /app/share/metainfo
+      - for s in 16 24 32 48 64 128 256 512; do install -Dm644 build/icons/${s}x${s}.png /app/share/icons/hicolor/${s}x${s}/apps/com.cesarmenegatti.Zeno.png;
+        done
+    sources:
+      - type: git
+        url: https://github.com/chmenegatti/zeno.git
+        tag: v1.2.0
+        commit: b0ea8b49c721a036bd745ab26827c6f44357c003
+      - type: file
+        path: com.cesarmenegatti.Zeno.desktop
+      - type: file
+        path: com.cesarmenegatti.Zeno.metainfo.xml
+      # gerados por update-sources.sh
+      - go-sources.json
+      - node-sources.json
