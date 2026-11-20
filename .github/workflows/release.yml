@@ -71,6 +71,11 @@ jobs:
       - name: Sem token
         if: env.WINGET_TOKEN == ''
         run: echo "::notice::WINGET_TOKEN não configurado; atualize o winget à mão (packaging/README.md)"
+      # o wingetcreate.exe avulso roda sobre o .NET 6, que as imagens Windows do GitHub não trazem mais
+      - uses: actions/setup-dotnet@v4
+        if: env.WINGET_TOKEN != ''
+        with:
+          dotnet-version: 6.0.x
       - name: PR no winget-pkgs
         if: env.WINGET_TOKEN != ''
         shell: pwsh
