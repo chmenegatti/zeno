@@ -34,6 +34,9 @@ jobs:
         run: |
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak install --user -y --noninteractive flathub org.flatpak.Builder
+          # o lint chama o flatpak-builder no sandbox, que cria .flatpak-builder na pasta atual
+          mkdir -p .flatpak-builder && chmod 777 .flatpak-builder
+          command -v flatpak-builder-lint || true
           flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest packaging/flatpak/com.cesarmenegatti.Zeno.yml
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
