@@ -240,7 +240,14 @@ func (m *Manager) Token(ctx context.Context, c Config, force bool) (*Token, erro
 		}
 		xt, err = cc.Token(ctx)
 	case "password":
-		xt, err = conf.PasswordCredentialsToken(ctx, c.Username, c.Password)
+		if c.Audience == "" {
+			xt, err = conf.PasswordCredentialsToken(ctx, c.Username, c.Password)
+			break
+		}
+		// PasswordCredentialsToken não aceita parâmetros extras: mesmo pedido, com audience
+		pc := clientcredentials.Config{ClientID: c.ClientID, ClientSecret: c.ClientSecret, TokenURL: c.TokenURL, Scopes: conf.Scopes, AuthStyle: conf.Endpoint.AuthStyle,
+			EndpointParams: url.Values{"grant_type": {"password"}, "username": {c.Username}, "password": {c.Password}, "audience": {c.Audience}}}
+		xt, err = pc.Token(ctx)
 	case "authorization_code", "":
 		xt, err = m.authCode(ctx, c, conf)
 	case "implicit":

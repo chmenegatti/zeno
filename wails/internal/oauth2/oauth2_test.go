@@ -183,6 +183,19 @@ func TestClientCredentialsECache(t *testing.T) {
 	}
 }
 
+func TestPasswordComAudience(t *testing.T) {
+	as := newAS(t)
+	m := manager(t)
+	c := Config{Owner: "fld_1", Grant: "password", TokenURL: as.URL + "/token", ClientID: "cliente", ClientSecret: "segredo", Username: "ana", Password: "s3", Audience: "api://x", Scope: "ler"}
+	if _, err := m.Token(context.Background(), c, false); err != nil {
+		t.Fatal(err)
+	}
+	f := as.lastForm
+	if f.Get("grant_type") != "password" || f.Get("audience") != "api://x" || f.Get("username") != "ana" || f.Get("scope") != "ler" {
+		t.Fatalf("%v", f)
+	}
+}
+
 func TestPasswordERefresh(t *testing.T) {
 	as := newAS(t)
 	m := manager(t)
