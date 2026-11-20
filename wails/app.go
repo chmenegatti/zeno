@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/chmenegatti/zeno/wails/internal/store"
+	"github.com/chmenegatti/zeno/wails/internal/watch"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -35,6 +36,7 @@ type App struct {
 	store    *store.Store
 	mu       sync.RWMutex
 	handlers map[string]handler
+	watcher  *watch.Watcher
 }
 
 func NewApp() *App {
@@ -50,6 +52,22 @@ func (a *App) handle(channel string, h handler) {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.store.Load()
+	// arquivo mudou fora do app (editor, git pull…): recarrega e avisa a interface
+	w, err := watch.New(append([]string{a.store.Dir}, a.store.LinkedDirs()...), watch.Options{
+		LastWrite: a.store.LastWrite,
+		OnChange:  func() { a.Emit("store:changed", a.store.Load()) },
+	})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "watcher:", err)
+		return
+	}
+	a.watcher = w
+}
+
+func (a *App) shutdown(context.Context) {
+	if a.watcher != nil {
+		_ = a.watcher.Close()
+	}
 }
 
 // Emit manda um evento pra interface (store:changed, response:added, run:step, prompt:ask)

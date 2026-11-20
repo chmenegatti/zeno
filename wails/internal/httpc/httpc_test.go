@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/vars"
 )
@@ -55,5 +56,16 @@ func TestSend(t *testing.T) {
 	e := Send("r4", vars.Prepared{Method: "GET", URL: "http://127.0.0.1:1/nada", BodyKind: "none", TimeoutMs: 2000})
 	if e.Str("error") == "" {
 		t.Error("erro de conexão deveria vir em error")
+	}
+}
+
+func TestFormNaOrdemEIdUnico(t *testing.T) {
+	got := FormEncode([][2]string{{"a", "1"}, {"b", "x y"}, {"a", "3~é&"}})
+	if got != "a=1&b=x+y&a=3%7E%C3%A9%26" {
+		t.Errorf("form: %s", got)
+	}
+	now := time.Now()
+	if ResponseID(now) == ResponseID(now) {
+		t.Error("ids iguais no mesmo ms")
 	}
 }
