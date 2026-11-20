@@ -6,6 +6,7 @@ import { Modal } from './ui'
 import { DEFAULT_THEME, THEMES, type Theme } from '@shared/themes'
 import { Select } from './Select'
 import { kl } from '../keys'
+import { LANGS, type Lang } from '@shared/i18n'
 
 const GROUPS: HotkeyGroup[] = ['Interface', 'Request', 'Ambientes']
 
@@ -25,6 +26,15 @@ export function PrefsModal({ onClose }: { onClose: () => void }) {
   return (
     <Modal title="Preferências" onClose={onClose} wide>
       <div className="flex flex-col gap-4">
+        {/* rótulo nas duas línguas: quem não lê a atual acha mesmo assim */}
+        <label className="flex items-center gap-3">
+          <span className="w-[170px] text-dim">Language / Idioma</span>
+          <Select className="field flex-1" value={p.lang ?? 'en'} onChange={(v) => setUi({ lang: v as Lang })}>
+            {LANGS.map((l) => (
+              <option key={l.id} value={l.id}>{l.label}</option>
+            ))}
+          </Select>
+        </label>
         <ThemePicker current={p.theme} />
         <label className="flex items-center gap-3">
           <span className="w-[170px] text-dim">Zoom</span>

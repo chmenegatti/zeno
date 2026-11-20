@@ -8,6 +8,7 @@ import { PromptHost, TagEditHost } from './components/Tags'
 import { OAuthWait } from './components/OAuth'
 import { VarPopover } from './components/Vars'
 import { applyUi, installHotkeys } from './hotkeys'
+import { setLang, t } from '@shared/i18n'
 
 const WIDTH_KEY = 'zeno:response-width'
 
@@ -71,10 +72,15 @@ export function App() {
     }
   }, [])
 
-  if (!ready) return <div className="flex h-full items-center justify-center text-faint">carregando…</div>
+  // idioma (#132): vale já neste render; trocar remonta a interface com os textos novos
+  const lang = prefs?.lang ?? 'en'
+  setLang(lang)
+  document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en'
+
+  if (!ready) return <div className="flex h-full items-center justify-center text-faint">{t('carregando…')}</div>
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full" key={lang}>
       {!prefs?.sidebarHidden && <Sidebar />}
       <RequestPane />
       <div

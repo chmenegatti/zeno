@@ -228,6 +228,8 @@ export interface UiPrefs {
   /** tela de workspaces: cartões ou lista, e a ordem */
   wsView?: 'grid' | 'list'
   wsSort?: 'manual' | 'name' | 'recent'
+  /** idioma da interface (#132); sem = inglês */
+  lang?: 'en' | 'pt'
 }
 
 /** request já com variáveis resolvidas, pronto pra enviar */
