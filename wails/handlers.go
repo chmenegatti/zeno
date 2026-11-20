@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chmenegatti/zeno/wails/internal/cookies"
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/filename"
 	"github.com/chmenegatti/zeno/wails/internal/httpc"
@@ -213,7 +214,15 @@ func (a *App) register() {
 		}
 		_, anc := doc.Find(ws, req.Str("id"))
 		p := vars.Prepare(ws, req, anc, envID)
-		rec := httpc.Send(req.Str("id"), p, httpc.CookieHooks{})
+		// cookie jar do workspace, respeitando "mandar/guardar cookies" do request
+		var hooks httpc.CookieHooks
+		if req.Get("sendCookies") != false {
+			hooks.Header = func(u string) string { return a.cookies.Header(wsID, u) }
+		}
+		if req.Get("storeCookies") != false {
+			hooks.Store = func(u string, set []string) { a.cookies.Store(wsID, u, set) }
+		}
+		rec := httpc.Send(req.Str("id"), p, hooks)
 		history := st.AddResponse(rec)
 		// o body vai uma vez só, no histórico: a interface só lê id e erro de "response"
 		// (JSON de 2,7 MB: 6,6 MB pela ponte com o body duplicado, 222 ms; metade sem ele)
@@ -284,6 +293,20 @@ func (a *App) register() {
 		return nil, st.ClearResponses(id)
 	})
 
+	// ---------- cookies ----------
+	a.handle("cookiesList", func(args Args) (any, error) {
+		wsID, _ := Get[string](args, 0)
+		return a.cookies.List(wsID), nil
+	})
+	a.handle("cookiesSave", func(args Args) (any, error) {
+		wsID, _ := Get[string](args, 0)
+		list, err := Get[[]cookies.Info](args, 1)
+		if err != nil {
+			return nil, err
+		}
+		return a.cookies.Replace(wsID, list), nil
+	})
+
 	// ---------- janela e sistema ----------
 	a.handle("copyText", func(args Args) (any, error) {
 		t, _ := Get[string](args, 0)
@@ -339,7 +362,7 @@ func (a *App) register() {
 
 	// ---------- ainda não portados: valores vazios pra interface abrir ----------
 	empty := func(v any) handler { return func(Args) (any, error) { return v, nil } }
-	for _, c := range []string{"codeTargets", "pluginsList", "pluginsReload", "cookiesList"} {
+	for _, c := range []string{"codeTargets", "pluginsList", "pluginsReload"} {
 		a.handle(c, empty([]any{}))
 	}
 	a.handle("vaultStatus", empty(doc.New("available", false, "backend", "versão Go (fase 2)", "weak", true, "hasKey", false)))
