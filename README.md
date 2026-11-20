@@ -74,6 +74,12 @@ Baixe o pacote na [página de releases](https://github.com/chmenegatti/zeno/rele
 sudo apt install ./zeno_*_amd64.deb
 ```
 
+**Fedora (.rpm)**
+
+```bash
+sudo dnf install ./zeno-*.x86_64.rpm
+```
+
 **Qualquer distribuição (AppImage)**
 
 ```bash
@@ -81,7 +87,17 @@ chmod +x Zeno-*.AppImage
 ./Zeno-*.AppImage
 ```
 
-> Por enquanto há pacotes só para Linux x64. O código roda em macOS e Windows com `npm run dev`; ajuda para empacotar nessas plataformas é bem-vinda.
+O AppImage usa o WebKitGTK do sistema; se faltar, ele mostra como instalar (`libwebkit2gtk-4.1-0` no Debian/Ubuntu, `webkit2gtk4.1` no Fedora).
+
+**Windows 10 e 11**
+
+Rode o `Zeno-*-windows-setup.exe` (ou use a versão portátil `Zeno-*-windows-portable.zip`). O app ainda não é assinado: se o SmartScreen avisar *O Windows protegeu o computador*, clique em **Mais informações** e depois em **Executar assim mesmo**.
+
+**macOS (Intel e Apple Silicon)**
+
+Abra o `Zeno-*-macos-universal.dmg` e arraste o Zeno para **Aplicativos**. O app ainda não tem notarização da Apple: na primeira abertura o macOS bloqueia; vá em **Ajustes do Sistema › Privacidade e Segurança** e clique em **Abrir mesmo assim**.
+
+> Windows, macOS e o `.rpm` chegam com a versão em Go (próxima release); até lá, há pacotes só para Linux.
 
 ### A partir do código
 

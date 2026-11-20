@@ -1,7 +1,7 @@
 name: Release
 
-# Roda quando uma tag v* é enviada (criada por `npm run release`).
-# Testa, gera .deb e AppImage e publica a release com as notas do CHANGELOG.
+# Roda quando uma tag v* é enviada (criada por `npm run release`). Testa, gera os pacotes da versão Go
+# nos três sistemas (workflow Pacotes Go) e publica tudo na mesma release, com as notas do CHANGELOG.
 
 on:
   push:
@@ -11,22 +11,31 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
-
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
 
-      - name: Build dos pacotes
-        run: npx electron-vite build && npx electron-builder --linux deb AppImage --publish never
+  packages:
+    uses: ./.github/workflows/go-packages.yml
+
+  publish:
+    needs: [test, packages]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
 
       - name: Notas da versão (seção do CHANGELOG)
         run: |
@@ -38,4 +47,6 @@ jobs:
       - name: Publicar release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/*.deb dist/*.AppImage --title "Zeno $GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+        run: |
+          ls -la dist
+          gh release create "$GITHUB_REF_NAME" dist/* --title "Zeno $GITHUB_REF_NAME" --notes-file notes.md --verify-tag
