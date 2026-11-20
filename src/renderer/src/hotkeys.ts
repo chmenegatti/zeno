@@ -98,6 +98,7 @@ const ACTIONS: Record<string, () => void> = {
   focusResponse: () => focusTarget('response'),
   showShortcuts: () => useStore.getState().openModal({ kind: 'shortcuts' }),
   showPreferences: () => useStore.getState().openModal({ kind: 'prefs' }),
+  workspaces: () => useStore.getState().openModal({ kind: 'workspaces' }),
   workspaceSettings: () => {
     const { s, ws } = current()
     if (ws) s.openModal({ kind: 'workspace', id: ws.id })

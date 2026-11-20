@@ -122,7 +122,23 @@ export interface AppState {
   disabledPlugins?: string[]
   /** filtro do body da resposta por request (JSONPath/XPath) */
   responseFilter?: Record<string, string>
+  /** organização na tela de workspaces (fixar, grupo, cor, ordem, arquivar, último uso); local, fora dos YAML */
+  wsMeta?: Record<string, WsMeta>
   ui?: UiPrefs
+}
+
+export interface WsMeta {
+  pinned?: boolean
+  /** cor escolhida (hex) */
+  color?: string
+  /** grupo/etiqueta, ex.: "cliente X" */
+  group?: string
+  /** some da lista e da lateral, sem apagar os arquivos */
+  archived?: boolean
+  /** posição na ordem manual */
+  order?: number
+  /** última vez que foi aberto (ms) */
+  lastUsed?: number
 }
 
 /** preferências da interface (state.json) */
@@ -138,6 +154,9 @@ export interface UiPrefs {
   sidebarHidden?: boolean
   /** atalhos trocados pelo usuário: id -> combinações */
   hotkeys?: Record<string, string[]>
+  /** tela de workspaces: cartões ou lista, e a ordem */
+  wsView?: 'grid' | 'list'
+  wsSort?: 'manual' | 'name' | 'recent'
 }
 
 /** request já com variáveis resolvidas, pronto pra enviar */

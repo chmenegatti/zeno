@@ -20,6 +20,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/httpc"
 	"github.com/chmenegatti/zeno/wails/internal/plugins"
 	"github.com/chmenegatti/zeno/wails/internal/protect"
+	"github.com/chmenegatti/zeno/wails/internal/store"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -129,6 +130,28 @@ func (a *App) register() {
 	a.handle("deleteWorkspace", func(args Args) (any, error) {
 		id, _ := Get[string](args, 0)
 		return list(st.DeleteWorkspace(id))
+	})
+	// cópia com ids novos, na pasta de dados (sem histórico nem cookies)
+	a.handle("duplicateWorkspace", func(args Args) (any, error) {
+		id, _ := Get[string](args, 0)
+		ws := st.Workspace(id)
+		if ws == nil {
+			return nil, errors.New("workspace não encontrado")
+		}
+		cp := store.CloneWorkspace(ws, ws.Str("name")+" (cópia)")
+		if err := st.WriteWorkspace(cp); err != nil {
+			return nil, err
+		}
+		return created(st.Load(), cp.Str("id"), nil)
+	})
+	a.handle("openWorkspaceDir", func(args Args) (any, error) {
+		id, _ := Get[string](args, 0)
+		ws := st.Workspace(id)
+		if ws == nil || ws.Map("location").Str("dir") == "" {
+			return nil, errors.New("workspace não encontrado")
+		}
+		runtime.BrowserOpenURL(a.ctx, "file://"+filepath.ToSlash(ws.Map("location").Str("dir")))
+		return nil, nil
 	})
 	a.handle("linkWorkspace", func(Args) (any, error) {
 		dir, err := a.pickDir("Pasta do workspace (com workspace.yaml)")

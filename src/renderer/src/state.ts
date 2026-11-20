@@ -6,7 +6,7 @@ import type { AppState, Environment, PluginInfo, Folder, FolderDoc, RequestDoc, 
 const api = window.zeno
 
 interface Modal {
-  kind: 'env' | 'folder' | 'workspace' | 'import' | 'prompt' | 'confirm' | 'code' | 'git' | 'run' | 'shortcuts' | 'prefs' | 'palette' | 'cookies' | 'plugins' | 'github'
+  kind: 'env' | 'folder' | 'workspace' | 'import' | 'prompt' | 'confirm' | 'code' | 'git' | 'run' | 'shortcuts' | 'prefs' | 'palette' | 'cookies' | 'plugins' | 'github' | 'workspaces'
   /** id do alvo (pasta/workspace) */
   id?: string
   /** run: pasta a rodar (sem = workspace inteiro) */
@@ -158,6 +158,13 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   setApp(patch) {
+    // trocou de workspace: guarda quando (ordenar por "usados recentemente")
+    const prev = get().app
+    if (patch.activeWorkspaceId && patch.activeWorkspaceId !== prev.activeWorkspaceId) {
+      const meta = { ...(patch.wsMeta ?? prev.wsMeta) }
+      meta[patch.activeWorkspaceId] = { ...meta[patch.activeWorkspaceId], lastUsed: Date.now() }
+      patch = { ...patch, wsMeta: meta }
+    }
     set((s) => ({ app: { ...s.app, ...patch } }))
     if (stateTimer) clearTimeout(stateTimer)
     stateTimer = setTimeout(() => api.setState(get().app), 300)

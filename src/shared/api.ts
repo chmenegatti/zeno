@@ -33,6 +33,10 @@ export interface ZenoApi {
   saveWorkspace(doc: WorkspaceDoc): Promise<void>
   /** apaga os arquivos; se o workspace for vinculado, só tira da lista */
   deleteWorkspace(id: string): Promise<Workspace[]>
+  /** cópia com ids novos na pasta de dados (sem histórico nem cookies) */
+  duplicateWorkspace(id: string): Promise<Created>
+  /** abre a pasta do workspace no gerenciador de arquivos */
+  openWorkspaceDir(id: string): Promise<void>
   /** abre um workspace que já existe numa pasta (diálogo); null = cancelado */
   linkWorkspace(): Promise<Created | null>
   /** move o workspace pra uma pasta escolhida (diálogo), ex.: dentro de um repo */
