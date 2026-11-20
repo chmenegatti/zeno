@@ -537,6 +537,7 @@ func (a *App) register() {
 	})
 
 	a.registerGitHub()
+	a.registerRunner()
 
 }
 

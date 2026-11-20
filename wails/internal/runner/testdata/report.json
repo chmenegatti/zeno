@@ -1,0 +1,7 @@
+{"name":"Loja <&> \"API\" 'v2'","startedAt":1763600000000,"totalMs":1234.5,"steps":[
+{"iteration":1,"requestId":"r1","name":"login","path":"","method":"POST","url":"http://x/login","status":200,"timeMs":62.5,"tests":[{"name":"status = 200","ok":true}]},
+{"iteration":1,"requestId":"r2","name":"me <eu>","path":"Usuários / Admin","method":"GET","url":"http://x/me?a=1&b=2","status":401,"timeMs":10.123,"tests":[{"name":"status = 200","ok":false,"error":"valor: 401"},{"name":"$.name existe","ok":false},{"name":"ok","ok":true}]},
+{"iteration":1,"requestId":"r3","name":"erro","path":"Usuários","method":"GET","url":"http://nada","status":0,"timeMs":0,"tests":[],"error":"connect ECONNREFUSED"},
+{"iteration":2,"requestId":"r1","name":"login","path":"","method":"POST","url":"http://x/login","status":200,"timeMs":1.0005,"tests":[]},
+{"iteration":2,"requestId":"r4","name":"vazio","path":"","method":"GET","url":"u","status":500,"timeMs":3,"tests":[],"error":""}
+],"passed":3,"failed":2}

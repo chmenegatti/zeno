@@ -68,3 +68,17 @@ func TestJSONInvalidoViraFalha(t *testing.T) {
 		}
 	}
 }
+
+// resposta recém-enviada guarda headers como [][2]string
+func TestHeaderDoEnvio(t *testing.T) {
+	res := doc.New("status", int64(200), "headers", [][2]string{{"Content-Type", "text/plain"}, {"X-Req", "/echo"}}, "body", "", "bodyEncoding", "utf8")
+	r := Evaluate([]any{
+		doc.New("enabled", true, "source", "header", "op", "contains", "value", "text/plain", "path", "content-type"),
+		doc.New("enabled", true, "source", "header", "op", "eq", "value", "/echo", "path", "x-req"),
+	}, res, func(s string) string { return s })
+	for _, x := range r {
+		if !x.OK {
+			t.Errorf("%+v", x)
+		}
+	}
+}
