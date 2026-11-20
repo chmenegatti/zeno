@@ -17,6 +17,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/engine"
 	"github.com/chmenegatti/zeno/wails/internal/keyring"
+	"github.com/chmenegatti/zeno/wails/internal/mock"
 	"github.com/chmenegatti/zeno/wails/internal/oauth2"
 	"github.com/chmenegatti/zeno/wails/internal/plugins"
 	"github.com/chmenegatti/zeno/wails/internal/store"
@@ -56,6 +57,7 @@ type App struct {
 	bodies   bodyCache
 	trim     memTrim
 	sockets  *ws.Manager
+	mocks    *mock.Manager
 }
 
 func NewApp() *App {
@@ -81,6 +83,7 @@ func NewApp() *App {
 	}}
 	a.engine = &engine.Engine{OAuth: oauth, Store: st, Cookies: a.cookies, Vault: a.vault, Plugins: a.plugins, Hooks: engine.Hooks{Emit: a.Emit, Ask: a.askPrompt}}
 	a.sockets = &ws.Manager{Emit: func(e ws.Event) { a.Emit("ws:event", e) }}
+	a.mocks = &mock.Manager{Workspace: st.WorkspaceSnapshot, OnHit: func(h mock.Hit) { a.Emit("mock:hit", h) }}
 	a.register()
 	return a
 }
@@ -107,6 +110,7 @@ func (a *App) startup(ctx context.Context) {
 func (a *App) shutdown(context.Context) {
 	a.store.Flush()
 	a.sockets.CloseAll()
+	a.mocks.StopAll()
 	if a.watcher != nil {
 		_ = a.watcher.Close()
 	}

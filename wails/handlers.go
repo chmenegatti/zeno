@@ -133,6 +133,7 @@ func (a *App) register() {
 	})
 	a.handle("deleteWorkspace", func(args Args) (any, error) {
 		id, _ := Get[string](args, 0)
+		a.mocks.Stop(id)
 		return list(st.DeleteWorkspace(id))
 	})
 	// cópia com ids novos, na pasta de dados (sem histórico nem cookies)
@@ -639,6 +640,7 @@ func (a *App) register() {
 	a.registerRunner()
 	a.registerExport()
 	a.registerWS()
+	a.registerMock()
 
 }
 

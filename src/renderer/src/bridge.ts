@@ -79,6 +79,7 @@ if (!w.zeno) {
     onOAuthWait: on('oauth:wait'),
     onOAuthDone: on('oauth:done'),
     onWsEvent: on('ws:event'),
+    onMockHit: on('mock:hit'),
     onSseEvent: on('sse:event'),
     setZoom: (f: number) => {
       document.documentElement.style.setProperty('zoom', String(f))

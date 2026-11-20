@@ -1,7 +1,13 @@
 import type { InsomniaKey } from './hotkeys'
-import type { CookieInfo, GitHubAccount, PluginInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, SendInput, OAuthTokenStatus, Workspace, WorkspaceDoc } from './types'
+import type { Example, CookieInfo, GitHubAccount, PluginInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, SendInput, OAuthTokenStatus, Workspace, WorkspaceDoc } from './types'
 
 import type { SSEEvent, WsEvent } from './stream'
+export interface MockStatus {
+  running: boolean
+  port: number
+  configuredPort: number
+  routes: { method: string; path: string; reqId: string; reqName: string; status: number }[]
+}
 export type ExportFormat = 'zeno' | 'insomnia' | 'postman'
 
 export interface Created {
@@ -81,6 +87,13 @@ export interface ZenoApi {
   onWsEvent(cb: (e: WsEvent) => void): () => void
   /** SSE (#6): cada evento de uma resposta text/event-stream, enquanto chega */
   onSseEvent(cb: (requestId: string, e: SSEEvent) => void): () => void
+  /** mock server (#20): ligar/desligar o servidor local do workspace e ver as rotas */
+  mockStatus(wsId: string): Promise<MockStatus>
+  mockStart(wsId: string): Promise<MockStatus>
+  mockStop(wsId: string): Promise<MockStatus>
+  /** exemplo a partir de uma resposta do histórico */
+  exampleFromResponse(requestId: string, responseId: string): Promise<Example>
+  onMockHit(cb: (h: { wsId: string; method: string; path: string; status: number; at: number }) => void): () => void
   /** GraphQL (#4): manda o request (body = consulta de introspecção) sem gravar histórico; interactive=false não abre login OAuth */
   graphqlIntrospect(wsId: string, req: RequestDoc, envId: string | null, interactive: boolean): Promise<{ status: number; body: string; error?: string }>
   tagPreview(raw: string, send: boolean): Promise<{ value?: string; error?: string; at?: number }>

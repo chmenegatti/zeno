@@ -116,6 +116,38 @@ func normAssertions(v any) any {
 	return out
 }
 
+// normExamples (#20): respostas de exemplo do request, servidas pelo mock
+// {id, name, status, headers [{name, value, enabled}], body, bodyEncoding (só base64), delayMs, default}
+func normExamples(v any) any {
+	arr, ok := v.([]any)
+	if !ok || len(arr) == 0 {
+		return undef
+	}
+	out := []any{}
+	for _, it := range arr {
+		e, _ := it.(*Doc)
+		if e == nil {
+			continue
+		}
+		id := e.Str("id")
+		if id == "" {
+			id = NewID("ex")
+		}
+		n := doc.New("id", id, "name", e.Str("name"), "status", num(e.Num("status", 200)), "headers", kvList(e.Get("headers")), "body", e.Str("body"))
+		if e.Str("bodyEncoding") == "base64" {
+			n.Set("bodyEncoding", "base64")
+		}
+		if d := e.Num("delayMs", 0); d > 0 {
+			n.Set("delayMs", num(d))
+		}
+		if e.Get("default") == true {
+			n.Set("default", true)
+		}
+		out = append(out, n)
+	}
+	return out
+}
+
 // normRequest: mesmos campos e ordem de normRequest do Electron
 func normRequest(raw *Doc, fallback string) *Doc {
 	id := raw.Str("id")
@@ -152,6 +184,7 @@ func normRequest(raw *Doc, fallback string) *Doc {
 	r.Set("auth", authOf(raw.Get("auth")))
 	r.Set("scripts", normScripts(raw.Get("scripts")))
 	r.Set("assertions", normAssertions(raw.Get("assertions")))
+	r.Set("examples", normExamples(raw.Get("examples")))
 	// só o "desligado" é gravado; ausente = ligado
 	r.Set("sendCookies", undefIfNotFalse(raw.Get("sendCookies")))
 	r.Set("storeCookies", undefIfNotFalse(raw.Get("storeCookies")))
@@ -225,6 +258,8 @@ func requestToYaml(r *Doc) *Doc {
 			out.Set(k, normScripts(r.Get(k)))
 		case "assertions":
 			out.Set(k, normAssertions(r.Get(k)))
+		case "examples":
+			out.Set(k, normExamples(r.Get(k)))
 		default:
 			out.Set(k, r.Get(k))
 		}
