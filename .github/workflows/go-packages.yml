@@ -8,8 +8,9 @@ on:
   push:
     branches: [main]
     paths: ['wails/**', 'src/renderer/**', 'src/shared/**', '.github/workflows/go-packages.yml']
+  # todo PR que mexe na versão Go: código específico de Windows/macOS só compila e testa nesses jobs
   pull_request:
-    paths: ['wails/packaging/**', 'wails/Makefile', '.github/workflows/go-packages.yml']
+    paths: ['wails/**', '.github/workflows/go-packages.yml']
 
 permissions:
   contents: read
@@ -60,4 +61,55 @@ jobs:
             wails/build/*.rpm
             wails/build/*.AppImage
             wails/build/zeno-cli
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: wails
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: wails/go.mod
+          cache-dependency-path: wails/go.sum
+      - run: npm ci
+        working-directory: .
+      - name: Testes Go no Windows
+        run: go test ./internal/...
+      - name: Interface e ícone
+        run: |
+          (cd .. && npx electron-vite build)
+          rm -rf frontend/dist && mkdir -p frontend build && cp -r ../out/renderer frontend/dist
+          cp ../build/icons/512x512.png frontend/icon.png
+          cp ../build/icons/512x512.png build/appicon.png
+          # versão do instalador = package.json
+          node -e "const f='wails.json',w=require('./'+f);w.info.productVersion=require('../package.json').version;require('fs').writeFileSync(f,JSON.stringify(w,null,2))"
+      - name: Wails CLI e NSIS
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.17.1
+          command -v makensis || choco install nsis -y --no-progress
+          echo "C:/Program Files (x86)/NSIS" >> "$GITHUB_PATH"
+      - name: Instalador (NSIS) e executável
+        run: wails build -platform windows/amd64 -nsis -s -skipbindings -trimpath -ldflags "-s -w"
+      - name: CLI
+        run: CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o build/bin/zeno-cli.exe ./cmd/zeno-cli
+      - name: Versão portátil (.zip)
+        run: |
+          v=$(node -p "require('../package.json').version")
+          cd build/bin && 7z a "../Zeno-$v-windows-portable.zip" zeno.exe zeno-cli.exe
+          mv Zeno-amd64-installer.exe "../Zeno-$v-windows-setup.exe"
+          ls -la .. .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: zeno-windows
+          path: |
+            wails/build/*-windows-setup.exe
+            wails/build/*-windows-portable.zip
           if-no-files-found: error

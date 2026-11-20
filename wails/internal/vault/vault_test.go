@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -55,7 +56,8 @@ func TestChavePersisteEProtegida(t *testing.T) {
 	if !bytes.HasPrefix(b, []byte("P:")) {
 		t.Error("chave em disco sem proteção")
 	}
-	if fi, _ := os.Stat(filepath.Join(dir, ".vault", "key")); fi.Mode().Perm() != 0o600 {
+	// permissão Unix (no Windows a chave fica no perfil do usuário e o DPAPI protege)
+	if fi, _ := os.Stat(filepath.Join(dir, ".vault", "key")); runtime.GOOS != "windows" && fi.Mode().Perm() != 0o600 {
 		t.Errorf("permissão: %v", fi.Mode().Perm())
 	}
 }
