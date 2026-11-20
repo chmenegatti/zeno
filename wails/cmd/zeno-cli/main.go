@@ -7,9 +7,11 @@ import (
 	"os"
 
 	"github.com/chmenegatti/zeno/wails/internal/cli"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/keyring"
 )
 
 func main() {
+	i18n.FromEnv()
 	os.Exit(cli.Run(os.Args[1:], keyring.System("zeno"), cli.StdOut(), cli.IsTTY()))
 }

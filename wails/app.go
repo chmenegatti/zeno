@@ -17,6 +17,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/engine"
 	"github.com/chmenegatti/zeno/wails/internal/grpcc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/keyring"
 	"github.com/chmenegatti/zeno/wails/internal/mock"
 	"github.com/chmenegatti/zeno/wails/internal/oauth2"
@@ -77,6 +78,8 @@ func NewApp() *App {
 		return false
 	})
 	a.plugins.Load()
+	// idioma das mensagens geradas no Go: o mesmo da interface (padrão inglês)
+	i18n.Set(st.GetState().Map("ui").Str("lang"))
 	// OAuth 2.0 (#9): login no navegador do sistema, aviso na interface enquanto espera
 	oauth := &oauth2.Manager{Dir: st.Dir, Vault: a.vault, Interactive: true, Hooks: oauth2.Hooks{
 		Open: func(u string) { runtime.BrowserOpenURL(a.ctx, u) },

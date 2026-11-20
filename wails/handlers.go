@@ -22,6 +22,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/filename"
 	"github.com/chmenegatti/zeno/wails/internal/gitws"
 	"github.com/chmenegatti/zeno/wails/internal/httpc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/plugins"
 	"github.com/chmenegatti/zeno/wails/internal/protect"
 	"github.com/chmenegatti/zeno/wails/internal/store"
@@ -116,7 +117,12 @@ func (a *App) register() {
 		if len(args) == 0 {
 			return nil, nil
 		}
-		return nil, st.SetState([]byte(args[0]))
+		if err := st.SetState([]byte(args[0])); err != nil {
+			return nil, err
+		}
+		// idioma das mensagens do Go acompanha o da interface
+		i18n.Set(st.GetState().Map("ui").Str("lang"))
+		return nil, nil
 	})
 
 	// ---------- workspaces ----------
