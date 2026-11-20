@@ -315,3 +315,33 @@ func Prepare(ws, req *Doc, anc []*Doc, envID string, tagValues map[string]string
 	}
 	return p
 }
+
+// Input: o request preparado no formato SendInput do Electron (gerar código no renderer)
+func (p Prepared) Input(requestID string) *Doc {
+	pairs := func(kv [][2]string) []any {
+		out := make([]any, len(kv))
+		for i, x := range kv {
+			out[i] = []any{x[0], x[1]}
+		}
+		return out
+	}
+	body := doc.New("kind", "none")
+	switch p.BodyKind {
+	case "text":
+		body = doc.New("kind", "text", "text", p.Text)
+	case "form":
+		body = doc.New("kind", "form", "fields", pairs(p.Form))
+	case "multipart":
+		fields := make([]any, len(p.Multipart))
+		for i, f := range p.Multipart {
+			d := doc.New("name", f.Name, "value", f.Value)
+			if f.File != "" {
+				d.Set("file", f.File)
+			}
+			fields[i] = d
+		}
+		body = doc.New("kind", "multipart", "fields", fields)
+	}
+	return doc.New("requestId", requestID, "method", p.Method, "url", p.URL, "headers", pairs(p.Headers),
+		"body", body, "insecureTLS", p.InsecureTLS, "timeoutMs", p.TimeoutMs)
+}

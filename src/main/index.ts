@@ -12,7 +12,6 @@ import { Engine } from './engine'
 import { evalFn, extract, parseArgs, type PromptAsk } from './tags'
 import { Plugins } from './plugins'
 import { DEFAULT_REPO, deviceClientId, devicePoll, deviceStart, ghCliToken, GitHubApi, GitHubSync, type GitHubAccount } from './github'
-import { codeTargets, snippet } from './codegen'
 import { findRequestRef, parseTag } from '../shared/tagdef'
 import { buildVars, render } from '../shared/template'
 import { parseData, runCollection, toJUnit, type RunHandle } from './runner'
@@ -23,7 +22,6 @@ import { SECRET_RE } from '../shared/secret'
 import { convert, insomniaSkipsTLS, INSOMNIA_DIR, readNedbDir, type ParseResult } from './import-insomnia'
 import { fetchSource, parseSources } from './import-sources'
 import { prepare } from '../shared/prepare'
-import { generate, type CodeLang } from '../shared/curl'
 import { countTree, findNode, slugify } from '../shared/tree'
 import type { CookieInfo, Environment, Folder, ImportPreview, RequestDoc, RunOptions, RunReport, Workspace } from '../shared/types'
 
@@ -325,24 +323,19 @@ handle('tagPreview', async (raw: string, send: boolean) => {
 })
 
 /** código do request (cURL, Go…). resolveVars=false mantém {{ var }}; segredos literais são decifrados (pedido explícito) */
-/** target 'curl' = gerador próprio (Copiar como cURL); demais = httpsnippet (target/client) */
-handle('codeSnippet', async (wsId: string, reqRaw: RequestDoc, envId: string | null, target: string, resolveVars: boolean, client?: string) => {
+/** request pronto pra "Gerar código" (o código sai no renderer, com o httpsnippet) */
+handle('codeInput', async (wsId: string, reqRaw: RequestDoc, envId: string | null, resolveVars: boolean) => {
   const wsRaw = store.list().find((w) => w.id === wsId)
   if (!wsRaw) throw new Error('workspace não encontrado')
-  let input
   if (resolveVars) {
     // variáveis, segredos e tags resolvidos (como no envio, sem reenviar dependências)
-    input = (await engine.prepareOpen(wsRaw, reqRaw.id, envId, reqRaw)).input
-  } else {
-    // {{ variáveis }} ficam como referência; segredos literais do request são decifrados (pedido explícito)
-    const req: RequestDoc = await vault.decryptDeep(reqRaw)
-    const ancestors: Folder[] = (await vault.decryptDeep(findNode(wsRaw, reqRaw.id)?.ancestors ?? [])).map((a) => ({ ...a, vars: {} }))
-    input = prepare({ ...wsRaw, environments: [] }, req, ancestors, envId).input
+    return (await engine.prepareOpen(wsRaw, reqRaw.id, envId, reqRaw)).input
   }
-  if (!client) return generate(target as CodeLang, input)
-  return snippet(target, client, input)
+  // {{ variáveis }} ficam como referência; segredos literais do request são decifrados (pedido explícito)
+  const req: RequestDoc = await vault.decryptDeep(reqRaw)
+  const ancestors: Folder[] = (await vault.decryptDeep(findNode(wsRaw, reqRaw.id)?.ancestors ?? [])).map((a) => ({ ...a, vars: {} }))
+  return prepare({ ...wsRaw, environments: [] }, req, ancestors, envId).input
 })
-handle('codeTargets', () => codeTargets())
 handle('copyText', (text: string) => clipboard.writeText(text))
 // atalhos de janela: o menu padrão do Electron sai (Ctrl+R recarregava a página); o renderer cuida de tudo
 handle('windowAction', (action: 'fullscreen' | 'devtools' | 'quit') => {

@@ -1,6 +1,5 @@
 import type { InsomniaKey } from './hotkeys'
-import type { CodeLang } from './curl'
-import type { CookieInfo, GitHubAccount, PluginInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, Workspace, WorkspaceDoc } from './types'
+import type { CookieInfo, GitHubAccount, PluginInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, SendInput, Workspace, WorkspaceDoc } from './types'
 
 export interface Created {
   workspaces: Workspace[]
@@ -53,9 +52,8 @@ export interface ZenoApi {
   send(wsId: string, req: RequestDoc, envId: string | null): Promise<SendResult>
   cancel(requestId: string): Promise<void>
   /** código pronto do request; resolveVars=false mantém as {{ variáveis }} */
-  /** target 'curl'/'go'/… sem client = gerador próprio; com client = httpsnippet (ex.: 'shell','curl' · 'python','requests') */
-  codeSnippet(wsId: string, req: RequestDoc, envId: string | null, target: string, resolveVars: boolean, client?: string): Promise<string>
-  codeTargets(): Promise<{ key: string; title: string; clients: { key: string; title: string; link?: string }[] }[]>
+  /** request pronto pra gerar código: variáveis/tags/segredos resolvidos ou {{ variáveis }} como referência */
+  codeInput(wsId: string, req: RequestDoc, envId: string | null, resolveVars: boolean): Promise<SendInput>
   copyText(text: string): Promise<void>
   /** valor que a tag {% %} daria agora (send=true envia o request de origem antes) */
   tagPreview(raw: string, send: boolean): Promise<{ value?: string; error?: string; at?: number }>

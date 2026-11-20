@@ -682,3 +682,34 @@ func (e *Engine) persistEnvChanges(ws, base, sub *Doc, before, after scripts.Sta
 		e.emit("store:changed", e.Store.List())
 	}
 }
+
+// CodeInput: request pronto pra "Gerar código" (o código sai no renderer). Com resolveVars, como
+// PrepareOpen; sem, as {{ variáveis }} ficam como referência e só os segredos literais do request e
+// das pastas são decifrados (pedido explícito do usuário).
+func (e *Engine) CodeInput(ws, req *Doc, envID string, resolveVars bool) (*Doc, error) {
+	if resolveVars {
+		p, _, err := e.PrepareOpen(ws, req.Str("id"), envID, req)
+		if err != nil {
+			return nil, err
+		}
+		return p.Input(req.Str("id")), nil
+	}
+	r, err := e.Vault.DecryptDeep(req, nil)
+	if err != nil {
+		return nil, err
+	}
+	_, anc := doc.Find(ws, req.Str("id"))
+	open := make([]*Doc, len(anc))
+	for i, f := range anc {
+		o, err := e.Vault.DecryptDeep(f, nil)
+		if err != nil {
+			return nil, err
+		}
+		d := o.(*Doc).Clone()
+		d.Set("vars", doc.New())
+		open[i] = d
+	}
+	bare := ws.Clone()
+	bare.Set("environments", []any{})
+	return vars.Prepare(bare, r.(*Doc), open, envID, nil).Input(req.Str("id")), nil
+}

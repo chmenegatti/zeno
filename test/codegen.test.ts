@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { codeTargets, snippet, toHar } from '../src/main/codegen'
+import { codeTargets, snippet, toHar } from '../src/renderer/src/codegen'
 import type { SendInput } from '../src/shared/types'
 
 const base = (body: SendInput['body'], headers: [string, string][] = []): SendInput => ({ requestId: 'r', method: 'POST', url: 'https://api.exemplo.com/v1/itens?ativo=true', headers: [['Authorization', 'Bearer tk'], ...headers], body, insecureTLS: false, timeoutMs: 0 })

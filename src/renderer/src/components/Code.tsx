@@ -1,13 +1,21 @@
 import { useEffect, useState } from 'react'
 import { findNode } from '@shared/tree'
+import { generate } from '@shared/curl'
 import type { RequestDoc } from '@shared/types'
 import { activeEnvId, activeWorkspace, api, useStore } from '../state'
 import { EditorState } from '@codemirror/state'
 import { codeLang } from '../codeLangs'
+import { codeTargets, snippet } from '../codegen'
 import { CodeEditor } from './CodeEditor'
 import { Modal, Segmented } from './ui'
 
 const PICK_KEY = 'zeno:code-target'
+
+/** código do request: o backend entrega o request pronto e o código sai aqui (cURL próprio ou httpsnippet) */
+async function codeSnippet(wsId: string, req: RequestDoc, envId: string | null, target: string, resolveVars: boolean, client?: string): Promise<string> {
+  const input = await api.codeInput(wsId, req, envId, resolveVars)
+  return client ? snippet(target, client, input) : generate('curl', input)
+}
 
 type Target = { key: string; title: string; clients: { key: string; title: string; link?: string }[] }
 
@@ -58,7 +66,7 @@ export async function copyAsCurl(reqId: string): Promise<void> {
   const c = current(reqId)
   if (!c) return
   const { run, notify } = useStore.getState()
-  const text = await run(api.codeSnippet(c.wsId, c.req, c.envId, 'curl', true))
+  const text = await run(codeSnippet(c.wsId, c.req, c.envId, 'curl', true))
   if (text === undefined) return
   await api.copyText(text)
   notify('cURL copiado')
@@ -66,7 +74,7 @@ export async function copyAsCurl(reqId: string): Promise<void> {
 
 export function CodeModal({ reqId, onClose }: { reqId: string; onClose: () => void }) {
   const [pick, setPick] = useState(savedPick)
-  const [targets, setTargets] = useState<Target[]>([])
+  const [targets] = useState<Target[]>(codeTargets)
   const [resolve, setResolve] = useState(true)
   const [code, setCode] = useState('')
   const [err, setErr] = useState('')
@@ -74,9 +82,6 @@ export function CodeModal({ reqId, onClose }: { reqId: string; onClose: () => vo
   const c = current(reqId)
   const req = c?.req
 
-  useEffect(() => {
-    api.codeTargets().then(setTargets, () => setTargets([]))
-  }, [])
   const target = targets.find((t) => t.key === pick.target) ?? targets[0]
   const client = target?.clients.find((x) => x.key === pick.client) ?? target?.clients[0]
 
@@ -84,7 +89,7 @@ export function CodeModal({ reqId, onClose }: { reqId: string; onClose: () => vo
     if (!c || !target || !client) return
     // só vale a resposta da escolha atual (trocar rápido não deixa código velho na tela)
     let alive = true
-    api.codeSnippet(c.wsId, c.req, c.envId, target.key, resolve, client.key).then(
+    codeSnippet(c.wsId, c.req, c.envId, target.key, resolve, client.key).then(
       (t) => {
         if (!alive) return
         setCode(t)

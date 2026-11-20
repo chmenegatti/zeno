@@ -13,7 +13,16 @@ export default defineConfig({
   },
   preload: { resolve: { alias: shared } },
   renderer: {
-    resolve: { alias: shared },
+    // httpsnippet (Gerar código) roda no renderer: módulos do Node trocados pelos ports pro navegador
+    resolve: {
+      alias: {
+        ...shared,
+        url: resolve(__dirname, 'node_modules/url/url.js'),
+        querystring: resolve(__dirname, 'node_modules/querystring-es3/index.js'),
+        'event-stream': resolve(__dirname, 'src/renderer/src/shims/event-stream.ts'),
+        'form-data/lib/form_data': resolve(__dirname, 'src/renderer/src/shims/form-data.ts')
+      }
+    },
     plugins: [react(), tailwindcss()]
   }
 })
