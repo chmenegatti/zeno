@@ -50,3 +50,15 @@ func TestFromJSONRecusaTextoDepois(t *testing.T) {
 		t.Errorf("espaços em volta: %v %v", v, err)
 	}
 }
+
+// "billion laughs": âncoras em cascata não explodem a memória
+func TestAliasesLimitados(t *testing.T) {
+	y := "a: &a [x, x, x, x, x, x, x, x, x, x]\nb: &b [*a, *a, *a, *a, *a, *a, *a, *a, *a, *a]\nc: &c [*b, *b, *b, *b, *b, *b, *b, *b, *b, *b]\nd: &d [*c, *c, *c, *c, *c, *c, *c, *c, *c, *c]\ne: [*d, *d, *d, *d, *d, *d, *d, *d, *d, *d]\n"
+	if _, err := ParseYAML([]byte(y)); err == nil {
+		t.Error("deveria recusar")
+	}
+	ok := "base: &b { a: 1 }\nx: *b\ny: *b\n"
+	if v, err := ParseYAML([]byte(ok)); err != nil || v.(*Doc).Map("y").Get("a") != int64(1) {
+		t.Errorf("alias normal: %v %v", v, err)
+	}
+}

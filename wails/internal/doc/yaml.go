@@ -16,6 +16,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// MaxAliases: limite de aliases expandidos por documento (como o maxAliasCount: 1000 do Electron);
+// evita que um arquivo pequeno com âncoras em cascata estoure a memória
+const MaxAliases = 1000
+
 // ParseYAML lê um documento YAML guardando a ordem das chaves.
 func ParseYAML(data []byte) (any, error) {
 	var n yaml.Node
@@ -25,18 +29,33 @@ func ParseYAML(data []byte) (any, error) {
 	if n.Kind == 0 {
 		return nil, nil
 	}
-	return fromNode(&n)
+	c := &conv{expanding: map[*yaml.Node]bool{}}
+	return c.fromNode(&n)
 }
 
-func fromNode(n *yaml.Node) (any, error) {
+type conv struct {
+	aliases   int
+	expanding map[*yaml.Node]bool
+}
+
+func (c *conv) fromNode(n *yaml.Node) (any, error) {
 	switch n.Kind {
 	case yaml.DocumentNode:
 		if len(n.Content) == 0 {
 			return nil, nil
 		}
-		return fromNode(n.Content[0])
+		return c.fromNode(n.Content[0])
 	case yaml.AliasNode:
-		return fromNode(n.Alias)
+		c.aliases++
+		if c.aliases > MaxAliases {
+			return nil, fmt.Errorf("YAML com aliases demais (mais de %d)", MaxAliases)
+		}
+		if c.expanding[n.Alias] {
+			return nil, fmt.Errorf("YAML com alias que aponta pra si mesmo")
+		}
+		c.expanding[n.Alias] = true
+		defer delete(c.expanding, n.Alias)
+		return c.fromNode(n.Alias)
 	case yaml.MappingNode:
 		d := New()
 		for i := 0; i+1 < len(n.Content); i += 2 {
@@ -44,7 +63,7 @@ func fromNode(n *yaml.Node) (any, error) {
 			if k.Kind == yaml.ScalarNode && k.Tag == "!!merge" {
 				continue
 			}
-			v, err := fromNode(n.Content[i+1])
+			v, err := c.fromNode(n.Content[i+1])
 			if err != nil {
 				return nil, err
 			}
@@ -53,8 +72,8 @@ func fromNode(n *yaml.Node) (any, error) {
 		return d, nil
 	case yaml.SequenceNode:
 		l := make([]any, 0, len(n.Content))
-		for _, c := range n.Content {
-			v, err := fromNode(c)
+		for _, item := range n.Content {
+			v, err := c.fromNode(item)
 			if err != nil {
 				return nil, err
 			}
