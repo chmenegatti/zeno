@@ -8,6 +8,11 @@ package main
 import (
 	"embed"
 	"log"
+	"os"
+	"strings"
+
+	"github.com/chmenegatti/zeno/wails/internal/cli"
+	"github.com/chmenegatti/zeno/wails/internal/keyring"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -23,7 +28,23 @@ var assets embed.FS
 //go:embed frontend/icon.png
 var icon []byte
 
+// `zeno run …`: roda a coleção na linha de comando, sem abrir janela (primeiro argumento que não é opção)
+func cliArgs() []string {
+	for i, a := range os.Args[1:] {
+		if !strings.HasPrefix(a, "-") {
+			if a == "run" {
+				return os.Args[1+i:]
+			}
+			return nil
+		}
+	}
+	return nil
+}
+
 func main() {
+	if args := cliArgs(); args != nil {
+		os.Exit(cli.Run(args, keyring.System("zeno"), cli.StdOut(), cli.IsTTY()))
+	}
 	app := NewApp()
 	err := wails.Run(&options.App{
 		// mesmas medidas e cor de fundo da janela do Electron

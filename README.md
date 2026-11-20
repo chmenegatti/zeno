@@ -244,6 +244,8 @@ zeno run ./api-workspace --data usuarios.csv --var token=$API_TOKEN   # pasta co
 
 Sai com `0` se tudo passou, `1` se algum request ou teste falhou e `2` em erro de uso. Na CLI, o que os scripts gravam nos ambientes vale só durante a execução: os YAML não mudam. No app instalado, `zeno run` usa o chaveiro pra abrir os segredos cifrados; sem chaveiro (ex.: no CI, com `npm run build && node out/main/cli.js run …`), passe-os com `--var`.
 
+Exemplo de workflow do GitHub Actions em [docs/github-actions.md](docs/github-actions.md).
+
 ## Cofre de segredos
 
 - Valores marcados como secretos ficam no YAML como `$zeno$v1$…` (AES-256-GCM). **Esses arquivos podem ir para o git.**

@@ -1,5 +1,5 @@
 # Zeno em Go + Wails (migração: #53). Precisa de Go, Node e, no Linux, libgtk-3-dev e libwebkit2gtk-4.1-dev.
-.PHONY: frontend build run test vet
+.PHONY: frontend build cli run test vet
 
 TAGS = desktop,production,webkit2_41
 
@@ -11,6 +11,10 @@ frontend:
 
 build: frontend
 	CGO_ENABLED=1 go build -tags $(TAGS) -trimpath -ldflags "-s -w" -o build/zeno .
+
+# só a linha de comando: binário estático, sem WebKit (CI)
+cli:
+	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o build/zeno-cli ./cmd/zeno-cli
 
 run: build
 	./build/zeno
