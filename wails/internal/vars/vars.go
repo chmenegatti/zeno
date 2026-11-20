@@ -181,8 +181,24 @@ type Prepared struct {
 	Multipart   []Part
 	InsecureTLS bool
 	TimeoutMs   float64
+	// Net: proxy, CA própria e certificados de cliente do workspace (#18)
+	Net         Net
 	Missing     []string
 	Unsupported []string
+}
+
+// Net: rede do workspace. ProxyMode: "" ou "none" (sem proxy), "system" (HTTP(S)_PROXY/NO_PROXY) ou
+// "custom" (ProxyURL, com NoProxy). CAFile: PEM somado às CAs do sistema.
+type Net struct {
+	ProxyMode, ProxyURL, NoProxy string
+	CAFile                       string
+	ClientCerts                  []ClientCert
+}
+
+// ClientCert: certificado de cliente (mTLS) pra um host: PEM (Cert + Key; Key vazio = no mesmo arquivo)
+// ou PFX/P12 com Passphrase. Host: "api.x.com", "api.x.com:8443" ou "*.x.com".
+type ClientCert struct {
+	Host, Cert, Key, PFX, Passphrase string
 }
 
 // Part: campo de multipart (File = caminho do arquivo no disco)
@@ -307,6 +323,20 @@ func Prepare(ws, req *Doc, anc []*Doc, envID string, tagValues map[string]string
 	settings := ws.Map("settings")
 	p.InsecureTLS = settings.Get("insecureTLS") == true
 	p.TimeoutMs = settings.Num("timeoutMs", 30000)
+	if px := settings.Map("proxy"); px != nil {
+		p.Net.ProxyMode = px.Str("mode")
+		p.Net.ProxyURL = strings.TrimSpace(R(px.Str("url")))
+		p.Net.NoProxy = strings.TrimSpace(R(px.Str("noProxy")))
+	}
+	p.Net.CAFile = strings.TrimSpace(R(settings.Str("caFile")))
+	for _, x := range settings.List("clientCerts") {
+		if d, ok := x.(*Doc); ok && d != nil {
+			p.Net.ClientCerts = append(p.Net.ClientCerts, ClientCert{
+				Host: strings.TrimSpace(R(d.Str("host"))), Cert: strings.TrimSpace(R(d.Str("cert"))), Key: strings.TrimSpace(R(d.Str("key"))),
+				PFX: strings.TrimSpace(R(d.Str("pfx"))), Passphrase: R(d.Str("passphrase")),
+			})
+		}
+	}
 	for m := range r.missing {
 		p.Missing = append(p.Missing, m)
 	}

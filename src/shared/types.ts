@@ -97,11 +97,32 @@ export interface Environment {
   sortKey: number
 }
 
+export interface WorkspaceSettings {
+  insecureTLS: boolean
+  timeoutMs: number
+  /** proxy (#18): sem (padrão), do sistema (HTTP(S)_PROXY/NO_PROXY) ou personalizado */
+  proxy?: { mode: 'none' | 'system' | 'custom'; url?: string; noProxy?: string }
+  /** CA própria (PEM), somada às do sistema */
+  caFile?: string
+  /** certificados de cliente (mTLS) por host: PEM (cert + key) ou PFX com senha (no cofre) */
+  clientCerts?: ClientCert[]
+}
+
+export interface ClientCert {
+  /** api.x.com, api.x.com:8443 ou *.x.com */
+  host: string
+  cert?: string
+  key?: string
+  pfx?: string
+  /** senha do PFX: token do cofre ($zeno$v1$…) */
+  passphrase?: string
+}
+
 export interface WorkspaceDoc {
   id: string
   name: string
   description?: string
-  settings: { insecureTLS: boolean; timeoutMs: number }
+  settings: WorkspaceSettings
 }
 
 export interface Workspace extends WorkspaceDoc {
@@ -223,6 +244,8 @@ export interface Timeline {
   hops: TimelineHop[]
   timing: { dnsMs?: number; connectMs?: number; tlsMs?: number; ttfbMs: number; downloadMs: number; totalMs: number }
   remote?: { address: string; port: number }
+  /** proxy por onde saiu (sem senha) */
+  proxy?: string
   tls?: { protocol?: string; cipher?: string; authorized: boolean; error?: string; subject?: string; issuer?: string; validFrom?: string; validTo?: string; altNames?: string; fingerprint?: string }
 }
 

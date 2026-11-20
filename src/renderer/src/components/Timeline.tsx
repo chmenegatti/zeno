@@ -75,6 +75,7 @@ export function TimelineView({ res }: { res: ResponseRecord }) {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-dim">
         <span>{new Date(res.at).toLocaleString('pt-BR')}</span>
         {t.remote && <span>servidor <span className="font-mono text-ink">{t.remote.address}:{t.remote.port}</span></span>}
+        {t.proxy && <span>via proxy <span className="font-mono text-ink">{t.proxy}</span></span>}
         <span>{formatBytes(res.size)}</span>
         <div className="flex-1" />
         <label className="flex items-center gap-1.5">

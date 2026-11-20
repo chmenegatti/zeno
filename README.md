@@ -58,6 +58,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 | **Importação** | Insomnia (pasta, export v4 e v5), OpenAPI 3 e Swagger 2 (arquivo ou URL) e Postman v2.1 com ambientes, com prévia e lista do que não foi convertido |
 | **Organização** | Pastas aninhadas, arrastar pra mover/reordenar, duplicar, renomear, fixar; paleta de comandos com `Ctrl+P`; tela de workspaces (`Ctrl+Shift+O`) com busca em todos os requests, grupos, cores, favoritos, arquivar, git e cofre de cada um |
 | **Resposta** | JSON formatado com destaque de sintaxe, filtro JSONPath/XPath salvo por request, busca (`Ctrl+F`), clique na chave pra copiar o caminho ou a tag `{% response %}`, headers, tempos e histórico das últimas 20 respostas |
+| **Rede** | Proxy por workspace (do sistema ou personalizado, HTTP/HTTPS/SOCKS5, com exceções), CA própria somada às do sistema e certificado de cliente (mTLS) por host, em PEM ou PFX com a senha no cofre |
 | **Cookies** | Jar por workspace, inclusive em redirects, com tela pra ver e editar (`Ctrl+K`) |
 | **Plugins** | Formato do Insomnia (`templateTags`, hooks, ações) e importadores, isolados e com liga/desliga |
 | **Salvar no GitHub** | Entre com o GitHub CLI ou um token e envie os workspaces pra um repositório privado (um commit por envio); baixe em outra máquina |

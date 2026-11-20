@@ -279,3 +279,27 @@ func TestCodeInput(t *testing.T) {
 		t.Error("gerar código não pode enviar dependência")
 	}
 }
+
+// rede do workspace (#18): variáveis no proxy e senha do PFX decifrada só pro envio
+func TestRedeDoWorkspace(t *testing.T) {
+	srv, _ := api(t)
+	e, ws := setup(t, srv.URL)
+	tok, err := e.Vault.Encrypt("senha-pfx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ws = ws.Clone()
+	ws.Set("settings", doc.New("insecureTLS", false, "timeoutMs", int64(5000),
+		"proxy", doc.New("mode", "custom", "url", "{{ base }}", "noProxy", "localhost"),
+		"clientCerts", []any{doc.New("host", "*.interno", "pfx", "/x/c.pfx", "passphrase", tok)}))
+	p, _, err := e.PrepareOpen(ws, "req_me", "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Net.ProxyMode != "custom" || p.Net.ProxyURL != srv.URL || p.Net.NoProxy != "localhost" {
+		t.Errorf("proxy: %+v", p.Net)
+	}
+	if len(p.Net.ClientCerts) != 1 || p.Net.ClientCerts[0].Passphrase != "senha-pfx" || p.Net.ClientCerts[0].Host != "*.interno" {
+		t.Errorf("certificado: %+v", p.Net.ClientCerts)
+	}
+}

@@ -211,7 +211,7 @@ func (s *Store) load() []*Doc {
 		if d := raw.Str("description"); d != "" {
 			ws.Set("description", d)
 		}
-		ws.Set("settings", doc.New("insecureTLS", set.Get("insecureTLS") == true, "timeoutMs", num(set.Num("timeoutMs", 30000))))
+		ws.Set("settings", normSettings(set))
 		ws.Set("location", doc.New("dir", wd.dir, "linked", wd.linked))
 		s.index[id] = indexEntry{"workspace", wd.dir, id}
 		ws.Set("environments", doc.Docs(s.loadEnvs(wd.dir, id)))
@@ -878,3 +878,43 @@ func foldKey(s string) string {
 
 // LocaleCompare: ordem de nomes como o localeCompare do Electron
 func LocaleCompare(a, b string) int { return localeCompare(a, b) }
+
+// normSettings: settings do workspace com as chaves conhecidas, na ordem: insecureTLS, timeoutMs e, se
+// houver, proxy {mode, url, noProxy}, caFile e clientCerts [{host, cert, key, pfx, passphrase}] (#18)
+func normSettings(set *Doc) *Doc {
+	out := doc.New("insecureTLS", set.Get("insecureTLS") == true, "timeoutMs", num(set.Num("timeoutMs", 30000)))
+	if px := set.Map("proxy"); px != nil {
+		mode := px.Str("mode")
+		if mode != "system" && mode != "custom" {
+			mode = "none"
+		}
+		p := doc.New("mode", mode)
+		for _, k := range []string{"url", "noProxy"} {
+			if v := px.Str(k); v != "" {
+				p.Set(k, v)
+			}
+		}
+		out.Set("proxy", p)
+	}
+	if ca := set.Str("caFile"); ca != "" {
+		out.Set("caFile", ca)
+	}
+	var certs []any
+	for _, x := range set.List("clientCerts") {
+		d, ok := x.(*Doc)
+		if !ok || d == nil {
+			continue
+		}
+		c := doc.New("host", d.Str("host"))
+		for _, k := range []string{"cert", "key", "pfx", "passphrase"} {
+			if v := d.Str(k); v != "" {
+				c.Set(k, v)
+			}
+		}
+		certs = append(certs, c)
+	}
+	if len(certs) > 0 {
+		out.Set("clientCerts", certs)
+	}
+	return out
+}
