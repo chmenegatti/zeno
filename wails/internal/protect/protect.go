@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 )
 
 type Doc = doc.Doc
@@ -162,8 +163,8 @@ func Scan(ws *Doc, extraKnown []string) Result {
 	}
 	doc.Walk(ws.List("children"), func(n *Doc) {
 		if n.Str("kind") == "folder" {
-			vars("folder", n.Str("id"), n.Get("vars"), Path{"vars"}, "pasta "+n.Str("name"))
-			authAndHeaders("folder", n, "pasta "+n.Str("name"))
+			vars("folder", n.Str("id"), n.Get("vars"), Path{"vars"}, i18n.T("pasta %s", n.Str("name")))
+			authAndHeaders("folder", n, i18n.T("pasta %s", n.Str("name")))
 		} else {
 			authAndHeaders("request", n, n.Str("name"))
 		}
@@ -171,7 +172,7 @@ func Scan(ws *Doc, extraKnown []string) Result {
 	// regra 4: mesma senha guardada com outro nome
 	for _, o := range others {
 		if len(o.value) >= 6 && known[o.value] {
-			o.spot.Label += " (mesmo valor de um segredo)"
+			o.spot.Label += " " + i18n.T("(mesmo valor de um segredo)")
 			spots = append(spots, o.spot)
 		}
 	}
@@ -196,7 +197,7 @@ func Scan(ws *Doc, extraKnown []string) Result {
 			}
 			for _, f := range n.Map("body").List("fields") {
 				if d, _ := f.(*Doc); d != nil {
-					texts = append(texts, [2]string{"campo " + d.Str("name"), d.Str("value")})
+					texts = append(texts, [2]string{i18n.T("campo %s", d.Str("name")), d.Str("value")})
 				}
 			}
 			for _, h := range n.List("headers") {
@@ -227,7 +228,7 @@ func Scan(ws *Doc, extraKnown []string) Result {
 func LiteralSecrets(ws *Doc) []string {
 	var out []string
 	for _, s := range Scan(ws, nil).Spots {
-		if strings.HasSuffix(s.Label, "(mesmo valor de um segredo)") {
+		if strings.HasSuffix(s.Label, i18n.T("(mesmo valor de um segredo)")) {
 			continue
 		}
 		out = append(out, doc.AsStr(GetAt(Target(ws, s), s.Path)))

@@ -7,11 +7,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/chmenegatti/zeno/wails/internal/oauth2"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
+	"github.com/chmenegatti/zeno/wails/internal/oauth2"
 
 	"github.com/chmenegatti/zeno/wails/internal/assert"
 	"github.com/chmenegatti/zeno/wails/internal/cookies"
@@ -257,7 +259,7 @@ func (e *Engine) ExecuteWith(ws, req *Doc, envID string, depth int, extraVars *D
 			rec := doc.New("id", httpc.ResponseID(time.Now()), "requestId", req.Get("id"), "at", time.Now().UnixMilli(),
 				"method", openReq.Get("method"), "url", openReq.Get("url"), "status", 0, "statusText", "", "headers", []any{},
 				"body", "", "bodyEncoding", "utf8", "size", 0, "timing", doc.New("headersMs", 0, "totalMs", 0),
-				"error", "Não enviado: o script "+rep.Errors[0])
+				"error", i18n.T("Não enviado: o script %s", rep.Errors[0]))
 			return sendResult(rec, e.Store.AddResponse(rec), nil, nil, reportDoc(rep)), nil
 		}
 	}
@@ -266,7 +268,7 @@ func (e *Engine) ExecuteWith(ws, req *Doc, envID string, depth int, extraVars *D
 	warnings := []string{}
 	if len(p.Unsupported) > 0 {
 		if depth > 3 {
-			warnings = append(warnings, "cadeia de {% response %} longa demais (máx. 3)")
+			warnings = append(warnings, i18n.T("cadeia de {% response %} longa demais (máx. 3)"))
 		} else {
 			varsDoc := vars.BuildVars(openWS, envID, openAnc)
 			// mesma pergunta (chave) só uma vez por envio
@@ -297,7 +299,7 @@ func (e *Engine) ExecuteWith(ws, req *Doc, envID string, depth int, extraVars *D
 				SendByID: func(id string) (*Doc, error) {
 					dep := e.wsOfRequest(id)
 					if dep == nil {
-						return nil, fmt.Errorf("request %s não existe", id)
+						return nil, fmt.Errorf(i18n.T("request %s não existe"), id)
 					}
 					node, _ := doc.Find(dep, id)
 					depEnv := envID
@@ -333,11 +335,11 @@ func (e *Engine) ExecuteWith(ws, req *Doc, envID string, depth int, extraVars *D
 		}
 	}
 	for _, t := range p.Unsupported {
-		warnings = append(warnings, "tag não resolvida: "+t)
+		warnings = append(warnings, i18n.T("tag não resolvida: %s", t))
 	}
 	for _, k := range locked {
 		if extraVars == nil || !extraVars.Has(k) {
-			warnings = append(warnings, `segredo cifrado "`+k+`" não abriu (sem chaveiro?); passe o valor com --var`)
+			warnings = append(warnings, i18n.T("segredo cifrado %q não abriu (sem chaveiro?); passe o valor com --var", k))
 		}
 	}
 	// OAuth 2.0: token do cache, renovado ou obtido (login no navegador se preciso) antes do envio
@@ -347,7 +349,7 @@ func (e *Engine) ExecuteWith(ws, req *Doc, envID string, depth int, extraVars *D
 			rec := doc.New("id", httpc.ResponseID(time.Now()), "requestId", req.Get("id"), "at", time.Now().UnixMilli(),
 				"method", p.Method, "url", p.URL, "status", 0, "statusText", "", "headers", []any{},
 				"body", "", "bodyEncoding", "utf8", "size", 0, "timing", doc.New("headersMs", 0, "totalMs", 0),
-				"error", "Não enviado: "+err.Error())
+				"error", i18n.T("Não enviado: %s", err.Error()))
 			return sendResult(rec, e.Store.AddResponse(rec), p.Missing, warnings, nil), nil
 		}
 		p.Headers = append(p.Headers, [2]string{"Authorization", strings.TrimSpace(p.OAuth2.Prefix + " " + tok.Access)})
@@ -484,7 +486,7 @@ func (e *Engine) TagPreview(raw string, send bool) *Doc {
 	case name != "response":
 		// tag de plugin: prévia com as variáveis do ambiente ativo
 		if e.Plugins == nil || !e.Plugins.HasTag(name) {
-			return doc.New("error", fmt.Sprintf("tag %q não suportada (nenhum plugin ativo tem)", name))
+			return doc.New("error", i18n.T("tag %q não suportada (nenhum plugin ativo tem)", name))
 		}
 		vs, _, _ := e.previewVars()
 		v, err := e.Plugins.RunTag(name, args, func(t string) string { return vars.Render(t, vs) }, vs)
@@ -517,7 +519,7 @@ func (e *Engine) TagPreview(raw string, send bool) *Doc {
 		}
 	}
 	if node == nil {
-		return doc.New("error", "request não encontrado")
+		return doc.New("error", i18n.T("request não encontrado"))
 	}
 	res := e.Latest(node.Str("id"))
 	if send {
@@ -529,7 +531,7 @@ func (e *Engine) TagPreview(raw string, send bool) *Doc {
 		res = e.Latest(node.Str("id"))
 	}
 	if res == nil {
-		return doc.New("error", "ainda sem resposta: envie o request")
+		return doc.New("error", i18n.T("ainda sem resposta: envie o request"))
 	}
 	v, err := tags.Extract(res, field, filter)
 	if err != nil {
@@ -583,7 +585,7 @@ func (e *Engine) openForSendLocked(ws, req *doc.Doc, anc []*doc.Doc) (*doc.Doc, 
 func (e *Engine) PrepareOpen(ws *Doc, reqID, envID string, override *Doc) (vars.Prepared, string, error) {
 	node, anc := doc.Find(ws, reqID)
 	if node == nil || node.Str("kind") != "request" {
-		return vars.Prepared{}, "", errors.New("request não encontrado")
+		return vars.Prepared{}, "", errors.New(i18n.T("request não encontrado"))
 	}
 	req := node
 	if override != nil {
@@ -870,7 +872,7 @@ func OAuthConfig(o *vars.OAuth2) oauth2.Config {
 
 func (e *Engine) oauthToken(o *vars.OAuth2, force bool) (*oauth2.Token, error) {
 	if e.OAuth == nil {
-		return nil, errors.New("OAuth 2.0 indisponível aqui")
+		return nil, errors.New(i18n.T("OAuth 2.0 indisponível aqui"))
 	}
 	return e.OAuth.Token(context.Background(), OAuthConfig(o), force)
 }
@@ -885,7 +887,7 @@ func (e *Engine) OAuthPrepared(ws, req *Doc, envID string) (*vars.OAuth2, error)
 	}
 	p := vars.Prepare(openWS, openReq, openAnc, envID, nil)
 	if p.OAuth2 == nil {
-		return nil, errors.New("este request não usa OAuth 2.0")
+		return nil, errors.New(i18n.T("este request não usa OAuth 2.0"))
 	}
 	return p.OAuth2, nil
 }
@@ -958,7 +960,7 @@ func (e *Engine) RenderText(ws, req *Doc, envID, text string) (string, error) {
 		return "", err
 	}
 	if len(p.Missing) > 0 {
-		return "", errors.New("variáveis sem valor: " + strings.Join(p.Missing, ", "))
+		return "", errors.New(i18n.T("variáveis sem valor: %s", strings.Join(p.Missing, ", ")))
 	}
 	return p.Text, nil
 }

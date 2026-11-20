@@ -7,9 +7,12 @@ package doc
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"sort"
+
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 )
 
 // Doc é um objeto JSON/YAML com ordem de chaves. Valores: string, float64, int64, bool, nil, []any, *Doc.
@@ -219,7 +222,7 @@ func (d *Doc) UnmarshalJSON(data []byte) error {
 	}
 	m, ok := v.(*Doc)
 	if !ok {
-		return fmt.Errorf("esperava objeto JSON")
+		return errors.New(i18n.T("esperava objeto JSON"))
 	}
 	*d = *m
 	return nil
@@ -235,7 +238,7 @@ func FromJSON(data []byte) (any, error) {
 		return nil, err
 	}
 	if _, err := dec.Token(); err != io.EOF {
-		return nil, fmt.Errorf("texto depois do JSON")
+		return nil, errors.New(i18n.T("texto depois do JSON"))
 	}
 	return v, nil
 }

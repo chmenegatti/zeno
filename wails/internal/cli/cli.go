@@ -14,6 +14,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/cookies"
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/engine"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/keyring"
 	"github.com/chmenegatti/zeno/wails/internal/oauth2"
 	"github.com/chmenegatti/zeno/wails/internal/plugins"
@@ -24,7 +25,9 @@ import (
 
 type Doc = doc.Doc
 
-const Usage = `uso: zeno run <workspace> [pasta] [opções]
+// usage: texto de ajuda no idioma escolhido
+func usage() string {
+	return i18n.T(`uso: zeno run <workspace> [pasta] [opções]
 
   <workspace>          nome ou id do workspace, ou caminho de uma pasta com workspace.yaml (ex.: no repositório)
   [pasta]              nome, caminho ("Usuários/Admin") ou id; sem pasta roda o workspace inteiro
@@ -40,14 +43,15 @@ opções:
       --data-dir <dir>   pasta de dados do Zeno (padrão: a do app)
   -h, --help             esta ajuda
 
-sai com 0 se tudo passou, 1 se algum request/teste falhou, 2 em erro de uso.`
+sai com 0 se tudo passou, 1 se algum request/teste falhou, 2 em erro de uso.`)
+}
 
 // NoKeyring: sem chaveiro, valores cifrados não abrem (use --var)
 type NoKeyring struct{}
 
 func (NoKeyring) Available() (bool, string, bool)  { return false, "nenhum", true }
-func (NoKeyring) Protect(string) ([]byte, error)   { return nil, errors.New("sem chaveiro") }
-func (NoKeyring) Unprotect([]byte) (string, error) { return "", errors.New("sem chaveiro") }
+func (NoKeyring) Protect(string) ([]byte, error)   { return nil, errors.New(i18n.T("sem chaveiro")) }
+func (NoKeyring) Unprotect([]byte) (string, error) { return "", errors.New(i18n.T("sem chaveiro")) }
 
 type usageError struct{ msg string }
 
@@ -80,7 +84,7 @@ func parseArgs(argv []string) (*args, bool, error) {
 				return inline, nil
 			}
 			if i+1 >= len(argv) {
-				return "", usagef("%s precisa de um valor", flag)
+				return "", usagef(i18n.T("%s precisa de um valor"), flag)
 			}
 			i++
 			return argv[i], nil
@@ -91,11 +95,11 @@ func parseArgs(argv []string) (*args, bool, error) {
 				return 0, err
 			}
 			if !digits.MatchString(v) {
-				return 0, usagef("%s espera um número, veio %q", flag, v)
+				return 0, usagef(i18n.T("%s espera um número, veio %q"), flag, v)
 			}
 			n, err := strconv.Atoi(v)
 			if err != nil {
-				return 0, usagef("%s espera um número, veio %q", flag, v)
+				return 0, usagef(i18n.T("%s espera um número, veio %q"), flag, v)
 			}
 			return n, nil
 		}
@@ -118,7 +122,7 @@ func parseArgs(argv []string) (*args, bool, error) {
 			if v, err = val(); err == nil {
 				eq := strings.Index(v, "=")
 				if eq <= 0 {
-					return nil, false, usagef("--var espera nome=valor, veio %q", v)
+					return nil, false, usagef(i18n.T("--var espera nome=valor, veio %q"), v)
 				}
 				a.vars.Set(v[:eq], v[eq+1:])
 			}
@@ -130,7 +134,7 @@ func parseArgs(argv []string) (*args, bool, error) {
 			a.dataDir, err = val()
 		default:
 			if strings.HasPrefix(arg, "-") && arg != "-" {
-				return nil, false, usagef("opção desconhecida: %s", arg)
+				return nil, false, usagef(i18n.T("opção desconhecida: %s"), arg)
 			}
 			pos = append(pos, arg)
 		}
@@ -139,10 +143,10 @@ func parseArgs(argv []string) (*args, bool, error) {
 		}
 	}
 	if len(pos) == 0 {
-		return nil, false, usagef("falta o workspace")
+		return nil, false, usageError{i18n.T("falta o workspace")}
 	}
 	if len(pos) > 2 {
-		return nil, false, usagef("argumentos demais: %s", strings.Join(pos[2:], " "))
+		return nil, false, usagef(i18n.T("argumentos demais: %s"), strings.Join(pos[2:], " "))
 	}
 	a.workspace = pos[0]
 	if len(pos) > 1 {
@@ -170,9 +174,9 @@ func pickWorkspace(st *store.Store, key string) (*Doc, error) {
 		names = append(names, "  "+w.Str("name"))
 	}
 	if len(names) > 0 {
-		return nil, usagef("workspace %q não encontrado. Disponíveis:\n%s", key, strings.Join(names, "\n"))
+		return nil, usagef(i18n.T("workspace %q não encontrado. Disponíveis:\n%s"), key, strings.Join(names, "\n"))
 	}
-	return nil, usagef("workspace %q não encontrado", key)
+	return nil, usagef(i18n.T("workspace %q não encontrado"), key)
 }
 
 func folders(nodes []any) []*Doc {
@@ -229,9 +233,9 @@ func pickFolder(ws *Doc, key string) (*Doc, error) {
 		return matches[0], nil
 	}
 	if len(matches) > 1 {
-		return nil, usagef("há %d pastas %q; use o caminho (ex.: \"Pai/%s\") ou o id", len(matches), key, key)
+		return nil, usagef(i18n.T("há %d pastas %q; use o caminho (ex.: \"Pai/%s\") ou o id"), len(matches), key, key)
 	}
-	return nil, usagef("pasta %q não encontrada em %s", key, ws.Str("name"))
+	return nil, usagef(i18n.T("pasta %q não encontrada em %s"), key, ws.Str("name"))
 }
 
 // Out: saída da CLI
@@ -260,14 +264,14 @@ func Run(argv []string, protector keyring.Protector, out Out, tty bool) (code in
 		return fmt.Sprintf("\x1b[%dm%s\x1b[0m", code, s)
 	}
 	if len(argv) == 0 || argv[0] == "-h" || argv[0] == "--help" || argv[0] == "help" {
-		out.Log(Usage)
+		out.Log(usage())
 		if len(argv) == 0 {
 			return 2
 		}
 		return 0
 	}
 	if argv[0] != "run" {
-		out.Err(fmt.Sprintf("comando desconhecido: %s\n\n%s", argv[0], Usage))
+		out.Err(i18n.T("comando desconhecido: %s\n\n%s", argv[0], usage()))
 		return 2
 	}
 	tmp := ""
@@ -279,10 +283,10 @@ func Run(argv []string, protector keyring.Protector, out Out, tty bool) (code in
 	fail := func(err error) int {
 		var ue usageError
 		if errors.As(err, &ue) {
-			out.Err(fmt.Sprintf("erro: %s\n\n%s", ue.msg, strings.SplitN(Usage, "\n", 2)[0]))
+			out.Err(i18n.T("erro: %s\n\n%s", ue.msg, strings.SplitN(usage(), "\n", 2)[0]))
 			return 2
 		}
-		out.Err("erro: " + err.Error())
+		out.Err(i18n.T("erro: %s", err.Error()))
 		return 1
 	}
 	a, help, err := parseArgs(argv[1:])
@@ -290,7 +294,7 @@ func Run(argv []string, protector keyring.Protector, out Out, tty bool) (code in
 		return fail(err)
 	}
 	if help {
-		out.Log(Usage)
+		out.Log(usage())
 		return 0
 	}
 	dataDir := a.dataDir
@@ -315,7 +319,7 @@ func Run(argv []string, protector keyring.Protector, out Out, tty bool) (code in
 		}
 		ws = st.Workspace(id)
 		if ws == nil {
-			return fail(errors.New("workspace não encontrado em " + asDir))
+			return fail(errors.New(i18n.T("workspace não encontrado em %s", asDir)))
 		}
 	} else {
 		st = store.New(dataDir)
@@ -349,9 +353,9 @@ func Run(argv []string, protector keyring.Protector, out Out, tty bool) (code in
 		}
 		if envID == "" {
 			if len(names) > 0 {
-				return fail(usagef("ambiente %q não existe em %s (há: %s)", a.env, ws.Str("name"), strings.Join(names, ", ")))
+				return fail(usagef(i18n.T("ambiente %q não existe em %s (há: %s)"), a.env, ws.Str("name"), strings.Join(names, ", ")))
 			}
-			return fail(usagef("ambiente %q não existe em %s", a.env, ws.Str("name")))
+			return fail(usagef(i18n.T("ambiente %q não existe em %s"), a.env, ws.Str("name")))
 		}
 	}
 	var data []*Doc
@@ -414,7 +418,7 @@ func Run(argv []string, protector keyring.Protector, out Out, tty bool) (code in
 				for _, x := range m {
 					names = append(names, doc.AsStr(x))
 				}
-				out.Log("    " + c(33, "variável sem valor: "+strings.Join(names, ", ")))
+				out.Log("    " + c(33, i18n.T("variável sem valor: %s", strings.Join(names, ", "))))
 			}
 			for _, x := range s.List("tests") {
 				t, _ := x.(*Doc)
@@ -448,11 +452,11 @@ func Run(argv []string, protector keyring.Protector, out Out, tty bool) (code in
 		}
 	}
 	failed := int(num(report.Get("failed")))
-	failTxt := "0 com falha"
+	failTxt := i18n.T("%d com falha", 0)
 	if failed > 0 {
-		failTxt = c(31, fmt.Sprintf("%d com falha", failed))
+		failTxt = c(31, i18n.T("%d com falha", failed))
 	}
-	out.Log(fmt.Sprintf("\n%s: %d request(s), %s, %s · %d teste(s), %d falharam · %s ms", report.Str("name"), len(steps),
+	out.Log(i18n.T("\n%s: %d request(s), %s, %s · %d teste(s), %d falharam · %s ms", report.Str("name"), len(steps),
 		c(32, fmt.Sprintf("%d ok", int(num(report.Get("passed"))))), failTxt, tests, testsFailed, doc.AsStr(report.Get("totalMs"))))
 	if a.junit != "" {
 		if err := os.WriteFile(a.junit, []byte(runner.ToJUnit(report)), 0o644); err != nil {
@@ -461,7 +465,7 @@ func Run(argv []string, protector keyring.Protector, out Out, tty bool) (code in
 		out.Log("JUnit: " + a.junit)
 	}
 	if len(steps) == 0 {
-		out.Err("nenhum request para rodar")
+		out.Err(i18n.T("nenhum request para rodar"))
 	}
 	if failed > 0 || len(steps) == 0 {
 		return 1

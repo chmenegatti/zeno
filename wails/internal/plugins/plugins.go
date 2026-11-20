@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/dop251/goja"
 	"github.com/dop251/goja_nodejs/buffer"
 	"github.com/dop251/goja_nodejs/eventloop"
@@ -200,11 +201,11 @@ func loadOne(dir string) *plugin {
 	}
 	raw, err := os.ReadFile(filepath.Join(dir, "package.json"))
 	if err != nil {
-		return fail(errors.New("sem package.json"))
+		return fail(errors.New(i18n.T("sem package.json")))
 	}
 	var pkg map[string]any
 	if err := json.Unmarshal(raw, &pkg); err != nil {
-		return fail(fmt.Errorf("package.json inválido: %w", err))
+		return fail(fmt.Errorf(i18n.T("package.json inválido: %w"), err))
 	}
 	meta, _ := pkg["insomnia"].(map[string]any)
 	if meta == nil {
@@ -226,13 +227,13 @@ func loadOne(dir string) *plugin {
 	main, _ := filepath.Abs(filepath.Join(dir, mainRel))
 	absDir, _ := filepath.Abs(dir)
 	if !strings.HasPrefix(main, absDir+string(filepath.Separator)) {
-		return fail(errors.New(`"main" aponta pra fora da pasta do plugin`))
+		return fail(errors.New(i18n.T(`"main" aponta pra fora da pasta do plugin`)))
 	}
 
 	p.loop = eventloop.NewEventLoop(eventloop.EnableConsole(false))
 	p.loop.Start()
 	var exports *goja.Object
-	_, err = p.run(LoadTimeout, "carga", func(vm *goja.Runtime) (goja.Value, error) {
+	_, err = p.run(LoadTimeout, i18n.T("carga"), func(vm *goja.Runtime) (goja.Value, error) {
 		p.vm = vm
 		if err := setup(vm, id); err != nil {
 			return nil, err
@@ -300,7 +301,7 @@ func (p *plugin) collect(exp *goja.Object) error {
 				continue
 			}
 			if !tagName.MatchString(name) {
-				err = fmt.Errorf("templateTag com nome inválido: %s", name)
+				err = fmt.Errorf(i18n.T("templateTag com nome inválido: %s"), name)
 				return
 			}
 			p.tags[name] = o.Get("run")
@@ -338,7 +339,7 @@ func (p *plugin) collect(exp *goja.Object) error {
 			p.actions = append(p.actions, o.Get("action"))
 			label := clip(str(o, "label"), 200)
 			if label == "" {
-				label = "Ação"
+				label = i18n.T("Ação")
 			}
 			p.info.RequestActions = append(p.info.RequestActions, Action{Label: label, Icon: clip(str(o, "icon"), 8)})
 		}
@@ -371,7 +372,7 @@ func (p *plugin) collect(exp *goja.Object) error {
 	p.info.RequestHooks = len(p.reqHooks)
 	p.info.ResponseHooks = len(p.respHooks)
 	if len(p.tags)+len(p.reqHooks)+len(p.respHooks)+len(p.actions)+len(p.importers) == 0 {
-		return errors.New("o plugin não exporta nada (templateTags, requestHooks, responseHooks, requestActions ou importers)")
+		return errors.New(i18n.T("o plugin não exporta nada (templateTags, requestHooks, responseHooks, requestActions ou importers)"))
 	}
 	return nil
 }
@@ -440,12 +441,12 @@ func requireFn(vm *goja.Runtime, file, root string, cache map[string]*goja.Objec
 			return nativeModule(vm, name)
 		}
 		if slices.Contains(missing, name) {
-			panic(vm.NewGoError(fmt.Errorf("módulo %q ainda não está disponível pros plugins na versão Go", spec)))
+			panic(vm.NewGoError(fmt.Errorf(i18n.T("módulo %q ainda não está disponível pros plugins na versão Go"), spec)))
 		}
 		if strings.HasPrefix(spec, "./") || strings.HasPrefix(spec, "../") {
 			target := filepath.Clean(filepath.Join(filepath.Dir(file), spec))
 			if !strings.HasPrefix(target, root+string(filepath.Separator)) {
-				panic(vm.NewGoError(fmt.Errorf("require fora da pasta do plugin: %s", spec)))
+				panic(vm.NewGoError(fmt.Errorf(i18n.T("require fora da pasta do plugin: %s"), spec)))
 			}
 			if fi, err := os.Stat(target); err != nil {
 				if _, err := os.Stat(target + ".js"); err == nil {
@@ -471,7 +472,7 @@ func requireFn(vm *goja.Runtime, file, root string, cache map[string]*goja.Objec
 			}
 			return exp
 		}
-		panic(vm.NewGoError(fmt.Errorf("módulo %q não é permitido em plugins (liberados: %s e arquivos do próprio plugin)", spec, strings.Join(allowed, ", "))))
+		panic(vm.NewGoError(fmt.Errorf(i18n.T("módulo %q não é permitido em plugins (liberados: %s e arquivos do próprio plugin)"), spec, strings.Join(allowed, ", "))))
 	}
 }
 
@@ -578,7 +579,7 @@ func (p *plugin) run(timeout time.Duration, what string, fn func(vm *goja.Runtim
 		finish(vm, v)
 	})
 	if !ok {
-		return nil, fmt.Errorf("plugin %s (%s): parado", p.info.DisplayName, what)
+		return nil, fmt.Errorf(i18n.T("plugin %s (%s): parado"), p.info.DisplayName, what)
 	}
 	select {
 	case r := <-ch:
@@ -592,7 +593,7 @@ func (p *plugin) run(timeout time.Duration, what string, fn func(vm *goja.Runtim
 			p.vm.Interrupt("tempo esgotado")
 			p.loop.RunOnLoop(func(vm *goja.Runtime) { vm.ClearInterrupt() })
 		}
-		return nil, fmt.Errorf("plugin %s (%s): passou de %s s", p.info.DisplayName, what, doc.FormatNum(timeout.Seconds()))
+		return nil, fmt.Errorf(i18n.T("plugin %s (%s): passou de %s s"), p.info.DisplayName, what, doc.FormatNum(timeout.Seconds()))
 	}
 }
 
@@ -612,7 +613,7 @@ func cleanErr(err error) string {
 	}
 	var ie *goja.InterruptedError
 	if errors.As(err, &ie) {
-		return "tempo esgotado"
+		return i18n.T("tempo esgotado")
 	}
 	return err.Error()
 }
@@ -669,7 +670,7 @@ func (ps *Plugins) RunTag(name string, args []string, render func(string) string
 		}
 	}
 	if p == nil {
-		return "", fmt.Errorf("tag %q não suportada", name)
+		return "", fmt.Errorf(i18n.T("tag %q não suportada"), name)
 	}
 	var spec []Arg
 	for _, t := range p.info.TemplateTags {
@@ -820,7 +821,7 @@ func (ps *Plugins) RunAction(id string, index int, req ActionRequest) ([]string,
 		}
 	}
 	if p == nil || index < 0 || index >= len(p.actions) {
-		return nil, nil, errors.New("ação de plugin não encontrada")
+		return nil, nil, errors.New(i18n.T("ação de plugin não encontrada"))
 	}
 	messages := []string{}
 	var clipboard *string

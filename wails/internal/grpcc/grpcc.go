@@ -30,13 +30,15 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
+
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 )
 
 // ParseURL: grpc://host:porta (sem TLS) ou grpcs://host[:porta] (TLS, padrão 443)
 func ParseURL(raw string) (addr string, secure bool, err error) {
 	u, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil || u.Host == "" || (u.Scheme != "grpc" && u.Scheme != "grpcs") {
-		return "", false, fmt.Errorf("endereço gRPC inválido (grpc://host:porta ou grpcs://host): %s", raw)
+		return "", false, fmt.Errorf(i18n.T("endereço gRPC inválido (grpc://host:porta ou grpcs://host): %s"), raw)
 	}
 	secure = u.Scheme == "grpcs"
 	addr = u.Host
@@ -103,14 +105,14 @@ func (s Source) services(ctx context.Context) ([]protoreflect.ServiceDescriptor,
 		return out, func() {}, nil
 	}
 	if s.Conn == nil {
-		return nil, nil, errors.New("sem conexão")
+		return nil, nil, errors.New(i18n.T("sem conexão"))
 	}
 	rctx := metadata.NewOutgoingContext(ctx, s.MD)
 	rc := grpcreflect.NewClientAuto(rctx, s.Conn)
 	names, err := rc.ListServices()
 	if err != nil {
 		rc.Reset()
-		return nil, nil, fmt.Errorf("server reflection: %s (sem reflection? escolha um arquivo .proto)", status.Convert(err).Message())
+		return nil, nil, fmt.Errorf(i18n.T("server reflection: %s (sem reflection? escolha um arquivo .proto)"), status.Convert(err).Message())
 	}
 	var out []protoreflect.ServiceDescriptor
 	for _, n := range names {
@@ -151,7 +153,7 @@ func Describe(ctx context.Context, src Source) ([]Service, error) {
 // FindMethod: descritor de serviço/método
 func FindMethod(ctx context.Context, src Source, service, method string) (protoreflect.MethodDescriptor, error) {
 	if service == "" || method == "" {
-		return nil, errors.New("escolha o serviço e o método")
+		return nil, errors.New(i18n.T("escolha o serviço e o método"))
 	}
 	sds, done, err := src.services(ctx)
 	if err != nil {
@@ -165,7 +167,7 @@ func FindMethod(ctx context.Context, src Source, service, method string) (protor
 			}
 		}
 	}
-	return nil, fmt.Errorf("método %s/%s não encontrado", service, method)
+	return nil, fmt.Errorf(i18n.T("método %s/%s não encontrado"), service, method)
 }
 
 // Skeleton: JSON de exemplo da mensagem (campos com valor vazio, enums no primeiro valor)
@@ -389,13 +391,13 @@ func (m *Manager) send(reqID string, s *session, text string) error {
 	msg := dynamicpb.NewMessage(s.input)
 	if strings.TrimSpace(text) != "" {
 		if err := (protojson.UnmarshalOptions{}).Unmarshal([]byte(text), msg); err != nil {
-			return fmt.Errorf("mensagem não confere com %s: %w", s.input.FullName(), err)
+			return fmt.Errorf(i18n.T("mensagem não confere com %s: %w"), s.input.FullName(), err)
 		}
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed {
-		return errors.New("envio já finalizado")
+		return errors.New(i18n.T("envio já finalizado"))
 	}
 	if err := s.stream.SendMsg(msg); err != nil {
 		return err
@@ -433,7 +435,7 @@ func (m *Manager) get(reqID string) *session {
 func (m *Manager) Send(reqID, text string) error {
 	s := m.get(reqID)
 	if s == nil {
-		return errors.New("nenhuma chamada gRPC em andamento")
+		return errors.New(i18n.T("nenhuma chamada gRPC em andamento"))
 	}
 	return m.send(reqID, s, text)
 }
@@ -442,7 +444,7 @@ func (m *Manager) Send(reqID, text string) error {
 func (m *Manager) CloseSend(reqID string) error {
 	s := m.get(reqID)
 	if s == nil {
-		return errors.New("nenhuma chamada gRPC em andamento")
+		return errors.New(i18n.T("nenhuma chamada gRPC em andamento"))
 	}
 	m.closeSend(s)
 	return nil

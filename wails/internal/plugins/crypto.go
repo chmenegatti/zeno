@@ -14,6 +14,7 @@ import (
 	"hash"
 	"strings"
 
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/dop251/goja"
 	"github.com/dop251/goja_nodejs/buffer"
 )
@@ -31,7 +32,7 @@ func newHash(vm *goja.Runtime, alg string) func() hash.Hash {
 	case "sha512":
 		return sha512.New
 	}
-	panic(vm.NewGoError(fmt.Errorf("algoritmo %q não suportado", alg)))
+	panic(vm.NewGoError(fmt.Errorf(i18n.T("algoritmo %q não suportado"), alg)))
 }
 
 // objeto com update/digest em cima de um hash.Hash

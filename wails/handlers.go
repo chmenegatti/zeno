@@ -31,7 +31,7 @@ import (
 
 type Doc = doc.Doc
 
-var errNoWorkspace = errors.New("workspace não encontrado")
+func errNoWorkspace() error { return errors.New(i18n.T("workspace não encontrado")) }
 
 // {workspaces, id} como o Created do Electron
 func created(wss []*Doc, id string, err error) (any, error) {
@@ -147,9 +147,9 @@ func (a *App) register() {
 		id, _ := Get[string](args, 0)
 		ws := st.Workspace(id)
 		if ws == nil {
-			return nil, errors.New("workspace não encontrado")
+			return nil, errors.New(i18n.T("workspace não encontrado"))
 		}
-		cp := store.CloneWorkspace(ws, ws.Str("name")+" (cópia)")
+		cp := store.CloneWorkspace(ws, i18n.T("%s (cópia)", ws.Str("name")))
 		if err := st.WriteWorkspace(cp); err != nil {
 			return nil, err
 		}
@@ -159,13 +159,13 @@ func (a *App) register() {
 		id, _ := Get[string](args, 0)
 		ws := st.Workspace(id)
 		if ws == nil || ws.Map("location").Str("dir") == "" {
-			return nil, errors.New("workspace não encontrado")
+			return nil, errors.New(i18n.T("workspace não encontrado"))
 		}
 		runtime.BrowserOpenURL(a.ctx, "file://"+filepath.ToSlash(ws.Map("location").Str("dir")))
 		return nil, nil
 	})
 	a.handle("linkWorkspace", func(Args) (any, error) {
-		dir, err := a.pickDir("Pasta do workspace (com workspace.yaml)")
+		dir, err := a.pickDir(i18n.T("Pasta do workspace (com workspace.yaml)"))
 		if err != nil || dir == "" {
 			return nil, err
 		}
@@ -175,7 +175,7 @@ func (a *App) register() {
 	})
 	a.handle("moveWorkspace", func(args Args) (any, error) {
 		id, _ := Get[string](args, 0)
-		dir, err := a.pickDir("Mover workspace para… (ex.: uma pasta dentro do repositório do projeto)")
+		dir, err := a.pickDir(i18n.T("Mover workspace para… (ex.: uma pasta dentro do repositório do projeto)"))
 		if err != nil || dir == "" {
 			return nil, err
 		}
@@ -248,7 +248,7 @@ func (a *App) register() {
 		envID, _ := Get[string](args, 2)
 		ws := st.Workspace(wsID)
 		if ws == nil {
-			return nil, errNoWorkspace
+			return nil, errNoWorkspace()
 		}
 		return a.engine.Execute(ws, req, envID, 0)
 	})
@@ -262,7 +262,7 @@ func (a *App) register() {
 		envID, _ := Get[string](args, 2)
 		ws := st.Workspace(wsID)
 		if ws == nil {
-			return nil, errNoWorkspace
+			return nil, errNoWorkspace()
 		}
 		interactive, _ := Get[bool](args, 3)
 		return a.engine.Introspect(ws, req, envID, interactive)
@@ -278,10 +278,10 @@ func (a *App) register() {
 		resolveVars, _ := Get[bool](args, 3)
 		ws := st.Workspace(wsID)
 		if ws == nil {
-			return nil, errors.New("workspace não encontrado")
+			return nil, errors.New(i18n.T("workspace não encontrado"))
 		}
 		if req == nil {
-			return nil, errors.New("request não encontrado")
+			return nil, errors.New(i18n.T("request não encontrado"))
 		}
 		return a.engine.CodeInput(ws, req, envID, resolveVars)
 	})
@@ -290,12 +290,12 @@ func (a *App) register() {
 		wsID, _ := Get[string](args, 0)
 		req, err := Get[*Doc](args, 1)
 		if err != nil || req == nil {
-			return nil, errors.New("request não encontrado")
+			return nil, errors.New(i18n.T("request não encontrado"))
 		}
 		envID, _ := Get[string](args, 2)
 		ws := st.Workspace(wsID)
 		if ws == nil {
-			return nil, errNoWorkspace
+			return nil, errNoWorkspace()
 		}
 		return a.engine.OAuthPrepared(ws, req, envID)
 	}
@@ -446,7 +446,7 @@ func (a *App) register() {
 		id, _ := Get[string](args, 0)
 		ws := st.Workspace(id)
 		if ws == nil || ws.Map("location").Str("dir") == "" {
-			return "", errNoWorkspace
+			return "", errNoWorkspace()
 		}
 		return ws.Map("location").Str("dir"), nil
 	}
@@ -554,7 +554,7 @@ func (a *App) register() {
 		envID, _ := Get[string](args, 4)
 		ws := st.Workspace(wsID)
 		if ws == nil {
-			return nil, errNoWorkspace
+			return nil, errNoWorkspace()
 		}
 		p, name, err := a.engine.PrepareOpen(ws, reqID, envID, nil)
 		if err != nil {

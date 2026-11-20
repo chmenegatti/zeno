@@ -42,27 +42,27 @@ function expect(target, msg) {
   let actual = target
   const flags = { not: false, deep: false }
   const check = (ok, text) => {
-    if (ok === flags.not) throw new AssertionError((msg ? msg + ': ' : '') + 'esperado ' + show(actual) + (flags.not ? ' não ' : ' ') + text)
+    if (ok === flags.not) throw new AssertionError((msg ? msg + ': ' : '') + __t('esperado') + ' ' + show(actual) + (flags.not ? ' ' + __t('não') + ' ' : ' ') + text)
     return api
   }
   const api = {
-    equal: (v) => check(flags.deep ? deepEq(actual, v) : actual === v, 'igual a ' + show(v)),
-    eql: (v) => check(deepEq(actual, v), 'igual (profundo) a ' + show(v)),
-    a: (t) => check(typeOf(actual) === String(t).toLowerCase(), 'do tipo ' + t),
-    include: (v) => check(typeof actual === 'string' ? actual.includes(v) : Array.isArray(actual) ? actual.some((x) => deepEq(x, v)) : actual && typeof v === 'object' ? Object.entries(v).every(([k, x]) => deepEq(actual[k], x)) : false, 'contendo ' + show(v)),
+    equal: (v) => check(flags.deep ? deepEq(actual, v) : actual === v, __t('igual a') + ' ' + show(v)),
+    eql: (v) => check(deepEq(actual, v), __t('igual (profundo) a') + ' ' + show(v)),
+    a: (t) => check(typeOf(actual) === String(t).toLowerCase(), __t('do tipo') + ' ' + t),
+    include: (v) => check(typeof actual === 'string' ? actual.includes(v) : Array.isArray(actual) ? actual.some((x) => deepEq(x, v)) : actual && typeof v === 'object' ? Object.entries(v).every(([k, x]) => deepEq(actual[k], x)) : false, __t('contendo') + ' ' + show(v)),
     // como no chai: depois de .property(k), o alvo passa a ser o valor da propriedade
-    property: (k, ...v) => { check(actual != null && k in Object(actual), 'com a propriedade ' + show(k)); const val = actual[k]; if (v.length) check(deepEq(val, v[0]), 'com ' + k + ' = ' + show(v[0])); if (!flags.not) actual = val; return api },
-    lengthOf: (n) => check(actual != null && actual.length === n, 'com tamanho ' + n),
-    above: (n) => check(actual > n, 'maior que ' + n),
-    least: (n) => check(actual >= n, 'maior ou igual a ' + n),
-    below: (n) => check(actual < n, 'menor que ' + n),
-    most: (n) => check(actual <= n, 'menor ou igual a ' + n),
-    within: (a, b) => check(actual >= a && actual <= b, 'entre ' + a + ' e ' + b),
-    oneOf: (list) => check(list.some((x) => deepEq(x, actual)), 'um de ' + show(list)),
-    match: (re) => check(re.test(String(actual)), 'casando com ' + re),
-    instanceOf: (C) => check(actual instanceof C, 'instância de ' + (C && C.name)),
-    status: (n) => check(actual && actual.code === n, 'com status ' + n),
-    header: (k, ...v) => check(actual && actual.headers && actual.headers.has(k) && (!v.length || actual.headers.get(k) === v[0]), 'com header ' + k)
+    property: (k, ...v) => { check(actual != null && k in Object(actual), __t('com a propriedade') + ' ' + show(k)); const val = actual[k]; if (v.length) check(deepEq(val, v[0]), __t('com§propriedade') + ' ' + k + ' = ' + show(v[0])); if (!flags.not) actual = val; return api },
+    lengthOf: (n) => check(actual != null && actual.length === n, __t('com tamanho') + ' ' + n),
+    above: (n) => check(actual > n, __t('maior que') + ' ' + n),
+    least: (n) => check(actual >= n, __t('maior ou igual a') + ' ' + n),
+    below: (n) => check(actual < n, __t('menor que') + ' ' + n),
+    most: (n) => check(actual <= n, __t('menor ou igual a') + ' ' + n),
+    within: (a, b) => check(actual >= a && actual <= b, __t('entre') + ' ' + a + ' ' + __t('e§entre') + ' ' + b),
+    oneOf: (list) => check(list.some((x) => deepEq(x, actual)), __t('um de') + ' ' + show(list)),
+    match: (re) => check(re.test(String(actual)), __t('casando com') + ' ' + re),
+    instanceOf: (C) => check(actual instanceof C, __t('instância de') + ' ' + (C && C.name)),
+    status: (n) => check(actual && actual.code === n, __t('com status') + ' ' + n),
+    header: (k, ...v) => check(actual && actual.headers && actual.headers.has(k) && (!v.length || actual.headers.get(k) === v[0]), __t('com header') + ' ' + k)
   }
   const alias = { equals: 'equal', eq: 'equal', eqls: 'eql', an: 'a', includes: 'include', contain: 'include', contains: 'include', length: 'lengthOf', gt: 'above', greaterThan: 'above', gte: 'least', lt: 'below', lessThan: 'below', lte: 'most', matches: 'match', instanceof: 'instanceOf', have_property: 'property' }
   for (const [a, b] of Object.entries(alias)) api[a] = api[b]
@@ -70,7 +70,7 @@ function expect(target, msg) {
   Object.defineProperty(api, 'not', { get: () => { flags.not = !flags.not; return api } })
   Object.defineProperty(api, 'deep', { get: () => { flags.deep = true; return api } })
   const is = { ok: (v) => (v && v === response ? v.code >= 200 && v.code < 300 : !!v), true: (v) => v === true, false: (v) => v === false, null: (v) => v === null, undefined: (v) => v === undefined, exist: (v) => v != null, empty: (v) => v != null && (typeof v === 'object' ? Object.keys(v).length === 0 : v.length === 0), NaN: (v) => Number.isNaN(v) }
-  for (const [k, f] of Object.entries(is)) Object.defineProperty(api, k, { get: () => check(f(actual), k === 'ok' ? 'verdadeiro' : k) })
+  for (const [k, f] of Object.entries(is)) Object.defineProperty(api, k, { get: () => check(f(actual), k === 'ok' ? __t('verdadeiro') : k) })
   return api
 }
 
@@ -131,7 +131,7 @@ if (S.response) {
     code: P.code, status: P.status, statusText: P.status, responseTime: P.time,
     headers: { get: rh, has: (k) => rh(k) !== undefined, toObject: () => Object.fromEntries(P.headers), all: () => P.headers.map(([key, value]) => ({ key, value })) },
     text: () => P.body,
-    json: () => { if (parsed === undefined) { try { parsed = JSON.parse(P.body) } catch (e) { throw new Error('a resposta não é JSON válido') } } return parsed },
+    json: () => { if (parsed === undefined) { try { parsed = JSON.parse(P.body) } catch (e) { throw new Error(__t('a resposta não é JSON válido')) } } return parsed },
     get body() { return P.body }
   }
   response.getStatusCode = () => P.code
@@ -150,7 +150,7 @@ const test = (name, fn) => {
 }
 test.skip = () => {}
 
-const unsupported = (what) => () => { throw new Error(what + ' não é suportado nos scripts do Zeno') }
+const unsupported = (what) => () => { throw new Error(what + ' ' + __t('não é suportado nos scripts do Zeno')) }
 const zeno = {
   environment, baseEnvironment, collectionVariables: baseEnvironment, globals: vars({}), variables, iterationData: vars({}),
   request, response, test, expect,

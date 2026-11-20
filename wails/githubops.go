@@ -18,6 +18,7 @@ import (
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/github"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -122,7 +123,7 @@ func ghPublic(g *ghSaved) any {
 func (a *App) ghSync() (*github.Sync, error) {
 	g := a.ghRead()
 	if g == nil {
-		return nil, errors.New("entre no GitHub primeiro")
+		return nil, errors.New(i18n.T("entre no GitHub primeiro"))
 	}
 	token, err := a.vault.Decrypt(g.Token)
 	if err != nil {
@@ -138,7 +139,7 @@ func (a *App) ghLogin(token, via string) (any, error) {
 		return nil, err
 	}
 	if u.Login == "" {
-		return nil, errors.New("não deu pra ler a conta com esse token")
+		return nil, errors.New(i18n.T("não deu pra ler a conta com esse token"))
 	}
 	enc, err := a.vault.Encrypt(token)
 	if err != nil {
@@ -164,7 +165,7 @@ func (a *App) registerGitHub() {
 	a.handle("githubLoginGh", func(Args) (any, error) {
 		t := github.GhCliToken()
 		if t == "" {
-			return nil, errors.New(`GitHub CLI sem sessão: rode "gh auth login" no terminal ou cole um token`)
+			return nil, errors.New(i18n.T(`GitHub CLI sem sessão: rode "gh auth login" no terminal ou cole um token`))
 		}
 		return a.ghLogin(t, "gh")
 	})
@@ -175,7 +176,7 @@ func (a *App) registerGitHub() {
 	a.handle("githubDeviceStart", func(Args) (any, error) {
 		id := github.DeviceClientID()
 		if id == "" {
-			return nil, errors.New("login pelo navegador precisa de um OAuth App (ZENO_GITHUB_CLIENT_ID)")
+			return nil, errors.New(i18n.T("login pelo navegador precisa de um OAuth App (ZENO_GITHUB_CLIENT_ID)"))
 		}
 		d, err := github.DeviceStart(nil, id)
 		if err != nil {
@@ -193,7 +194,7 @@ func (a *App) registerGitHub() {
 		code, interval, expires := dev.code, dev.interval, dev.expires
 		dev.mu.Unlock()
 		if id == "" || code == "" {
-			return nil, errors.New("comece o login de novo")
+			return nil, errors.New(i18n.T("comece o login de novo"))
 		}
 		token, err := github.DevicePoll(nil, id, code, interval, expires, nil)
 		if err != nil {
@@ -215,12 +216,12 @@ func (a *App) registerGitHub() {
 	a.handle("githubSetRepo", func(args Args) (any, error) {
 		g := a.ghRead()
 		if g == nil {
-			return nil, errors.New("entre no GitHub primeiro")
+			return nil, errors.New(i18n.T("entre no GitHub primeiro"))
 		}
 		repo, _ := Get[string](args, 0)
 		name := strings.TrimSpace(repo)
 		if !repoNameRe.MatchString(name) {
-			return nil, errors.New("nome de repositório inválido")
+			return nil, errors.New(i18n.T("nome de repositório inválido"))
 		}
 		g.Repo = name
 		if err := a.ghWrite(g); err != nil {
@@ -254,7 +255,7 @@ func (a *App) registerGitHub() {
 			dirs[w.Str("id")] = dir
 		}
 		if len(list) == 0 {
-			return nil, errors.New("nenhum workspace escolhido")
+			return nil, errors.New(i18n.T("nenhum workspace escolhido"))
 		}
 		// data como o toLocaleString('pt-BR') do Electron
 		when := time.Now().Format("02/01/2006, 15:04:05")
@@ -282,7 +283,7 @@ func (a *App) registerGitHub() {
 		remoteID, _ := Get[string](args, 1)
 		// nome de pasta da raiz do repositório, nunca um caminho
 		if dir == "" || dir == "." || dir == ".." || strings.ContainsAny(dir, `/\`) {
-			return nil, errors.New("pasta inválida")
+			return nil, errors.New(i18n.T("pasta inválida"))
 		}
 		target := ""
 		if remoteID != "" {

@@ -7,13 +7,13 @@ package main
 
 import (
 	"embed"
-	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"log"
 	"os"
 	goruntime "runtime"
 	"strings"
 
 	"github.com/chmenegatti/zeno/wails/internal/cli"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/keyring"
 
 	"github.com/wailsapp/wails/v2"

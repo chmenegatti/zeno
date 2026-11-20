@@ -9,11 +9,11 @@ package scripts
 import (
 	_ "embed"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/dop251/goja"
 )
 
@@ -50,6 +50,8 @@ func Run(code string, input *Doc, envIsBase bool, timeout time.Duration) *Doc {
 		return fail(err.Error())
 	}
 	_ = vm.Set("__input", string(raw))
+	// mensagens do bootstrap.js (expect, avisos) no idioma do app
+	_ = vm.Set("__t", func(k string) string { return i18n.T(k) })
 	source := bootstrap + `
 ;(async () => {
   try {
@@ -64,14 +66,14 @@ func Run(code string, input *Doc, envIsBase bool, timeout time.Duration) *Doc {
 })()`
 	prog, err := goja.Compile(input.Str("where")+".js", source, false)
 	if err != nil {
-		return fail("erro de sintaxe: " + err.Error())
+		return fail(i18n.T("erro de sintaxe: %s", err.Error()))
 	}
 	timer := time.AfterFunc(timeout, func() { vm.Interrupt("timeout") })
 	defer timer.Stop()
 	if _, err := vm.RunProgram(prog); err != nil {
 		var ie *goja.InterruptedError
 		if errors.As(err, &ie) {
-			return fail(fmt.Sprintf("passou de %s s (laço infinito?)", doc.FormatNum(timeout.Seconds())))
+			return fail(i18n.T("passou de %s s (laço infinito?)", doc.FormatNum(timeout.Seconds())))
 		}
 		return fail(err.Error())
 	}
@@ -81,12 +83,12 @@ func Run(code string, input *Doc, envIsBase bool, timeout time.Duration) *Doc {
 		out, ok = o.Export().(string)
 	}
 	if !ok {
-		return fail("o script não terminou (await em algo que nunca resolve?)")
+		return fail(i18n.T("o script não terminou (await em algo que nunca resolve?)"))
 	}
 	v, err := doc.FromJSON([]byte(out))
 	d, isDoc := v.(*Doc)
 	if err != nil || !isDoc {
-		return fail("não deu pra ler o resultado do script (valor não serializável em variável?)")
+		return fail(i18n.T("não deu pra ler o resultado do script (valor não serializável em variável?)"))
 	}
 	return d
 }
@@ -146,9 +148,9 @@ func RunPhase(phase string, list []Script, st State, rep *Report, timeout time.D
 		next.Request = out.Map("request")
 		cur = next
 		if e := out.Str("error"); e != "" {
-			name := "pós-resposta"
+			name := i18n.T("pós-resposta")
 			if phase == "pre" {
-				name = "pré-request"
+				name = i18n.T("pré-request")
 			}
 			rep.Errors = append(rep.Errors, name+" ("+s.Where+"): "+e)
 			return cur, true

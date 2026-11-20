@@ -13,6 +13,7 @@ import (
 
 	"github.com/chmenegatti/zeno/wails/internal/grpcc"
 	"github.com/chmenegatti/zeno/wails/internal/httpc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/vars"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -38,19 +39,19 @@ func (a *App) grpcPrep(args Args) (*Doc, vars.Prepared, *grpc.ClientConn, metada
 	wsID, _ := Get[string](args, 0)
 	req, err := Get[*Doc](args, 1)
 	if err != nil || req == nil {
-		return nil, vars.Prepared{}, nil, nil, errNoWorkspace
+		return nil, vars.Prepared{}, nil, nil, errNoWorkspace()
 	}
 	envID, _ := Get[string](args, 2)
 	ws := a.store.Workspace(wsID)
 	if ws == nil {
-		return nil, vars.Prepared{}, nil, nil, errNoWorkspace
+		return nil, vars.Prepared{}, nil, nil, errNoWorkspace()
 	}
 	p, err := a.engine.PrepareConn(ws, req, envID)
 	if err != nil {
 		return nil, p, nil, nil, err
 	}
 	if len(p.Missing) > 0 {
-		return nil, p, nil, nil, errors.New("variáveis sem valor: " + strings.Join(p.Missing, ", "))
+		return nil, p, nil, nil, errors.New(i18n.T("variáveis sem valor: %s", strings.Join(p.Missing, ", ")))
 	}
 	addr, secure, err := grpcc.ParseURL(p.URL)
 	if err != nil {
@@ -107,13 +108,13 @@ func (a *App) registerGrpc() {
 		wsID, _ := Get[string](args, 0)
 		req, err := Get[*Doc](args, 1)
 		if err != nil || req == nil {
-			return nil, errNoWorkspace
+			return nil, errNoWorkspace()
 		}
 		envID, _ := Get[string](args, 2)
 		text, _ := Get[string](args, 3)
 		ws := a.store.Workspace(wsID)
 		if ws == nil {
-			return nil, errNoWorkspace
+			return nil, errNoWorkspace()
 		}
 		msg, err := a.engine.RenderText(ws, req, envID, text)
 		if err != nil {

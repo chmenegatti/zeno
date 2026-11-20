@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 )
 
 const (
@@ -235,7 +236,7 @@ func (s *Store) ResponseBody(rec *Doc) (string, error) {
 	}
 	b, err := os.ReadFile(s.bodyPath(rec.Str("id")))
 	if err != nil {
-		return "", errors.New("o body completo desta resposta não está mais no disco")
+		return "", errors.New(i18n.T("o body completo desta resposta não está mais no disco"))
 	}
 	return string(b), nil
 }
@@ -247,7 +248,7 @@ func (s *Store) FindResponse(reqID, resID string) (*Doc, error) {
 			return d, nil
 		}
 	}
-	return nil, errors.New("resposta não está mais no histórico")
+	return nil, errors.New(i18n.T("resposta não está mais no histórico"))
 }
 
 // ClearResponses apaga o histórico do request e os bodies guardados à parte

@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -55,14 +56,14 @@ func Decrypt(password string, data []byte) ([]byte, error) {
 
 func decryptKey(key, data []byte) ([]byte, error) {
 	if len(data) < 3+aes.BlockSize || (len(data)-3)%aes.BlockSize != 0 {
-		return nil, errors.New("dado cifrado com tamanho inválido")
+		return nil, errors.New(i18n.T("dado cifrado com tamanho inválido"))
 	}
 	block, _ := aes.NewCipher(key)
 	out := make([]byte, len(data)-3)
 	cipher.NewCBCDecrypter(block, iv).CryptBlocks(out, data[3:])
 	pad := int(out[len(out)-1])
 	if pad == 0 || pad > aes.BlockSize || !bytes.Equal(out[len(out)-pad:], bytes.Repeat([]byte{byte(pad)}, pad)) {
-		return nil, errors.New("senha do chaveiro não abre este dado")
+		return nil, errors.New(i18n.T("senha do chaveiro não abre este dado"))
 	}
 	return out[:len(out)-pad], nil
 }
@@ -77,7 +78,7 @@ func Prefix(data []byte) string {
 
 // errUnsupported: formato de outro sistema/backend
 func errUnsupported(p string) error {
-	return fmt.Errorf("chave do cofre num formato que esta versão ainda não lê (%q)", p)
+	return fmt.Errorf(i18n.T("chave do cofre num formato que esta versão ainda não lê (%q)"), p)
 }
 
 // None: sem chaveiro (cofre indisponível). ZENO_NO_KEYRING=1 no app usa isto: testes que não podem
@@ -85,9 +86,11 @@ func errUnsupported(p string) error {
 type none struct{}
 
 func (none) Available() (bool, string, bool) { return false, "nenhum", true }
-func (none) Protect(string) ([]byte, error)  { return nil, errors.New("sem chaveiro (ZENO_NO_KEYRING)") }
+func (none) Protect(string) ([]byte, error) {
+	return nil, errors.New(i18n.T("sem chaveiro (ZENO_NO_KEYRING)"))
+}
 func (none) Unprotect([]byte) (string, error) {
-	return "", errors.New("sem chaveiro (ZENO_NO_KEYRING)")
+	return "", errors.New(i18n.T("sem chaveiro (ZENO_NO_KEYRING)"))
 }
 
 func None() Protector { return none{} }

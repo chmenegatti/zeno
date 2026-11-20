@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/runner"
 	"github.com/chmenegatti/zeno/wails/internal/store"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -29,7 +30,7 @@ func (a *App) registerRunner() {
 		mu.Lock()
 		if running != nil {
 			mu.Unlock()
-			return nil, errors.New("já tem uma execução em andamento")
+			return nil, errors.New(i18n.T("já tem uma execução em andamento"))
 		}
 		h := runner.NewHandle()
 		running = h
@@ -55,10 +56,10 @@ func (a *App) registerRunner() {
 	})
 	a.handle("runPickData", func(Args) (any, error) {
 		file, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
-			Title: "Dados para as iterações (CSV ou JSON)",
+			Title: i18n.T("Dados para as iterações (CSV ou JSON)"),
 			Filters: []runtime.FileFilter{
-				{DisplayName: "CSV ou JSON", Pattern: "*.csv;*.json"},
-				{DisplayName: "Todos", Pattern: "*"},
+				{DisplayName: i18n.T("CSV ou JSON"), Pattern: "*.csv;*.json"},
+				{DisplayName: i18n.T("Todos"), Pattern: "*"},
 			},
 		})
 		if err != nil || file == "" {
@@ -81,14 +82,14 @@ func (a *App) registerRunner() {
 	a.handle("runSaveJUnit", func(args Args) (any, error) {
 		report, err := Get[*Doc](args, 0)
 		if err != nil || report == nil {
-			return nil, errors.New("relatório inválido")
+			return nil, errors.New(i18n.T("relatório inválido"))
 		}
 		name := store.Slugify(report.Str("name"))
 		if name == "" {
 			name = "zeno"
 		}
 		dest, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
-			Title:           "Salvar relatório JUnit",
+			Title:           i18n.T("Salvar relatório JUnit"),
 			DefaultFilename: name + "-junit.xml",
 			Filters:         []runtime.FileFilter{{DisplayName: "XML", Pattern: "*.xml"}},
 		})

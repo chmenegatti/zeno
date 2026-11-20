@@ -141,8 +141,13 @@ func (a *App) domReady(ctx context.Context) {
 	}
 }
 
-// ErrNotPorted: canal que ainda não existe na versão Go (a interface mostra o erro e segue)
-var ErrNotPorted = fmt.Errorf("ainda não disponível na versão Go")
+// ErrNotPorted: canal que ainda não existe na versão Go (a interface mostra o erro e segue). Tipo próprio
+// pra traduzir na hora de mostrar e continuar valendo com errors.Is.
+var ErrNotPorted error = notPorted{}
+
+type notPorted struct{}
+
+func (notPorted) Error() string { return i18n.T("ainda não disponível na versão Go") }
 
 // Call é o único método exposto ao JavaScript
 func (a *App) Call(channel string, args []string) (any, error) {

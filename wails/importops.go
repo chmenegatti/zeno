@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/importers"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -58,10 +59,10 @@ func (a *App) importPreview(source any) (any, error) {
 			res, label = importers.Convert(docs, importers.SkipsTLS(dir)), dir
 		case "file":
 			files, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{
-				Title: "Importar (Insomnia, OpenAPI/Swagger, Postman)",
+				Title: i18n.T("Importar (Insomnia, OpenAPI/Swagger, Postman)"),
 				Filters: []runtime.FileFilter{
-					{DisplayName: "JSON ou YAML", Pattern: "*.json;*.yaml;*.yml"},
-					{DisplayName: "Todos", Pattern: "*"},
+					{DisplayName: i18n.T("JSON ou YAML"), Pattern: "*.json;*.yaml;*.yml"},
+					{DisplayName: i18n.T("Todos"), Pattern: "*"},
 				},
 			})
 			if err != nil || len(files) == 0 {
@@ -80,7 +81,7 @@ func (a *App) importPreview(source any) (any, error) {
 			}
 			label = strings.Join(files, ", ")
 		default:
-			return nil, errors.New("origem de importação desconhecida")
+			return nil, errors.New(i18n.T("origem de importação desconhecida"))
 		}
 	case *Doc:
 		u := s.Str("url")
@@ -93,7 +94,7 @@ func (a *App) importPreview(source any) (any, error) {
 		}
 		label = u
 	default:
-		return nil, errors.New("origem de importação desconhecida")
+		return nil, errors.New(i18n.T("origem de importação desconhecida"))
 	}
 	if err != nil {
 		return nil, err

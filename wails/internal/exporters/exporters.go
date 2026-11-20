@@ -7,6 +7,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/github"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/vault"
 )
 
@@ -69,7 +71,7 @@ func Zip(ws []*Doc) (Result, error) {
 	for _, w := range ws {
 		dir := w.Map("location").Str("dir")
 		if dir == "" {
-			return Result{}, fmt.Errorf("%s: pasta do workspace desconhecida", w.Str("name"))
+			return Result{}, errors.New(i18n.T("%s: pasta do workspace desconhecida", w.Str("name")))
 		}
 		files, err := github.WorkspaceFiles(dir)
 		if err != nil {
@@ -262,7 +264,7 @@ func Insomnia(ws []*Doc) (Result, error) {
 		for _, n := range list {
 			where := trail + " / " + n.Str("name")
 			if len(n.List("assertions")) > 0 {
-				w.warn(where + ": asserções não existem no Insomnia (ficaram de fora)")
+				w.warn(i18n.T("%s: asserções não existem no Insomnia (ficaram de fora)", where))
 			}
 			if n.Str("kind") == "folder" {
 				f := doc.New("_id", n.Str("id"), "_type", "request_group", "parentId", parent, "name", n.Str("name"), "description", n.Str("description"),
@@ -327,7 +329,7 @@ var varRe = regexp.MustCompile(`\{\{\s*(?:_\.)?([^{}\s]+)\s*\}\}`)
 // {{ x }} / {{ _.x }} → {{x}}; tags {% %} não existem no Postman (aviso)
 func pmText(s, where string, w *warner) string {
 	if tagRe.MatchString(s) {
-		w.warn(where + ": tags {% %} não existem no Postman (ficaram como texto)")
+		w.warn(i18n.T("%s: tags {%% %%} não existem no Postman (ficaram como texto)", where))
 	}
 	s = strings.ReplaceAll(s, "{% uuid 'v4' %}", "{{$guid}}")
 	s = strings.ReplaceAll(s, "{% now %}", "{{$isoTimestamp}}")
@@ -351,7 +353,7 @@ func pmAuth(a *Doc, where string, w *warner) *Doc {
 		return pairs("basic", "username", a.Str("username"), "password", a.Str("password"))
 	case "bearer":
 		if p := a.Str("prefix"); p != "" && !strings.EqualFold(p, "bearer") {
-			w.warn(where + ": prefixo do Bearer \"" + p + "\" não existe no Postman")
+			w.warn(i18n.T("%s: prefixo do Bearer \"%s\" não existe no Postman", where, p))
 		}
 		return pairs("bearer", "token", a.Str("token"))
 	case "apikey":
@@ -363,7 +365,7 @@ func pmAuth(a *Doc, where string, w *warner) *Doc {
 	case "oauth2":
 		grant := map[string]string{"authorization_code": "authorization_code", "client_credentials": "client_credentials", "password": "password_credentials", "implicit": "implicit"}[a.Str("grantType")]
 		if grant == "" {
-			w.warn(where + ": OAuth 2.0 device code não existe no Postman (virou authorization code)")
+			w.warn(i18n.T("%s: OAuth 2.0 device code não existe no Postman (virou authorization code)", where))
 			grant = "authorization_code"
 		}
 		if grant == "authorization_code" && a.Get("pkce") == true {
@@ -458,7 +460,7 @@ func pmEvents(n *Doc, where string, w *warner) []any {
 		out = append(out, doc.New("listen", s[0], "script", doc.New("type", "text/javascript", "exec", strings.Split(s[1], "\n"))))
 	}
 	if len(out) > 0 {
-		w.warn(where + ": scripts exportados como estão; confira se a API usada existe no Postman")
+		w.warn(i18n.T("%s: scripts exportados como estão; confira se a API usada existe no Postman", where))
 	}
 	return out
 }
@@ -468,7 +470,7 @@ func pmItems(list []*Doc, trail string, w *warner) []any {
 	for _, n := range list {
 		where := trail + " / " + n.Str("name")
 		if len(n.List("assertions")) > 0 {
-			w.warn(where + ": asserções não existem no Postman (ficaram de fora)")
+			w.warn(i18n.T("%s: asserções não existem no Postman (ficaram de fora)", where))
 		}
 		if n.Str("kind") == "folder" {
 			f := doc.New("name", n.Str("name"))
@@ -476,7 +478,7 @@ func pmItems(list []*Doc, trail string, w *warner) []any {
 				f.Set("description", d)
 			}
 			if len(kvs(n, "headers")) > 0 {
-				w.warn(where + ": headers da pasta não existem no Postman (ficaram de fora)")
+				w.warn(i18n.T("%s: headers da pasta não existem no Postman (ficaram de fora)", where))
 			}
 			if vars := n.Map("vars"); vars != nil && vars.Len() > 0 {
 				vl := []any{}

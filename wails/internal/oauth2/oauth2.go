@@ -27,6 +27,8 @@ import (
 
 	xo "golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
+
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 )
 
 // Config: campos da auth oauth2 já com variáveis resolvidas
@@ -203,10 +205,10 @@ func audience(c Config) []xo.AuthCodeOption {
 // Token: válido do cache, renovado pelo refresh token ou obtido de novo (force = sempre obter de novo)
 func (m *Manager) Token(ctx context.Context, c Config, force bool) (*Token, error) {
 	if c.TokenURL == "" && c.Grant != "implicit" {
-		return nil, errors.New("OAuth 2.0: falta a URL do token")
+		return nil, errors.New(i18n.T("OAuth 2.0: falta a URL do token"))
 	}
 	if c.ClientID == "" {
-		return nil, errors.New("OAuth 2.0: falta o client ID")
+		return nil, errors.New(i18n.T("OAuth 2.0: falta o client ID"))
 	}
 	// um fluxo por vez (dois envios seguidos não abrem dois navegadores)
 	m.pending.Lock()
@@ -255,7 +257,7 @@ func (m *Manager) Token(ctx context.Context, c Config, force bool) (*Token, erro
 	case "device_code":
 		xt, err = m.device(ctx, c, conf)
 	default:
-		return nil, fmt.Errorf("OAuth 2.0: fluxo %q desconhecido", c.Grant)
+		return nil, errors.New(i18n.T("OAuth 2.0: fluxo %q desconhecido", c.Grant))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("OAuth 2.0: %w", friendly(err))
@@ -323,18 +325,18 @@ func callback(redirect string) (net.Listener, string, string, error) {
 	}
 	u, err := url.Parse(redirect)
 	if err != nil || u.Scheme != "http" || (u.Hostname() != "127.0.0.1" && u.Hostname() != "localhost" && u.Hostname() != "[::1]") {
-		return nil, "", "", fmt.Errorf("o retorno (redirect URI) precisa ser http://127.0.0.1:<porta>/… ou http://localhost:<porta>/… pra o Zeno receber a autorização; veio %q", redirect)
+		return nil, "", "", errors.New(i18n.T("o retorno (redirect URI) precisa ser http://127.0.0.1:<porta>/… ou http://localhost:<porta>/… pra o Zeno receber a autorização; veio %q", redirect))
 	}
 	port := u.Port()
 	if port == "" {
 		port = "80"
 	}
 	if _, err := strconv.Atoi(port); err != nil {
-		return nil, "", "", fmt.Errorf("porta inválida no redirect: %q", redirect)
+		return nil, "", "", errors.New(i18n.T("porta inválida no redirect: %q", redirect))
 	}
 	l, err := net.Listen("tcp", net.JoinHostPort(u.Hostname(), port))
 	if err != nil {
-		return nil, "", "", fmt.Errorf("não deu pra escutar em %s (porta ocupada?): %w", u.Host, err)
+		return nil, "", "", fmt.Errorf(i18n.T("não deu pra escutar em %s (porta ocupada?): %w"), u.Host, err)
 	}
 	path := u.Path
 	if path == "" {
@@ -382,15 +384,15 @@ func (m *Manager) wait(ctx context.Context, msg, openURL, code string, got <-cha
 		return v, nil
 	case <-ctx.Done():
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return nil, errors.New("tempo esgotado esperando a autorização no navegador")
+			return nil, errors.New(i18n.T("tempo esgotado esperando a autorização no navegador"))
 		}
-		return nil, errors.New("autorização cancelada")
+		return nil, errors.New(i18n.T("autorização cancelada"))
 	}
 }
 
 func (m *Manager) needBrowser() error {
 	if !m.Interactive {
-		return errors.New("este fluxo precisa do navegador: obtenha o token no app (o cache vale pra CLI) ou use client credentials")
+		return errors.New(i18n.T("este fluxo precisa do navegador: obtenha o token no app (o cache vale pra CLI) ou use client credentials"))
 	}
 	return nil
 }
@@ -400,7 +402,7 @@ func (m *Manager) authCode(ctx context.Context, c Config, conf *xo.Config) (*xo.
 		return nil, err
 	}
 	if c.AuthURL == "" {
-		return nil, errors.New("falta a URL de autorização")
+		return nil, errors.New(i18n.T("falta a URL de autorização"))
 	}
 	l, redirect, path, err := callback(c.RedirectURI)
 	if err != nil {
@@ -417,11 +419,11 @@ func (m *Manager) authCode(ctx context.Context, c Config, conf *xo.Config) (*xo.
 		}
 		q := r.URL.Query()
 		if q.Get("state") != state && q.Get("error") == "" {
-			http.Error(w, "state inválido", http.StatusBadRequest)
+			http.Error(w, i18n.T("state inválido"), http.StatusBadRequest)
 			return
 		}
 		ok := q.Get("error") == ""
-		fmt.Fprintf(w, page, map[bool]string{true: "Autorizado. Pode voltar pro Zeno.", false: "Autorização recusada: " + html.EscapeString(q.Get("error"))}[ok])
+		fmt.Fprintf(w, page, map[bool]string{true: i18n.T("Autorizado. Pode voltar pro Zeno."), false: i18n.T("Autorização recusada: %s", html.EscapeString(q.Get("error")))}[ok])
 		select {
 		case got <- q:
 		default:
@@ -436,7 +438,7 @@ func (m *Manager) authCode(ctx context.Context, c Config, conf *xo.Config) (*xo.
 		opts = append(opts, xo.S256ChallengeOption(verifier))
 	}
 	authURL := conf.AuthCodeURL(state, opts...)
-	v, err := m.wait(ctx, "Autorize no navegador que abrimos.", authURL, "", got)
+	v, err := m.wait(ctx, i18n.T("Autorize no navegador que abrimos."), authURL, "", got)
 	if err != nil {
 		return nil, err
 	}
@@ -454,7 +456,7 @@ func (m *Manager) implicit(ctx context.Context, c Config, conf *xo.Config) (*xo.
 		return nil, err
 	}
 	if c.AuthURL == "" {
-		return nil, errors.New("falta a URL de autorização")
+		return nil, errors.New(i18n.T("falta a URL de autorização"))
 	}
 	l, redirect, path, err := callback(c.RedirectURI)
 	if err != nil {
@@ -466,11 +468,11 @@ func (m *Manager) implicit(ctx context.Context, c Config, conf *xo.Config) (*xo.
 	srv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case path:
-			fmt.Fprintf(w, page, `Recebendo o token…<script>fetch('/zeno-fragment?'+location.hash.slice(1)).then(()=>document.body.textContent='Autorizado. Pode voltar pro Zeno.')</script>`)
+			fmt.Fprintf(w, page, html.EscapeString(i18n.T("Recebendo o token…"))+`<script>fetch('/zeno-fragment?'+location.hash.slice(1)).then(()=>document.body.textContent=`+strconv.Quote(i18n.T("Autorizado. Pode voltar pro Zeno."))+`)</script>`)
 		case "/zeno-fragment":
 			q := r.URL.Query()
 			if q.Get("state") != state && q.Get("error") == "" {
-				http.Error(w, "state inválido", http.StatusBadRequest)
+				http.Error(w, i18n.T("state inválido"), http.StatusBadRequest)
 				return
 			}
 			select {
@@ -494,7 +496,7 @@ func (m *Manager) implicit(ctx context.Context, c Config, conf *xo.Config) (*xo.
 	if strings.Contains(c.AuthURL, "?") {
 		sep = "&"
 	}
-	v, err := m.wait(ctx, "Autorize no navegador que abrimos.", c.AuthURL+sep+q.Encode(), "", got)
+	v, err := m.wait(ctx, i18n.T("Autorize no navegador que abrimos."), c.AuthURL+sep+q.Encode(), "", got)
 	if err != nil {
 		return nil, err
 	}
@@ -503,7 +505,7 @@ func (m *Manager) implicit(ctx context.Context, c Config, conf *xo.Config) (*xo.
 		t.Expiry = time.Now().Add(time.Duration(s) * time.Second)
 	}
 	if t.AccessToken == "" {
-		return nil, errors.New("o retorno não trouxe access_token")
+		return nil, errors.New(i18n.T("o retorno não trouxe access_token"))
 	}
 	return t, nil
 }
@@ -513,7 +515,7 @@ func (m *Manager) device(ctx context.Context, c Config, conf *xo.Config) (*xo.To
 		return nil, err
 	}
 	if c.AuthURL == "" {
-		return nil, errors.New("falta a URL de autorização do dispositivo")
+		return nil, errors.New(i18n.T("falta a URL de autorização do dispositivo"))
 	}
 	resp, err := conf.DeviceAuth(ctx, audience(c)...)
 	if err != nil {
@@ -541,7 +543,7 @@ func (m *Manager) device(ctx context.Context, c Config, conf *xo.Config) (*xo.To
 		}
 	}()
 	if m.Hooks.Wait != nil {
-		m.Hooks.Wait("Digite o código na página que abrimos.", open, resp.UserCode)
+		m.Hooks.Wait(i18n.T("Digite o código na página que abrimos."), open, resp.UserCode)
 	}
 	if m.Hooks.Open != nil {
 		m.Hooks.Open(open)
@@ -549,9 +551,9 @@ func (m *Manager) device(ctx context.Context, c Config, conf *xo.Config) (*xo.To
 	t, err := conf.DeviceAccessToken(wctx, resp)
 	if err != nil && wctx.Err() != nil {
 		if errors.Is(wctx.Err(), context.DeadlineExceeded) {
-			return nil, errors.New("tempo esgotado esperando a autorização")
+			return nil, errors.New(i18n.T("tempo esgotado esperando a autorização"))
 		}
-		return nil, errors.New("autorização cancelada")
+		return nil, errors.New(i18n.T("autorização cancelada"))
 	}
 	return t, err
 }

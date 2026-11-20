@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -67,12 +68,12 @@ func unlock(conn *dbus.Conn, paths []dbus.ObjectPath) error {
 	case sig := <-ch:
 		if len(sig.Body) > 0 {
 			if dismissed, _ := sig.Body[0].(bool); dismissed {
-				return errors.New("desbloqueio do chaveiro cancelado")
+				return errors.New(i18n.T("desbloqueio do chaveiro cancelado"))
 			}
 		}
 		return nil
 	case <-time.After(2 * time.Minute):
-		return errors.New("chaveiro não foi desbloqueado")
+		return errors.New(i18n.T("chaveiro não foi desbloqueado"))
 	}
 }
 
@@ -101,7 +102,7 @@ func (s SecretService) password(create bool) (string, error) {
 		return string(sec.Value), nil
 	}
 	if !create {
-		return "", errors.New("senha do zeno não está no chaveiro")
+		return "", errors.New(i18n.T("senha do zeno não está no chaveiro"))
 	}
 	b := make([]byte, 16)
 	_, _ = rand.Read(b)
@@ -113,10 +114,10 @@ func (s SecretService) password(create bool) (string, error) {
 	coll := conn.Object(ssDest, "/org/freedesktop/secrets/aliases/default")
 	var item, prompt dbus.ObjectPath
 	if err := coll.Call("org.freedesktop.Secret.Collection.CreateItem", 0, props, secret{Session: session, Value: []byte(pw), ContentType: "text/plain"}, true).Store(&item, &prompt); err != nil {
-		return "", fmt.Errorf("não deu pra guardar a senha no chaveiro: %w", err)
+		return "", fmt.Errorf(i18n.T("não deu pra guardar a senha no chaveiro: %w"), err)
 	}
 	if prompt != "/" {
-		return "", errors.New("chaveiro bloqueado: desbloqueie e tente de novo")
+		return "", errors.New(i18n.T("chaveiro bloqueado: desbloqueie e tente de novo"))
 	}
 	return pw, nil
 }

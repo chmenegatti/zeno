@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/tags"
 )
 
@@ -112,7 +113,7 @@ func ReadNedbDir(dir string) ([]*Doc, error) {
 			return docs, nil
 		}
 	}
-	return nil, fmt.Errorf("nenhum workspace do Insomnia em %s", dir)
+	return nil, errors.New(i18n.T("nenhum workspace do Insomnia em %s", dir))
 }
 
 // SkipsTLS: Insomnia com "Validate certificates" desligado?
@@ -139,7 +140,7 @@ func IsV4(raw any) bool {
 func FromExportV4(raw any) ([]*Doc, error) {
 	res, ok := get(raw, "resources").([]any)
 	if !ok {
-		return nil, errors.New("arquivo não é export JSON do Insomnia (v4)")
+		return nil, errors.New(i18n.T("arquivo não é export JSON do Insomnia (v4)"))
 	}
 	var out []*Doc
 	for _, x := range res {
@@ -207,7 +208,7 @@ func num(f float64) any {
 // FromExportV5: export v5 (YAML, um workspace por arquivo) → mesmos registros do NeDB
 func FromExportV5(raw any) ([]*Doc, error) {
 	if !IsV5(raw) {
-		return nil, errors.New("arquivo não é export do Insomnia v5")
+		return nil, errors.New(i18n.T("arquivo não é export do Insomnia v5"))
 	}
 	r := obj(raw)
 	var docs []*Doc
@@ -344,12 +345,12 @@ func insAuth(a *Doc, where string, w *warner) *Doc {
 		case "queryParams":
 			return doc.New("type", "apikey", "key", s("key"), "value", s("value"), "addTo", "query")
 		case "cookie":
-			w.warn(where + ": API key em cookie virou header Cookie")
+			w.warn(i18n.T("%s: API key em cookie virou header Cookie", where))
 			return doc.New("type", "apikey", "key", "Cookie", "value", s("key")+"="+s("value"), "addTo", "header")
 		}
 		return doc.New("type", "apikey", "key", s("key"), "value", s("value"), "addTo", "header")
 	}
-	w.warn(fmt.Sprintf("%s: auth %q não suportada (ficou sem auth)", where, jsString(a.Get("type"))))
+	w.warn(i18n.T("%s: auth %q não suportada (ficou sem auth)", where, jsString(a.Get("type"))))
 	return doc.New("type", "none")
 }
 
@@ -452,7 +453,7 @@ func Convert(docs []*Doc, insecureTLS bool) Result {
 					r.Set("grpc", doc.New("service", svc, "method", method))
 				}
 				if truthy(d.Get("protoFileId")) {
-					w.warn(where + ": arquivo .proto do Insomnia não vem junto; use server reflection ou escolha o .proto")
+					w.warn(i18n.T("%s: arquivo .proto do Insomnia não vem junto; use server reflection ou escolha o .proto", where))
 				}
 				r.Set("sortKey", sortKey(d))
 				nodes = append(nodes, r)
@@ -480,7 +481,7 @@ func Convert(docs []*Doc, insecureTLS bool) Result {
 					texts = append(texts, str(obj(h).Get("value")))
 				}
 				if unknown := unknownTags(texts); len(unknown) > 0 {
-					w.warn(fmt.Sprintf("%s: usa a tag %s, que o Zeno não tem (só com plugin)", where, strings.Join(unknown, ", ")))
+					w.warn(i18n.T("%s: usa a tag %s, que o Zeno não tem (só com plugin)", where, strings.Join(unknown, ", ")))
 				}
 				nodes = append(nodes, r)
 			}
@@ -520,7 +521,7 @@ func Convert(docs []*Doc, insecureTLS bool) Result {
 		}
 		for _, extra := range bases[min(1, len(bases)):] {
 			extra.Set("parentId", bases[0].Get("id"))
-			w.warn(fmt.Sprintf("%s: ambiente base extra %q virou sub-ambiente", name, str(extra.Get("name"))))
+			w.warn(i18n.T("%s: ambiente base extra %q virou sub-ambiente", name, str(extra.Get("name"))))
 		}
 		envList := make([]any, len(envs))
 		for i, e := range envs {

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/jsonq"
 )
 
@@ -19,14 +20,45 @@ type Test struct {
 	Where string `json:"where"`
 }
 
-var opLabel = map[string]string{"eq": "=", "neq": "≠", "contains": "contém", "notContains": "não contém", "lt": "<", "gt": ">", "exists": "existe", "notExists": "não existe", "matches": "casa regex"}
+// opLabel: rótulo do operador (traduzido na hora, não no init)
+func opLabel(op string) string {
+	switch op {
+	case "eq":
+		return "="
+	case "neq":
+		return "≠"
+	case "contains":
+		return i18n.T("contém")
+	case "notContains":
+		return i18n.T("não contém")
+	case "lt":
+		return "<"
+	case "gt":
+		return ">"
+	case "exists":
+		return i18n.T("existe")
+	case "notExists":
+		return i18n.T("não existe")
+	case "matches":
+		return i18n.T("casa regex")
+	}
+	return ""
+}
+
 var sourceLabel = map[string]string{"status": "status", "header": "header", "json": "JSON", "body": "body", "time": "tempo (ms)"}
+
+func sourceText(source string) string {
+	if source == "time" {
+		return i18n.T("tempo (ms)")
+	}
+	return sourceLabel[source]
+}
 
 func noValue(op string) bool { return op == "exists" || op == "notExists" }
 
 // Name: "status = 200", "header content-type contém json", "$.id existe"…
 func Name(source, path, op, value string) string {
-	what := sourceLabel[source]
+	what := sourceText(source)
 	if source == "header" || source == "json" {
 		p := path
 		if p == "" {
@@ -39,9 +71,9 @@ func Name(source, path, op, value string) string {
 		}
 	}
 	if noValue(op) {
-		return what + " " + opLabel[op]
+		return what + " " + opLabel(op)
 	}
-	return strings.TrimSpace(what + " " + opLabel[op] + " " + value)
+	return strings.TrimSpace(what + " " + opLabel(op) + " " + value)
 }
 
 func text(v any, found bool) string {
@@ -125,7 +157,7 @@ func Evaluate(assertions []any, res *doc.Doc, resolve func(string) string) []Tes
 			}
 			parsed, parseErr = doc.FromJSON([]byte(body))
 			if parseErr != nil {
-				parseErr = errText("resposta não é JSON")
+				parseErr = errText(i18n.T("resposta não é JSON"))
 			}
 		}
 		return parsed, parseErr
@@ -205,7 +237,7 @@ func Evaluate(assertions []any, res *doc.Doc, resolve func(string) string) []Tes
 		case "matches":
 			re, rerr := regexp.Compile(expected)
 			if rerr != nil {
-				out = append(out, Test{Name: name, OK: false, Where: "asserção", Error: "regex inválida: " + rerr.Error()})
+				out = append(out, Test{Name: name, OK: false, Where: "asserção", Error: i18n.T("regex inválida: %s", rerr.Error())})
 				continue
 			}
 			ok = found && re.MatchString(text(actual, true))
@@ -213,9 +245,9 @@ func Evaluate(assertions []any, res *doc.Doc, resolve func(string) string) []Tes
 		t := Test{Name: name, OK: ok, Where: "asserção"}
 		if !ok {
 			if found {
-				t.Error = "valor: " + clip(text(actual, true))
+				t.Error = i18n.T("valor: %s", clip(text(actual, true)))
 			} else {
-				t.Error = "não encontrado"
+				t.Error = i18n.T("não encontrado")
 			}
 		}
 		out = append(out, t)

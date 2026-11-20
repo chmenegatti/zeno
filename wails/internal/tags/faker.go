@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -157,7 +158,7 @@ var Faker = map[string]func() string{
 func Fake(name string) (string, error) {
 	f, ok := Faker[strings.TrimPrefix(name, "$")]
 	if !ok {
-		return "", fmt.Errorf("faker %q não existe (ex.: randomEmail, randomFullName, randomUUID)", name)
+		return "", fmt.Errorf(i18n.T("faker %q não existe (ex.: randomEmail, randomFullName, randomUUID)"), name)
 	}
 	return f(), nil
 }

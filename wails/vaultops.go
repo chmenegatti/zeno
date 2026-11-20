@@ -37,7 +37,7 @@ func (a *App) knownSecrets() []string {
 func (a *App) protectWorkspace(wsID string, known []string) (int, error) {
 	ws := a.store.Workspace(wsID)
 	if ws == nil {
-		return 0, errNoWorkspace
+		return 0, errNoWorkspace()
 	}
 	if known == nil {
 		known = a.knownSecrets()

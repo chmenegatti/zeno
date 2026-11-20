@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/chmenegatti/zeno/wails/internal/httpc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 )
 
 func (a *App) registerWS() {
@@ -18,12 +19,12 @@ func (a *App) registerWS() {
 		wsID, _ := Get[string](args, 0)
 		req, err := Get[*Doc](args, 1)
 		if err != nil || req == nil {
-			return nil, nil, "", errors.New("request inválido")
+			return nil, nil, "", errors.New(i18n.T("request inválido"))
 		}
 		envID, _ := Get[string](args, 2)
 		ws := a.store.Workspace(wsID)
 		if ws == nil {
-			return nil, nil, "", errNoWorkspace
+			return nil, nil, "", errNoWorkspace()
 		}
 		return ws, req, envID, nil
 	}
@@ -37,11 +38,11 @@ func (a *App) registerWS() {
 			return nil, err
 		}
 		if len(p.Missing) > 0 {
-			return nil, errors.New("variáveis sem valor: " + strings.Join(p.Missing, ", "))
+			return nil, errors.New(i18n.T("variáveis sem valor: %s", strings.Join(p.Missing, ", ")))
 		}
 		u, err := url.Parse(p.URL)
 		if err != nil || (u.Scheme != "ws" && u.Scheme != "wss") || u.Host == "" {
-			return nil, errors.New("URL de WebSocket inválida (ws:// ou wss://): " + p.URL)
+			return nil, errors.New(i18n.T("URL de WebSocket inválida (ws:// ou wss://): %s", p.URL))
 		}
 		target := *u
 		target.Scheme = "http" + strings.TrimPrefix(u.Scheme, "ws")

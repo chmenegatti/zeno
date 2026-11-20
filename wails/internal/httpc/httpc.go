@@ -33,6 +33,7 @@ import (
 	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/i18n"
 	"github.com/chmenegatti/zeno/wails/internal/vars"
 )
 
@@ -117,7 +118,7 @@ func bodyText(p vars.Prepared) (string, bool) {
 	cut := func(t string) string {
 		if n := len([]rune(t)); n > 65536 {
 			r := []rune(t)
-			return string(r[:65536]) + fmt.Sprintf("\n… (%d caracteres a mais)", n-65536)
+			return string(r[:65536]) + i18n.T("\n… (%d caracteres a mais)", n-65536)
 		}
 		return t
 	}
@@ -131,7 +132,7 @@ func bodyText(p vars.Prepared) (string, bool) {
 		for i, f := range p.Multipart {
 			v := f.Value
 			if f.File != "" {
-				v = "arquivo " + f.File
+				v = i18n.T("arquivo %s", f.File)
 			}
 			lines[i] = "--- " + f.Name + ": " + v
 		}
@@ -214,7 +215,7 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 	var timer *time.Timer
 	if p.TimeoutMs > 0 {
 		timer = time.AfterFunc(time.Duration(p.TimeoutMs)*time.Millisecond, func() {
-			cancel(fmt.Errorf("timeout de %s ms", doc.FormatNum(p.TimeoutMs)))
+			cancel(errors.New(i18n.T("timeout de %s ms", doc.FormatNum(p.TimeoutMs))))
 		})
 	}
 	defer func() {
@@ -297,6 +298,9 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 		msg := err.Error()
 		if c := context.Cause(ctx); c != nil && ctx.Err() != nil {
 			msg = c.Error()
+			if errors.Is(c, errCancel) { // sentinela criado no init, antes do idioma
+				msg = i18n.T("cancelado")
+			}
 		}
 		rec.Set("error", msg)
 		return rec
@@ -322,7 +326,7 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 		VerifyConnection: func(cs tls.ConnectionState) error {
 			var verr error
 			if len(cs.PeerCertificates) == 0 {
-				verr = errors.New("servidor não mandou certificado")
+				verr = errors.New(i18n.T("servidor não mandou certificado"))
 			} else {
 				inter := x509.NewCertPool()
 				for _, c := range cs.PeerCertificates[1:] {
@@ -397,7 +401,7 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 			if f.File != "" {
 				data, err := os.ReadFile(f.File)
 				if err != nil {
-					return fail(fmt.Errorf("arquivo do multipart: %w", err))
+					return fail(fmt.Errorf(i18n.T("arquivo do multipart: %w"), err))
 				}
 				h := make(textproto.MIMEHeader)
 				h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, escapeQuotes(f.Name), escapeQuotes(filepath.Base(f.File))))
@@ -566,9 +570,9 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 		data, err = readSSE(res.Body, start, cookies.Event)
 		if err != nil {
 			if errors.Is(context.Cause(ctx), errCancel) {
-				rec.Set("streamEnd", "cancelado")
+				rec.Set("streamEnd", i18n.T("cancelado"))
 			} else {
-				rec.Set("streamEnd", "erro: "+unwrapURL(err).Error())
+				rec.Set("streamEnd", i18n.T("erro: %s", unwrapURL(err).Error()))
 			}
 		}
 	} else if data, err = io.ReadAll(res.Body); err != nil {
