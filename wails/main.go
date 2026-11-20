@@ -9,6 +9,7 @@ import (
 	"embed"
 	"log"
 	"os"
+	goruntime "runtime"
 	"strings"
 
 	"github.com/chmenegatti/zeno/wails/internal/cli"
@@ -44,6 +45,11 @@ func cliArgs() []string {
 func main() {
 	if args := cliArgs(); args != nil {
 		os.Exit(cli.Run(args, keyring.System("zeno"), cli.StdOut(), cli.IsTTY()))
+	}
+	// o Wails monta o CSS da cor de fundo da janela com printf: em locale com vírgula decimal (pt_BR) o
+	// "1.0" vira "1,0", o GTK rejeita (Theme parsing error) e a janela pisca branca antes da interface
+	if goruntime.GOOS == "linux" {
+		_ = os.Setenv("LC_NUMERIC", "C")
 	}
 	app := NewApp()
 	err := wails.Run(&options.App{
