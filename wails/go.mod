@@ -3,14 +3,19 @@ module github.com/chmenegatti/zeno/wails
 go 1.26.1
 
 require (
+	github.com/coder/websocket v1.8.14
 	github.com/dop251/goja v0.0.0-20261118204651-8dfece3d1e1d
 	github.com/dop251/goja_nodejs v0.0.0-20260918173711-b481721df8a2
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/godbus/dbus/v5 v5.2.4
 	github.com/wailsapp/wails/v2 v2.17.1
 	golang.org/x/crypto v0.59.0
+	golang.org/x/net v0.62.0
+	golang.org/x/oauth2 v0.38.0
+	golang.org/x/sys v0.50.0
 	golang.org/x/text v0.44.0
 	gopkg.in/yaml.v3 v3.0.1
+	software.sslmate.com/src/go-pkcs12 v0.7.4
 )
 
 require (
@@ -41,8 +46,4 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
-	golang.org/x/net v0.62.0 // indirect
-	golang.org/x/oauth2 v0.38.0 // indirect
-	golang.org/x/sys v0.50.0 // indirect
-	software.sslmate.com/src/go-pkcs12 v0.7.4 // indirect
 )

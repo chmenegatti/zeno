@@ -14,6 +14,7 @@ import { AssertionsEditor } from './Runner'
 import { editorTags, TemplateInput } from './Tags'
 import type { GraphQLCtx } from './GraphQLBody'
 import { maskSecrets } from '@shared/secret'
+import { isWsUrl } from '@shared/stream'
 import { askSchedule, stopSend } from '../sendSchedule'
 import { parseCurl } from '@shared/curl'
 import { beautifyJson } from '@shared/format'
@@ -68,6 +69,7 @@ export function RequestPane() {
   const { req, ancestors } = cur
   const update = (patch: Partial<RequestDoc>) => useStore.getState().updateRequest({ ...req, ...patch })
   const isSending = !!sending[req.id]
+  const wsMode = isWsUrl(preview?.input.url)
   /** substitui o request pelo que o curl descreve (nome só muda se ainda for o padrão) */
   const applyCurl = (cmd: string) => {
     const { showError, notify } = useStore.getState()
@@ -106,16 +108,22 @@ export function RequestPane() {
       </div>
 
       <div className="flex items-center gap-1.5 p-3">
-        <MethodPicker value={req.method} onChange={(method) => update({ method })} />
+        {wsMode ? (
+          <span className="rounded-md bg-raised px-2 py-1 font-mono text-[12px] font-semibold text-tpurple" title="WebSocket (URL ws:// ou wss://)">WS</span>
+        ) : (
+          <MethodPicker value={req.method} onChange={(method) => update({ method })} />
+        )}
         <div data-hk="url" className="contents">
           <UrlField value={req.url} onChange={(url) => update({ url })} onEnter={() => useStore.getState().sendActive()} onCurl={applyCurl} />
         </div>
-        {isSending ? (
+        {wsMode ? (
+          <WsButton reqId={req.id} />
+        ) : isSending ? (
           <button className="btn w-[88px]" onClick={() => api.cancel(req.id)}>Cancelar</button>
         ) : (
           <button className="btn btn-accent w-[88px]" onClick={() => useStore.getState().sendActive()} title="Ctrl+Enter">Enviar</button>
         )}
-        <SendOptions reqId={req.id} />
+        {!wsMode && <SendOptions reqId={req.id} />}
       </div>
 
       <div className="-mt-1.5 truncate px-3 pb-1.5 font-mono text-[11px] text-faint select-text" title={maskSecrets(preview?.input.url ?? '')}>
@@ -135,7 +143,7 @@ export function RequestPane() {
           options={[
             { id: 'params', label: <>Params<Count n={req.params.length} /></> },
             { id: 'headers', label: <>Headers<Count n={req.headers.length} /></> },
-            { id: 'body', label: <>Body{req.body.mime && <span className="ml-1 text-[10.5px] text-faint">{BODY_TYPES.find((b) => b.mime === req.body.mime)?.label ?? req.body.mime}</span>}</> },
+            { id: 'body', label: <>{wsMode ? 'Mensagem' : 'Body'}{req.body.mime && <span className="ml-1 text-[10.5px] text-faint">{BODY_TYPES.find((b) => b.mime === req.body.mime)?.label ?? req.body.mime}</span>}</> },
             { id: 'auth', label: <>Auth<span className="ml-1 text-[10.5px] text-faint">{req.auth.type === 'inherit' ? '↑' : req.auth.type === 'none' ? '' : req.auth.type === 'oauth2' ? 'OAuth2' : AUTH_LABEL[req.auth.type]}</span></> },
             { id: 'scripts', label: <>Scripts{hasScripts(req.scripts) ? <span className="ml-1 text-[10.5px] text-tpurple">●</span> : ancestors.some((a) => hasScripts(a.scripts)) ? <span className="ml-1 text-[10.5px] text-faint">↑</span> : null}</> },
             { id: 'assertions', label: <>Asserções<Count n={req.assertions?.filter((a) => a.enabled).length ?? 0} /></> },
@@ -172,7 +180,7 @@ export function RequestPane() {
             )}
           </div>
         )}
-        {section === 'body' && <BodyEditor body={req.body} onChange={(body) => update({ body })} gql={{ wsId: cur.ws.id, req, envId }} />}
+        {section === 'body' && <BodyEditor body={req.body} onChange={(body) => update({ body })} gql={{ wsId: cur.ws.id, req, envId }} ws={wsMode ? req.id : undefined} />}
         {section === 'auth' && <AuthEditor auth={req.auth} inherited={effectiveAuth({ ...req, auth: { type: 'inherit' } }, ancestors)} onChange={(auth) => update({ auth })} oauthCtx={{ wsId: cur.ws.id, req, envId }} />}
         {section === 'scripts' && <ScriptsEditor scripts={req.scripts} onChange={(scripts) => update({ scripts })} />}
         {section === 'assertions' && <AssertionsEditor list={req.assertions ?? []} onChange={(assertions) => update({ assertions: assertions.length ? assertions : undefined })} />}
@@ -184,7 +192,24 @@ export function RequestPane() {
   )
 }
 
-function BodyEditor({ body, onChange, gql }: { body: Body; onChange: (b: Body) => void; gql: GraphQLCtx }) {
+function WsButton({ reqId }: { reqId: string }) {
+  const state = useStore((s) => s.wsState[reqId]) ?? 'closed'
+  const { wsAction } = useStore.getState()
+  if (state === 'open')
+    return (
+      <button className="btn w-[104px]" onClick={() => void wsAction(reqId, 'close')} title="Fecha a conexão">
+        Desconectar
+      </button>
+    )
+  return (
+    <button className="btn btn-accent w-[104px]" disabled={state === 'connecting'} onClick={() => void wsAction(reqId, 'connect')} title="Ctrl+Enter">
+      {state === 'connecting' ? 'Conectando…' : 'Conectar'}
+    </button>
+  )
+}
+
+function BodyEditor({ body, onChange, gql, ws }: { body: Body; onChange: (b: Body) => void; gql: GraphQLCtx; ws?: string }) {
+  const wsOpen = useStore((s) => (ws ? s.wsState[ws] === 'open' : false))
   const isForm = body.mime === 'application/x-www-form-urlencoded' || body.mime === 'multipart/form-data'
   const setMime = (mime: string | null) => {
     const toForm = mime === 'application/x-www-form-urlencoded' || mime === 'multipart/form-data'
@@ -208,7 +233,16 @@ function BodyEditor({ body, onChange, gql }: { body: Body; onChange: (b: Body) =
         </Select>
         {body.mime === 'application/json' && <button className="btn btn-ghost py-1" onClick={format}>Formatar</button>}
       </div>
-      {body.mime === null && <p className="px-3 text-faint">Este request não envia body.</p>}
+      {body.mime === null && <p className="px-3 text-faint">{ws ? 'Escolha um tipo (JSON, texto…) pra escrever a mensagem.' : 'Este request não envia body.'}</p>}
+      {ws && body.mime !== null && (
+        <div className="flex items-center gap-2 border-t border-line px-3 py-1.5 text-[11.5px]">
+          <span className="text-faint">{wsOpen ? 'Ctrl+Enter manda esta mensagem ({{ variáveis }} e tags resolvidas)' : 'Conecte pra mandar a mensagem'}</span>
+          <div className="flex-1" />
+          <button className="btn btn-accent py-0.5 text-[12px]" disabled={!wsOpen} onClick={() => void useStore.getState().wsAction(ws, 'send')}>
+            ↑ Enviar mensagem
+          </button>
+        </div>
+      )}
       {isForm && (
         <div className="px-3">
           <KeyValueTable

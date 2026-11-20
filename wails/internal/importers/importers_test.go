@@ -126,3 +126,14 @@ func TestUnknownTags(t *testing.T) {
 		t.Errorf("desconhecidas: %v", got)
 	}
 }
+
+func TestInsomniaWebSocket(t *testing.T) {
+	r, err := ParseSources([]Source{{Name: "v4.json", Text: `{"_type":"export","__export_format":4,"resources":[{"_id":"wrk_a","_type":"workspace","name":"A"},{"_id":"ws-req_1","_type":"websocket_request","parentId":"wrk_a","name":"Eco","url":"wss://eco.test/ws","headers":[{"name":"X","value":"1"}],"authentication":{"type":"bearer","token":"t"}}]}`}}, nil)
+	if err != nil || len(r.Workspaces) != 1 {
+		t.Fatal(err)
+	}
+	req, _ := doc.Find(r.Workspaces[0], "ws-req_1")
+	if req == nil || req.Str("url") != "wss://eco.test/ws" || req.Map("auth").Str("token") != "t" || len(req.List("headers")) != 1 {
+		t.Fatalf("%v", req)
+	}
+}
