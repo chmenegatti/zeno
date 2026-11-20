@@ -114,6 +114,33 @@
     ok('prévia Postman', /^E2E\.postman(\.zip|_collection\.json)$/.test(pm.name) && pm.warnings.length > 0, JSON.stringify(pm))
     ok('status GitHub sem conta', JSON.stringify(await z.githubWsStatus()) === '{}')
   })
+  await safe('SSE', async () => {
+    const r = await mk('sse', { url: '{{ base }}/sse' })
+    const seen = []
+    const off = z.onSseEvent((id, e) => id === r.id && seen.push(e))
+    const { rec } = await send(r)
+    off()
+    ok('SSE eventos ao vivo', seen.length === 3 && seen[2].data === '{"n":3}' && seen[0].event === 'tick' && seen[0].atMs < seen[2].atMs, JSON.stringify(seen))
+    ok('SSE body no histórico', rec.status === 200 && (rec.body.match(/event: tick/g) || []).length === 3, rec.body)
+  })
+  await safe('WebSocket', async () => {
+    const r = await mk('ws', { url: 'ws://127.0.0.1:4777/ws', auth: { type: 'bearer', token: '{{ token }}' } })
+    const evs = []
+    const off = z.onWsEvent((e) => e.reqId === r.id && evs.push(e))
+    const until = async (f) => { for (let i = 0; i < 50 && !f(); i++) await w(100) }
+    await z.wsConnect(wsId, r, null)
+    await until(() => evs.some((e) => e.kind === 'open'))
+    const open = evs.find((e) => e.kind === 'open')
+    ok('WS conecta com auth', open && open.status === 101 && (open.headers || []).some(([k, v]) => /x-auth-echo/i.test(k) && v === 'Bearer tk-e2e'), JSON.stringify(open))
+    ok('WS aberto', await z.wsIsOpen(r.id))
+    await z.wsSend(wsId, r, null, 'oi {{ user }}')
+    await until(() => evs.some((e) => e.kind === 'in'))
+    ok('WS eco com variável', evs.some((e) => e.kind === 'out' && e.data === 'oi ana') && evs.some((e) => e.kind === 'in' && e.data === 'eco: oi ana'), JSON.stringify(evs))
+    await z.wsClose(r.id)
+    await until(() => evs.some((e) => e.kind === 'close'))
+    ok('WS fecha', evs.some((e) => e.kind === 'close') && !(await z.wsIsOpen(r.id)), JSON.stringify(evs.at(-1)))
+    off()
+  })
   await safe('redirect e cookies', async () => {
     const r = await mk('redirect', { url: '{{ base }}/redirect' })
     const { body, rec } = await send(r)

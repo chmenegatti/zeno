@@ -22,6 +22,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/store"
 	"github.com/chmenegatti/zeno/wails/internal/vault"
 	"github.com/chmenegatti/zeno/wails/internal/watch"
+	"github.com/chmenegatti/zeno/wails/internal/ws"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -54,6 +55,7 @@ type App struct {
 	pending  pendingImport
 	bodies   bodyCache
 	trim     memTrim
+	sockets  *ws.Manager
 }
 
 func NewApp() *App {
@@ -78,6 +80,7 @@ func NewApp() *App {
 		Done: func() { a.Emit("oauth:done") },
 	}}
 	a.engine = &engine.Engine{OAuth: oauth, Store: st, Cookies: a.cookies, Vault: a.vault, Plugins: a.plugins, Hooks: engine.Hooks{Emit: a.Emit, Ask: a.askPrompt}}
+	a.sockets = &ws.Manager{Emit: func(e ws.Event) { a.Emit("ws:event", e) }}
 	a.register()
 	return a
 }
@@ -103,6 +106,7 @@ func (a *App) startup(ctx context.Context) {
 
 func (a *App) shutdown(context.Context) {
 	a.store.Flush()
+	a.sockets.CloseAll()
 	if a.watcher != nil {
 		_ = a.watcher.Close()
 	}

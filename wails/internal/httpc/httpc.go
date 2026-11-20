@@ -36,10 +36,12 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/vars"
 )
 
-// CookieHooks: cookie jar do workspace (opcional): header pra URL e guardar Set-Cookie
+// CookieHooks: cookie jar do workspace (opcional): header pra URL e guardar Set-Cookie; Event recebe
+// os eventos de uma resposta text/event-stream enquanto chegam (#6)
 type CookieHooks struct {
 	Header func(url string) string
 	Store  func(url string, setCookies []string)
+	Event  func(SSEEvent)
 }
 
 var (
@@ -554,8 +556,22 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 	}
 	defer res.Body.Close()
 	headersMs := ms(time.Since(start))
-	data, err := io.ReadAll(res.Body)
-	if err != nil {
+	var data []byte
+	if cookies.Event != nil && IsSSE(res.Header.Get("Content-Type")) {
+		// stream: sem timeout depois dos headers; termina quando o servidor fecha ou o usuário cancela
+		if timer != nil {
+			timer.Stop()
+		}
+		// caiu no meio: guarda o que chegou e diz por que parou
+		data, err = readSSE(res.Body, start, cookies.Event)
+		if err != nil {
+			if errors.Is(context.Cause(ctx), errCancel) {
+				rec.Set("streamEnd", "cancelado")
+			} else {
+				rec.Set("streamEnd", "erro: "+unwrapURL(err).Error())
+			}
+		}
+	} else if data, err = io.ReadAll(res.Body); err != nil {
 		return fail(err)
 	}
 	totalMs := ms(time.Since(start))

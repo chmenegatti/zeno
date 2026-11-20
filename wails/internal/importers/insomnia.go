@@ -35,9 +35,9 @@ func Dir() string {
 	return filepath.Join(home, ".config", "Insomnia")
 }
 
-var nedbFiles = []string{"Workspace", "RequestGroup", "Request", "Environment"}
+var nedbFiles = []string{"Workspace", "RequestGroup", "Request", "Environment", "WebSocketRequest"}
 
-var typeFromExport = map[string]string{"workspace": "Workspace", "request_group": "RequestGroup", "request": "Request", "environment": "Environment"}
+var typeFromExport = map[string]string{"workspace": "Workspace", "request_group": "RequestGroup", "request": "Request", "environment": "Environment", "websocket_request": "WebSocketRequest"}
 
 // ordered: registros por _id na ordem em que apareceram (como um Map do JavaScript)
 type ordered struct {
@@ -426,7 +426,8 @@ func Convert(docs []*Doc, insecureTLS bool) Result {
 				setDef(f, "scripts", insScripts(d))
 				f.Set("children", buildNodes(d.Str("_id"), where))
 				nodes = append(nodes, f)
-			case "Request":
+			case "Request", "WebSocketRequest":
+				// WebSocket (#6): URL ws(s)://; a conexão é aberta pelo Zeno (as mensagens salvas do Insomnia ficam de fora)
 				r := doc.New("kind", "request", "id", d.Get("_id"), "name", name)
 				setDef(r, "description", orNil(d.Get("description")))
 				r.Set("method", strings.ToUpper(str(or(d.Get("method"), "GET"))))

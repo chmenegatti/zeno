@@ -239,6 +239,8 @@ export interface CookieInfo {
 }
 
 export interface ResponseRecord {
+  /** SSE (#6): por que o stream parou antes do servidor fechar (cancelado, erro: …) */
+  streamEnd?: string
   id: string
   requestId: string
   at: number

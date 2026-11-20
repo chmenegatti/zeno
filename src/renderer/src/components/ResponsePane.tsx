@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { ResponseRecord } from '@shared/types'
-import { activeRequest, api, useStore } from '../state'
+import { activeEnvId, activeRequest, api, useStore } from '../state'
 import { ResponseView } from './ResponseBody'
 import { CompareView, TimelineView } from './Timeline'
 import { Count, formatBytes, Segmented } from './ui'
 import { ScriptResults } from './Scripts'
 import { Select } from './Select'
+import { SseEvents, WsPane } from './Streams'
+import { prepare } from '@shared/prepare'
+import { isEventStream, isWsUrl, parseSSE } from '@shared/stream'
 
-type Section = 'body' | 'headers' | 'tests' | 'timeline' | 'compare'
+type Section = 'body' | 'events' | 'headers' | 'tests' | 'timeline' | 'compare'
 
 function statusColor(r: ResponseRecord): string {
   if (r.error) return 'bg-tpink/15 text-tpink'
@@ -25,7 +28,9 @@ export function ResponsePane({ width }: { width: number }) {
   const selected = useStore((s) => s.selectedResponse)
   const sending = useStore((s) => s.sending)
   const lastSend = useStore((s) => s.lastSend)
+  const live = useStore((s) => s.live)
   const cur = activeRequest({ workspaces, app })
+  const envId = activeEnvId({ workspaces, app })
   const [section, setSection] = useState<Section>('body')
   const [pretty, setPretty] = useState(true)
 
@@ -35,6 +40,33 @@ export function ResponsePane({ width }: { width: number }) {
   // resultado dos scripts vale para o envio mais recente
   const report = id && res && res.id === history[0]?.id ? lastSend[id]?.scripts : undefined
   const failed = report ? report.tests.filter((t) => !t.ok).length + report.errors.length : 0
+  // WebSocket: o painel é o log da conexão
+  const wsMode = useMemo(() => !!cur && isWsUrl(prepare(cur.ws, cur.req, cur.ancestors, envId).input.url), [cur, envId])
+  const stream = !!res && !res.error && isEventStream(res.headers)
+  const events = useMemo(() => (stream && res ? parseSSE(res.body) : []), [stream, res])
+  const liveEvents = id && sending[id] ? (live[id] ?? []) : []
+  if (wsMode && id)
+    return (
+      <section data-hk="response" className="flex shrink-0 flex-col border-l border-line bg-panel" style={{ width }}>
+        <WsPane reqId={id} />
+      </section>
+    )
+  // SSE em andamento: eventos conforme chegam
+  if (liveEvents.length > 0)
+    return (
+      <section data-hk="response" className="flex shrink-0 flex-col border-l border-line bg-panel" style={{ width }}>
+        <div className="flex items-center gap-2 px-3 py-3">
+          <span className="rounded-md bg-tblue/15 px-2 py-0.5 font-mono text-[12px] font-semibold text-tblue">STREAM</span>
+          <span className="text-dim">text/event-stream</span>
+          <div className="flex-1" />
+          <button className="btn py-0.5 text-[12px]" onClick={() => api.cancel(id!)}>Parar</button>
+        </div>
+        <div className="min-h-0 flex-1">
+          <SseEvents events={liveEvents} live />
+        </div>
+      </section>
+    )
+  const sec = section === 'events' && !stream ? 'body' : section
 
   return (
     <section data-hk="response" className="flex shrink-0 flex-col border-l border-line bg-panel" style={{ width }}>
@@ -46,6 +78,7 @@ export function ResponsePane({ width }: { width: number }) {
             <span className={`rounded-md px-2 py-0.5 font-mono text-[12px] font-semibold ${statusColor(res)}`}>{res.error ? 'ERRO' : `${res.status} ${res.statusText}`}</span>
             <span className="text-dim">{res.timing.totalMs} ms</span>
             <span className="text-dim">{formatBytes(res.size)}</span>
+            {res.streamEnd && <span className="truncate text-[11.5px] text-torange" title={res.streamEnd}>stream {res.streamEnd}</span>}
             {id && sending[id] && <span className="animate-pulse text-accent">enviando…</span>}
             <div className="flex-1" />
             {history.length > 1 && (
@@ -83,9 +116,10 @@ export function ResponsePane({ width }: { width: number }) {
             <>
               <div className="flex items-center border-b border-line px-2 pb-1.5">
                 <Segmented
-                  value={section}
+                  value={sec}
                   onChange={setSection}
                   options={[
+                    ...(stream ? [{ id: 'events' as const, label: <>Eventos<Count n={events.length} /></> }] : []),
                     { id: 'body', label: 'Body' },
                     { id: 'headers', label: <>Headers<Count n={res.headers.length} /></> },
                     ...(report
@@ -96,15 +130,16 @@ export function ResponsePane({ width }: { width: number }) {
                   ]}
                 />
                 <div className="flex-1" />
-                {section === 'body' && res.bodyEncoding !== 'base64' && (
+                {sec === 'body' && res.bodyEncoding !== 'base64' && (
                   <label className="mr-2 flex items-center gap-1 text-[11.5px] text-dim">
                     <input type="checkbox" checked={pretty} onChange={(e) => setPretty(e.target.checked)} /> formatar
                   </label>
                 )}
               </div>
-              <div className={`min-h-0 flex-1 ${section === 'body' || section === 'compare' ? 'overflow-hidden' : 'overflow-auto'}`}>
-                {section === 'body' && <ResponseView res={res} requestId={id!} pretty={pretty} />}
-                {section === 'headers' && (
+              <div className={`min-h-0 flex-1 ${sec === 'body' || sec === 'compare' || sec === 'events' ? 'overflow-hidden' : 'overflow-auto'}`}>
+                {sec === 'events' && <SseEvents events={events} />}
+                {sec === 'body' && <ResponseView res={res} requestId={id!} pretty={pretty} />}
+                {sec === 'headers' && (
                   <table className="w-full font-mono text-[12px]">
                     <tbody>
                       {res.headers.map(([k, v], i) => (
@@ -116,9 +151,9 @@ export function ResponsePane({ width }: { width: number }) {
                     </tbody>
                   </table>
                 )}
-                {section === 'tests' && (report ? <ScriptResults report={report} /> : <p className="p-3 text-faint">Este envio não teve scripts nem asserções.</p>)}
-                {section === 'timeline' && <TimelineView res={res} />}
-                {section === 'compare' && <CompareView res={res} history={history} />}
+                {sec === 'tests' && (report ? <ScriptResults report={report} /> : <p className="p-3 text-faint">Este envio não teve scripts nem asserções.</p>)}
+                {sec === 'timeline' && <TimelineView res={res} />}
+                {sec === 'compare' && <CompareView res={res} history={history} />}
               </div>
             </>
           )}

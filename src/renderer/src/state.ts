@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import type { SendResult } from '@shared/api'
 import { findNode } from '@shared/tree'
+import { prepare } from '@shared/prepare'
+import { isWsUrl, type SSEEvent, type WsEvent } from '@shared/stream'
 import type { AppState, Environment, PluginInfo, Folder, FolderDoc, RequestDoc, ResponseRecord, TreeNode, Workspace } from '@shared/types'
 
 const api = window.zeno
@@ -54,6 +56,13 @@ interface Store {
   /** plugins carregados (tags, ações) */
   plugins: PluginInfo[]
   loadPlugins(reload?: boolean): Promise<void>
+  /** SSE (#6): eventos do envio em andamento (ou do último), por request */
+  live: Record<string, SSEEvent[]>
+  /** WebSocket (#6): log da conexão e estado, por request (só na memória) */
+  wsLog: Record<string, WsEvent[]>
+  wsState: Record<string, 'connecting' | 'open' | 'closed'>
+  /** conecta (ou, conectado, manda o body como mensagem) */
+  wsAction(id?: string, action?: 'connect' | 'send' | 'close'): Promise<void>
   /** envio agendado por request: atrasado (uma vez) ou repetindo */
   sendTimers: Record<string, { mode: 'delay' | 'repeat'; seconds: number }>
 
@@ -124,6 +133,8 @@ async function saveNow(id: string): Promise<void> {
   await api.saveRequest(p.req)
 }
 
+const LOG_MAX = 2000
+
 let stateTimer: ReturnType<typeof setTimeout> | null = null
 
 export const useStore = create<Store>((set, get) => ({
@@ -145,6 +156,9 @@ export const useStore = create<Store>((set, get) => ({
   methodMenu: false,
   sendTimers: {},
   plugins: [],
+  live: {},
+  wsLog: {},
+  wsState: {},
 
   async init() {
     const { workspaces, state, dataDir } = await api.load()
@@ -155,6 +169,13 @@ export const useStore = create<Store>((set, get) => ({
       set({ workspaces: ws })
     })
     api.onResponse((id, history) => set((s) => ({ responses: { ...s.responses, [id]: history } })))
+    api.onSseEvent((id, e) => set((s) => ({ live: { ...s.live, [id]: [...(s.live[id] ?? []), e].slice(-LOG_MAX) } })))
+    api.onWsEvent((e) =>
+      set((s) => ({
+        wsLog: { ...s.wsLog, [e.reqId]: [...(s.wsLog[e.reqId] ?? []), e].slice(-LOG_MAX) },
+        wsState: e.kind === 'open' || e.kind === 'close' ? { ...s.wsState, [e.reqId]: e.kind === 'open' ? 'open' : 'closed' } : s.wsState
+      }))
+    )
     const id = get().app.activeRequestId
     if (id) get().selectRequest(id)
   },
@@ -195,13 +216,45 @@ export const useStore = create<Store>((set, get) => ({
     await Promise.all([...pending.keys()].map(saveNow))
   },
 
+  async wsAction(target, action) {
+    const s = get()
+    const cur = target ? findRequest(s, target) : activeRequest(s)
+    if (!cur) return
+    const id = cur.req.id
+    const env = cur.ws.id === activeWorkspace(s)?.id ? activeEnvId(s) : (s.app.activeEnv[cur.ws.id] ?? null)
+    const state = s.wsState[id]
+    const act = action ?? (state === 'open' ? 'send' : 'connect')
+    const log = (e: Omit<WsEvent, 'reqId' | 'at'>): void =>
+      set((st) => ({ wsLog: { ...st.wsLog, [id]: [...(st.wsLog[id] ?? []), { ...e, reqId: id, at: Date.now() }].slice(-LOG_MAX) } }))
+    if (act === 'close') return void api.wsClose(id)
+    if (act === 'send') {
+      if (state !== 'open') return get().notify('Conecte primeiro')
+      if (cur.req.body.fields) return get().notify('Formulário não vira mensagem de WebSocket: escolha JSON ou texto na aba Mensagem')
+      await api.wsSend(cur.ws.id, cur.req, env, cur.req.body.text ?? '').catch((e: unknown) => log({ kind: 'error', data: e instanceof Error ? e.message : String(e) }))
+      return
+    }
+    if (state === 'connecting') return
+    await saveNow(id).catch(() => undefined)
+    set((st) => ({ wsState: { ...st.wsState, [id]: 'connecting' } }))
+    try {
+      await api.wsConnect(cur.ws.id, cur.req, env)
+    } catch (e) {
+      log({ kind: 'error', data: e instanceof Error ? e.message : String(e) })
+      set((st) => ({ wsState: { ...st.wsState, [id]: 'closed' } }))
+    }
+  },
+
   async sendActive(target) {
     const s = get()
     const cur = target ? findRequest(s, target) : activeRequest(s)
     if (!cur || s.sending[cur.req.id]) return
     const id = cur.req.id
+    // ws:// e wss://: conectar/mandar mensagem em vez de enviar HTTP
+    const f = findNode(cur.ws, id)
+    const env0 = cur.ws.id === activeWorkspace(s)?.id ? activeEnvId(s) : (s.app.activeEnv[cur.ws.id] ?? null)
+    if (isWsUrl(prepare(cur.ws, cur.req, f?.ancestors ?? [], env0).input.url)) return get().wsAction(id)
     await saveNow(id).catch(() => undefined)
-    set((st) => ({ sending: { ...st.sending, [id]: true } }))
+    set((st) => ({ sending: { ...st.sending, [id]: true }, live: { ...st.live, [id]: [] } }))
     try {
       const env = cur.ws.id === activeWorkspace(s)?.id ? activeEnvId(s) : (s.app.activeEnv[cur.ws.id] ?? null)
       const r = await api.send(cur.ws.id, cur.req, env)

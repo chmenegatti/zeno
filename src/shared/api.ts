@@ -1,6 +1,7 @@
 import type { InsomniaKey } from './hotkeys'
 import type { CookieInfo, GitHubAccount, PluginInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, SendInput, OAuthTokenStatus, Workspace, WorkspaceDoc } from './types'
 
+import type { SSEEvent, WsEvent } from './stream'
 export type ExportFormat = 'zeno' | 'insomnia' | 'postman'
 
 export interface Created {
@@ -71,6 +72,15 @@ export interface ZenoApi {
   oauthCancel(): Promise<void>
   onOAuthWait(cb: (w: { message: string; url: string; code: string }) => void): () => void
   onOAuthDone(cb: () => void): () => void
+  /** WebSocket (#6): conecta o request ws(s)://; mensagens e estado chegam por onWsEvent */
+  wsConnect(wsId: string, req: RequestDoc, envId: string | null): Promise<void>
+  /** manda o texto (com variáveis e tags resolvidas) */
+  wsSend(wsId: string, req: RequestDoc, envId: string | null, text: string): Promise<void>
+  wsClose(requestId: string): Promise<void>
+  wsIsOpen(requestId: string): Promise<boolean>
+  onWsEvent(cb: (e: WsEvent) => void): () => void
+  /** SSE (#6): cada evento de uma resposta text/event-stream, enquanto chega */
+  onSseEvent(cb: (requestId: string, e: SSEEvent) => void): () => void
   /** GraphQL (#4): manda o request (body = consulta de introspecção) sem gravar histórico; interactive=false não abre login OAuth */
   graphqlIntrospect(wsId: string, req: RequestDoc, envId: string | null, interactive: boolean): Promise<{ status: number; body: string; error?: string }>
   tagPreview(raw: string, send: boolean): Promise<{ value?: string; error?: string; at?: number }>

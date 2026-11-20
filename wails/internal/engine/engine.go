@@ -377,7 +377,13 @@ func (e *Engine) ExecuteWith(ws, req *Doc, envID string, depth int, extraVars *D
 	if req.Get("storeCookies") != false {
 		hooks.Store = func(u string, set []string) { e.Cookies.Store(wsID, u, set) }
 	}
-	rec := httpc.Send(req.Str("id"), p, hooks)
+	// SSE (#6): cada evento sai na hora pra interface
+	reqID := req.Str("id")
+	// só com interface: na CLI (sem Emit) o stream respeita o timeout do workspace
+	if e.Hooks.Emit != nil {
+		hooks.Event = func(ev httpc.SSEEvent) { e.emit("sse:event", reqID, ev) }
+	}
+	rec := httpc.Send(reqID, p, hooks)
 	vault.RedactTimeline(rec, secrets)
 	if e.Plugins != nil && rec.Str("error") == "" {
 		body := ""
@@ -913,4 +919,46 @@ func (e *Engine) Introspect(ws, req *Doc, envID string, interactive bool) (*Doc,
 		body = rec.Str("body")
 	}
 	return doc.New("status", rec.Get("status"), "body", body, "error", rec.Get("error")), nil
+}
+
+// PrepareConn (#6): request pronto pra uma conexão (WebSocket): variáveis, tags, auth (OAuth pode
+// abrir o login) e cookies do workspace, como no envio HTTP
+func (e *Engine) PrepareConn(ws, req *Doc, envID string) (vars.Prepared, error) {
+	ws = e.withOverlay(ws)
+	p, _, err := e.PrepareOpen(ws, req.Str("id"), envID, req)
+	if err != nil {
+		return p, err
+	}
+	if p.OAuth2 != nil && e.OAuth != nil && !e.OAuth.Status(OAuthConfig(p.OAuth2)).Valid() {
+		tok, err := e.oauthToken(p.OAuth2, false)
+		if err != nil {
+			return p, err
+		}
+		p.Headers = append(p.Headers, [2]string{"Authorization", strings.TrimSpace(p.OAuth2.Prefix + " " + tok.Access)})
+	}
+	if req.Get("sendCookies") != false && e.Cookies != nil {
+		u := p.URL
+		if strings.HasPrefix(u, "ws") {
+			u = "http" + strings.TrimPrefix(u, "ws")
+		}
+		if c := e.Cookies.Header(ws.Str("id"), u); c != "" {
+			p.Headers = append(p.Headers, [2]string{"Cookie", c})
+		}
+	}
+	return p, nil
+}
+
+// RenderText (#6): texto com {{ variáveis }} e {% tags %} resolvidos no contexto do request (a
+// mensagem do WebSocket)
+func (e *Engine) RenderText(ws, req *Doc, envID, text string) (string, error) {
+	r := req.Clone()
+	r.Set("body", doc.New("mime", "text/plain", "text", text))
+	p, _, err := e.PrepareOpen(e.withOverlay(ws), req.Str("id"), envID, r)
+	if err != nil {
+		return "", err
+	}
+	if len(p.Missing) > 0 {
+		return "", errors.New("variáveis sem valor: " + strings.Join(p.Missing, ", "))
+	}
+	return p.Text, nil
 }
