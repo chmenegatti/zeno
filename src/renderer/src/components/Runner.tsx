@@ -38,7 +38,7 @@ export function AssertionsEditor({ list, onChange }: { list: Assertion[]; onChan
       </p>
       {list.map((a, i) => (
         <div key={i} className={`group flex items-center gap-1.5 ${a.enabled ? '' : 'opacity-45'}`}>
-          <input type="checkbox" className="accent-[var(--color-accent)]" checked={a.enabled} onChange={(e) => set(i, { enabled: e.target.checked })} title="Ativa" />
+          <input type="checkbox" checked={a.enabled} onChange={(e) => set(i, { enabled: e.target.checked })} title="Ativa" />
           <Select className="field w-[112px] py-1" value={a.source} onChange={(v) => set(i, { source: v as Assertion['source'] })}>
             {ASSERT_SOURCES.map((s) => <option key={s} value={s}>{SOURCE_LABEL[s]}</option>)}
           </Select>

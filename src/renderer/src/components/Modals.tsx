@@ -17,6 +17,7 @@ import { editorTags } from './Tags'
 import { ScriptsEditor } from './Scripts'
 import { LockIcon, useVaultStatus } from './Secret'
 import { Modal } from './ui'
+import { kl } from '../keys'
 
 export function Modals() {
   const modal = useStore((s) => s.modal)
@@ -165,7 +166,7 @@ function EnvForm({ ws, env, onDeleted }: { ws: Workspace; env: Environment; onDe
         )}
         <div className="flex-1" />
         {saved && <span className="text-accent">Salvo</span>}
-        <button className="btn btn-accent" onClick={save}>Salvar (Ctrl+S)</button>
+        <button className="btn btn-accent" onClick={save}>Salvar ({kl('Ctrl+S')})</button>
       </div>
     </div>
   )
@@ -251,7 +252,7 @@ function WorkspaceModal({ ws, onClose }: { ws: Workspace; onClose: () => void })
           <textarea className="field h-16 resize-none" value={description} onChange={(e) => setDescription(e.target.value)} />
         </label>
         <label className="flex items-center gap-2">
-          <input type="checkbox" className="accent-[var(--color-accent)]" checked={settings.insecureTLS} onChange={(e) => setSettings({ ...settings, insecureTLS: e.target.checked })} />
+          <input type="checkbox" checked={settings.insecureTLS} onChange={(e) => setSettings({ ...settings, insecureTLS: e.target.checked })} />
           Aceitar certificado TLS inválido / autoassinado
         </label>
         <label className="flex items-center gap-2">
@@ -447,7 +448,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                 <thead className="sticky top-0 bg-raised text-left text-dim">
                   <tr>
                     <th className="w-8 px-2 py-1.5">
-                      <input type="checkbox" className="accent-[var(--color-accent)]" checked={picked.size === preview.workspaces.length} onChange={(e) => setPicked(e.target.checked ? new Set(preview.workspaces.map((w) => w.id)) : new Set())} />
+                      <input type="checkbox" checked={picked.size === preview.workspaces.length} onChange={(e) => setPicked(e.target.checked ? new Set(preview.workspaces.map((w) => w.id)) : new Set())} />
                     </th>
                     <th className="px-2">Workspace</th>
                     <th className="px-2 text-right">Pastas</th>
@@ -460,7 +461,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                   {preview.workspaces.map((w) => (
                     <tr key={w.id} className="border-t border-line/60">
                       <td className="px-2 py-1">
-                        <input type="checkbox" className="accent-[var(--color-accent)]" checked={picked.has(w.id)} onChange={(e) => { const n = new Set(picked); if (e.target.checked) n.add(w.id); else n.delete(w.id); setPicked(n) }} />
+                        <input type="checkbox" checked={picked.has(w.id)} onChange={(e) => { const n = new Set(picked); if (e.target.checked) n.add(w.id); else n.delete(w.id); setPicked(n) }} />
                       </td>
                       <td className="px-2">{w.name}</td>
                       <td className="px-2 text-right text-dim">{w.folders}</td>
@@ -481,7 +482,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               </div>
             )}
             <label className={`flex items-center gap-2 text-[12.5px] ${vaultOk ? '' : 'opacity-50'}`} title="Senhas, tokens e chaves vão para o cofre: no YAML fica só o valor cifrado">
-              <input type="checkbox" className="accent-[var(--color-tpurple)]" disabled={!vaultOk} checked={protect && vaultOk} onChange={(e) => setProtect(e.target.checked)} />
+              <input type="checkbox" className="[--cb:var(--color-tpurple)]" disabled={!vaultOk} checked={protect && vaultOk} onChange={(e) => setProtect(e.target.checked)} />
               <span className="text-tpurple"><LockIcon /></span> Criptografar senhas, tokens e chaves no cofre
               {!vaultOk && <span className="text-torange">(chaveiro do sistema indisponível)</span>}
             </label>

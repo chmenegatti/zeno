@@ -18,6 +18,7 @@ import { copyAsCurl } from './Code'
 import { Chevron, FolderIcon, MethodBadge } from './ui'
 import { EnvVarList } from './Vars'
 import { Select } from './Select'
+import { kl } from '../keys'
 
 const EXPANDED_KEY = 'zeno:expanded'
 
@@ -187,9 +188,9 @@ export function Sidebar() {
       <EnvPicker ws={ws} />
       <EnvVarList ws={ws} />
       <div className="flex items-center gap-1.5 px-2 pb-2">
-        <input className="field min-w-0 flex-1" data-hk="search" placeholder="Filtrar  (Ctrl+Shift+F)" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setQuery('')} />
-        <button className="btn px-2" title="Novo request (Ctrl+N)" onClick={() => createRequestIn(ws.id)}>＋</button>
-        <button className="btn px-2" title="Nova pasta (Ctrl+Shift+N)" onClick={() => createFolderIn(ws.id)}>▤</button>
+        <input className="field min-w-0 flex-1" data-hk="search" placeholder={`Filtrar  (${kl('Ctrl+Shift+F')})`} value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setQuery('')} />
+        <button className="btn px-2" title={`Novo request (${kl('Ctrl+N')})`} onClick={() => createRequestIn(ws.id)}>＋</button>
+        <button className="btn px-2" title={`Nova pasta (${kl('Ctrl+Shift+N')})`} onClick={() => createFolderIn(ws.id)}>▤</button>
       </div>
       <div
         className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-6"
@@ -202,9 +203,9 @@ export function Sidebar() {
         {visible.length ? renderNodes(visible, ws.id, 0) : <p className="px-3 py-6 text-center text-faint">{query ? 'Nada encontrado' : 'Vazio. Crie um request ou importe do Insomnia.'}</p>}
       </div>
       <div className="flex items-center gap-1 border-t border-line px-2 py-1.5 text-[11.5px]">
-        <button className="btn btn-ghost px-2 py-0.5 text-dim" title="Preferências (Ctrl+,)" onClick={() => useStore.getState().openModal({ kind: 'prefs' })}>⚙ Preferências</button>
-        <button className="btn btn-ghost px-2 py-0.5 text-dim" title="Atalhos de teclado (Ctrl+Shift+/)" onClick={() => useStore.getState().openModal({ kind: 'shortcuts' })}>⌨ Atalhos</button>
-        <button className="btn btn-ghost px-2 py-0.5 text-dim" title="Cookies do workspace (Ctrl+K)" onClick={() => useStore.getState().openModal({ kind: 'cookies', id: ws.id })}>Cookies</button>
+        <button className="btn btn-ghost px-2 py-0.5 text-dim" title={`Preferências (${kl('Ctrl+,')})`} onClick={() => useStore.getState().openModal({ kind: 'prefs' })}>⚙ Preferências</button>
+        <button className="btn btn-ghost px-2 py-0.5 text-dim" title={`Atalhos de teclado (${kl('Ctrl+Shift+/')})`} onClick={() => useStore.getState().openModal({ kind: 'shortcuts' })}>⌨ Atalhos</button>
+        <button className="btn btn-ghost px-2 py-0.5 text-dim" title={`Cookies do workspace (${kl('Ctrl+K')})`} onClick={() => useStore.getState().openModal({ kind: 'cookies', id: ws.id })}>Cookies</button>
       </div>
       {menu && <ContextMenu menu={menu} ws={ws} onRename={setRenaming} />}
     </aside>
@@ -350,7 +351,7 @@ function EnvPicker({ ws }: { ws: Workspace }) {
         className="field min-w-0 flex-1 py-1"
         value={current ?? ''}
         onChange={(v) => useStore.getState().setApp({ activeEnv: { ...app.activeEnv, [ws.id]: v || null } })}
-        title="Ambiente (Ctrl+Shift+E)"
+        title={`Ambiente (${kl('Ctrl+Shift+E')})`}
       >
         <option value="">Só base</option>
         {subs.map((e) => (

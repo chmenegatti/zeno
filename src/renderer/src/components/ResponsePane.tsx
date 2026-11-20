@@ -98,7 +98,7 @@ export function ResponsePane({ width }: { width: number }) {
                 <div className="flex-1" />
                 {section === 'body' && res.bodyEncoding !== 'base64' && (
                   <label className="mr-2 flex items-center gap-1 text-[11.5px] text-dim">
-                    <input type="checkbox" className="accent-[var(--color-accent)]" checked={pretty} onChange={(e) => setPretty(e.target.checked)} /> formatar
+                    <input type="checkbox" checked={pretty} onChange={(e) => setPretty(e.target.checked)} /> formatar
                   </label>
                 )}
               </div>

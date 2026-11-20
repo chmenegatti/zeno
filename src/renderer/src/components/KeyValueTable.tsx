@@ -32,7 +32,6 @@ export function KeyValueTable<T extends Row>({ rows, onChange, keyPlaceholder = 
           <div key={i} className={`group flex items-center gap-1.5 border-b border-line/60 py-1 ${!r.enabled && !ghost ? 'opacity-45' : ''}`}>
             <input
               type="checkbox"
-              className="accent-[var(--color-accent)]"
               checked={r.enabled}
               disabled={ghost}
               onChange={(e) => update(i, { enabled: e.target.checked })}

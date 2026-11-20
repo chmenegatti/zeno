@@ -214,3 +214,14 @@ export function fromInsomnia(registry: Record<string, { macKeys?: InsomniaKey[];
 }
 
 
+
+/** combinação pra mostrar: no macOS com os símbolos (⌘⇧E); Ctrl também casa com Cmd lá */
+export function keyLabel(combo: string, mac: boolean): string {
+  if (!mac) return combo
+  const sym: Record<string, string> = { Ctrl: '⌘', Shift: '⇧', Alt: '⌥', Enter: '↩', Backspace: '⌫', Escape: '⎋', Delete: '⌦' }
+  return combo
+    .split('+')
+    .map((p, i, all) => (p === '' && i === all.length - 1 ? '+' : (sym[p] ?? p)))
+    .filter((p, i, all) => p !== '' || i === all.length - 1)
+    .join('')
+}

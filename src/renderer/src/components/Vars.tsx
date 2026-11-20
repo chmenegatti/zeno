@@ -361,7 +361,7 @@ export function VarPopover() {
         <label className="flex items-center gap-2 text-[11.5px]" title="Cifra com AES-256-GCM; a chave fica no chaveiro do sistema. No YAML vai só o valor cifrado.">
           <input
             type="checkbox"
-            className="accent-[var(--color-tpurple)]"
+            className="[--cb:var(--color-tpurple)]"
             checked={secret}
             onChange={(e) => {
               setSecret(e.target.checked)

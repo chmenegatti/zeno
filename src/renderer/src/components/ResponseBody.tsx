@@ -7,6 +7,7 @@ import type { ResponseRecord } from '@shared/types'
 import { api, useStore } from '../state'
 import { formatBytes, Segmented } from './ui'
 import { CodeEditor, langFor } from './CodeEditor'
+import { kl } from '../keys'
 
 // linha gigante (ex.: prévia de 256 KB sem quebra): quebrar custa caro no navegador; rola na horizontal
 const longLine = (s: string): boolean => {
@@ -145,7 +146,7 @@ export function TextBody({ res, requestId, pretty }: { res: ResponseRecord; requ
         />
         {result && 'error' in result && <span className="shrink-0 text-[11.5px] text-tpink">{result.error}</span>}
         {result && 'count' in result && <span className="shrink-0 text-[11.5px] text-faint">{result.count} resultado{result.count > 1 ? 's' : ''}</span>}
-        <button className="btn btn-ghost shrink-0 px-1.5 py-0.5 text-[11.5px]" title="Buscar no body (Ctrl+F com o foco na resposta)" onClick={() => view.current && openSearchPanel(view.current)}>
+        <button className="btn btn-ghost shrink-0 px-1.5 py-0.5 text-[11.5px]" title={`Buscar no body (${kl('Ctrl+F')} com o foco na resposta)`} onClick={() => view.current && openSearchPanel(view.current)}>
           buscar
         </button>
         <button className="btn btn-ghost shrink-0 px-1.5 py-0.5 text-[11.5px]" onClick={() => copy(shown, 'Body copiado')}>copiar</button>
@@ -256,6 +257,8 @@ export function ResponseView({ res, requestId, pretty }: { res: ResponseRecord; 
   if (!canVisual) content = <p className="p-4 text-faint">Binário de {formatBytes(res.size)} ({ct}). Use <b>salvar em arquivo</b>.</p>
   else if (!url) content = <p className="p-4 text-faint">{res.bodyFile ? `Resposta grande (${formatBytes(res.size)}): clique em carregar tudo pra visualizar.` : 'carregando…'}</p>
   else if (kind === 'image') content = <div className="flex h-full items-center justify-center overflow-auto bg-[repeating-conic-gradient(var(--color-line)_0_25%,transparent_0_50%)] bg-[length:16px_16px] p-3"><img src={url} alt="resposta" className="max-h-full max-w-full object-contain" /></div>
+  // WebKitGTK antigo (versão Go no Linux) não tem leitor de PDF; o 2.40+ traz o pdf.js embutido
+  else if (kind === 'pdf' && navigator.pdfViewerEnabled === false) content = <p className="p-4 text-faint">Este sistema não mostra PDF dentro do app. Use <b>salvar em arquivo</b> e abra no leitor de PDF.</p>
   else if (kind === 'pdf') content = <iframe title="PDF" src={url} className="h-full w-full border-0 bg-white" />
   else if (kind === 'audio') content = <div className="p-4"><audio controls src={url} className="w-full" /></div>
   else if (kind === 'video') content = <div className="flex h-full items-center justify-center p-3"><video controls src={url} className="max-h-full max-w-full" /></div>
