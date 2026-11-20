@@ -113,3 +113,61 @@ jobs:
             wails/build/*-windows-setup.exe
             wails/build/*-windows-portable.zip
           if-no-files-found: error
+
+  macos:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: wails
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: wails/go.mod
+          cache-dependency-path: wails/go.sum
+      - run: npm ci
+        working-directory: .
+      - name: Testes Go no macOS (com o Keychain)
+        run: |
+          go test ./internal/...
+          go test -v -count=1 -run TestKeychain ./internal/keyring/ | tee keychain.log
+          grep -q -- '--- PASS: TestKeychain' keychain.log
+        env:
+          ZENO_KEYCHAIN_TEST: '1'
+      - name: Interface e ícone
+        run: |
+          (cd .. && npx electron-vite build)
+          rm -rf frontend/dist && mkdir -p frontend build && cp -r ../out/renderer frontend/dist
+          cp ../build/icons/512x512.png frontend/icon.png
+          cp ../build/icons/512x512.png build/appicon.png
+          node -e "const f='wails.json',w=require('./'+f);w.info.productVersion=require('../package.json').version;require('fs').writeFileSync(f,JSON.stringify(w,null,2))"
+      - name: Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.17.1
+      - name: App universal (Intel + Apple Silicon)
+        run: |
+          wails build -platform darwin/universal -s -skipbindings -trimpath -ldflags "-s -w"
+          lipo -info build/bin/Zeno.app/Contents/MacOS/zeno
+      - name: CLI universal
+        run: |
+          for a in arm64 amd64; do CGO_ENABLED=1 GOARCH=$a go build -trimpath -ldflags "-s -w" -o build/zeno-cli-$a ./cmd/zeno-cli; done
+          lipo -create -output build/bin/zeno-cli build/zeno-cli-arm64 build/zeno-cli-amd64
+      - name: Assinatura ad-hoc e .dmg
+        run: |
+          v=$(node -p "require('../package.json').version")
+          codesign --force --deep --sign - build/bin/Zeno.app
+          codesign --verify --deep --strict build/bin/Zeno.app
+          mkdir -p dmg && cp -R build/bin/Zeno.app dmg/ && ln -s /Applications dmg/Applications
+          hdiutil create -volname Zeno -srcfolder dmg -ov -format UDZO "build/Zeno-$v-macos-universal.dmg"
+          (cd build/bin && zip -q "../Zeno-$v-macos-cli.zip" zeno-cli)
+          ls -la build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: zeno-macos
+          path: |
+            wails/build/*-macos-universal.dmg
+            wails/build/*-macos-cli.zip
+          if-no-files-found: error
