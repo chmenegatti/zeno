@@ -16,6 +16,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/cookies"
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/filename"
+	"github.com/chmenegatti/zeno/wails/internal/gitws"
 	"github.com/chmenegatti/zeno/wails/internal/httpc"
 	"github.com/chmenegatti/zeno/wails/internal/plugins"
 	"github.com/chmenegatti/zeno/wails/internal/protect"
@@ -315,6 +316,57 @@ func (a *App) register() {
 		}
 		return doc.New("count", n, "workspaces", st.Load()), nil
 	})
+
+	// ---------- git do workspace ----------
+	wsDir := func(args Args) (string, error) {
+		id, _ := Get[string](args, 0)
+		ws := st.Workspace(id)
+		if ws == nil || ws.Map("location").Str("dir") == "" {
+			return "", errNoWorkspace
+		}
+		return ws.Map("location").Str("dir"), nil
+	}
+	a.handle("gitStatus", func(args Args) (any, error) {
+		dir, err := wsDir(args)
+		if err != nil {
+			return nil, err
+		}
+		return gitws.GetStatus(dir)
+	})
+	a.handle("gitDiff", func(args Args) (any, error) {
+		dir, err := wsDir(args)
+		if err != nil {
+			return nil, err
+		}
+		file, _ := Get[string](args, 1)
+		return gitws.Diff(dir, file)
+	})
+	// roda a operação e devolve o status novo; mudanças nos arquivos chegam pelo watcher
+	gitOp := func(name string, op func(dir string, args Args) error) {
+		a.handle(name, func(args Args) (any, error) {
+			dir, err := wsDir(args)
+			if err != nil {
+				return nil, err
+			}
+			if err := op(dir, args); err != nil {
+				return nil, err
+			}
+			return gitws.GetStatus(dir)
+		})
+	}
+	gitOp("gitCommit", func(dir string, args Args) error {
+		msg, _ := Get[string](args, 1)
+		return gitws.Commit(dir, msg)
+	})
+	gitOp("gitPull", func(dir string, _ Args) error { return gitws.Pull(dir) })
+	gitOp("gitPush", func(dir string, _ Args) error { return gitws.Push(dir) })
+	gitOp("gitSwitch", func(dir string, args Args) error {
+		branch, _ := Get[string](args, 1)
+		create, _ := Get[bool](args, 2)
+		return gitws.SwitchBranch(dir, branch, create)
+	})
+	gitOp("gitAbort", func(dir string, _ Args) error { return gitws.AbortRebase(dir) })
+	gitOp("gitInit", func(dir string, _ Args) error { return gitws.Init(dir) })
 
 	// ---------- importação ----------
 	a.handle("importPreview", func(args Args) (any, error) {
