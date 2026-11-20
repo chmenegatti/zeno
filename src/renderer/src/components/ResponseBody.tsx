@@ -9,7 +9,17 @@ import { formatBytes, Segmented } from './ui'
 import { CodeEditor, langFor } from './CodeEditor'
 
 // linha gigante (ex.: prévia de 256 KB sem quebra): quebrar custa caro no navegador; rola na horizontal
-const longLine = (s: string): boolean => s.length > 20000 && !/\n/.test(s.slice(0, 20000))
+const longLine = (s: string): boolean => {
+  if (s.length <= 20000) return false
+  // qualquer linha, não só a primeira (ex.: cabeçalho curto e depois um JSON minificado)
+  for (let start = 0; start < s.length; ) {
+    const nl = s.indexOf('\n', start)
+    const end = nl === -1 ? s.length : nl
+    if (end - start > 20000) return true
+    start = end + 1
+  }
+  return false
+}
 
 export function contentType(r: ResponseRecord): string | undefined {
   return r.headers.find(([k]) => k.toLowerCase() === 'content-type')?.[1]
