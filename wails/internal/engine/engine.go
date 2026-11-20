@@ -1,17 +1,20 @@
 // Package engine: envio completo (port da parte de envio de src/main/engine.ts): segredos do cofre abertos
-// só pro envio, tags {% %} com dependências, cookies, asserções e histórico. Scripts e plugins entram
-// no #67 e no #68.
+// só pro envio, scripts pré e pós-request, tags {% %} com dependências, cookies, asserções e histórico.
+// Plugins entram no #68.
 package engine
 
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/assert"
 	"github.com/chmenegatti/zeno/wails/internal/cookies"
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/httpc"
+	"github.com/chmenegatti/zeno/wails/internal/protect"
+	"github.com/chmenegatti/zeno/wails/internal/scripts"
 	"github.com/chmenegatti/zeno/wails/internal/store"
 	"github.com/chmenegatti/zeno/wails/internal/tags"
 	"github.com/chmenegatti/zeno/wails/internal/vars"
@@ -108,6 +111,47 @@ func (e *Engine) Execute(ws, req *Doc, envID string, depth int) (*Doc, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// ---------- scripts: pastas de fora pra dentro, depois o request ----------
+	rep := &scripts.Report{}
+	pre, post := chain("pre", openAnc, openReq), chain("post", openAnc, openReq)
+	var st *scripts.State
+	var before scripts.State
+	baseEnv, subEnv := envs(openWS, envID)
+	if len(pre)+len(post) > 0 {
+		base := baseEnv.Map("data").Clone()
+		if base == nil {
+			base = doc.New()
+		}
+		state := scripts.State{Base: base, Env: base, EnvIsBase: subEnv == nil, Vars: doc.New(), Request: scriptRequest(openReq)}
+		if subEnv != nil {
+			state.Env = subEnv.Map("data").Clone()
+			if state.Env == nil {
+				state.Env = doc.New()
+			}
+		}
+		before = scripts.State{Base: state.Base.Clone(), Env: state.Env.Clone()}
+		st = &state
+	}
+	if st != nil && len(pre) > 0 {
+		next, failed := scripts.RunPhase("pre", pre, *st, rep, scripts.Timeout)
+		st = &next
+		// o que o script mudou vale pro envio
+		openWS = withState(openWS, baseEnv, subEnv, st)
+		openReq = applyRequest(openReq, st.Request)
+		if st.Vars.Len() > 0 {
+			openAnc = append(append([]*Doc{}, openAnc...), pseudoFolder("_script", st.Vars))
+		}
+		if failed {
+			e.persistEnvChanges(ws, baseEnv, subEnv, before, *st)
+			rec := doc.New("id", httpc.ResponseID(time.Now()), "requestId", req.Get("id"), "at", time.Now().UnixMilli(),
+				"method", openReq.Get("method"), "url", openReq.Get("url"), "status", 0, "statusText", "", "headers", []any{},
+				"body", "", "bodyEncoding", "utf8", "size", 0, "timing", doc.New("headersMs", 0, "totalMs", 0),
+				"error", "Não enviado: o script "+rep.Errors[0])
+			return sendResult(rec, e.Store.AddResponse(rec), nil, nil, reportDoc(rep)), nil
+		}
+	}
+
 	p := vars.Prepare(openWS, openReq, openAnc, envID, nil)
 	warnings := []string{}
 	if len(p.Unsupported) > 0 {
@@ -192,21 +236,43 @@ func (e *Engine) Execute(ws, req *Doc, envID string, depth int) (*Doc, error) {
 	rec := httpc.Send(req.Str("id"), p, hooks)
 	vault.RedactTimeline(rec, secrets)
 
-	// asserções (com o body completo, antes de virar prévia no histórico)
-	var report *Doc
+	if st != nil && len(post) > 0 && rec.Str("error") == "" {
+		body := ""
+		if rec.Str("bodyEncoding") == "utf8" {
+			body = rec.Str("body")
+		}
+		cur := *st
+		cur.Response = doc.New("code", rec.Get("status"), "status", rec.Get("statusText"), "headers", rec.Get("headers"), "body", body, "time", rec.Map("timing").Get("totalMs"))
+		next, _ := scripts.RunPhase("post", post, cur, rep, scripts.Timeout)
+		st = &next
+	}
+
+	// asserções: depois dos scripts, com as variáveis que eles deixaram (body completo, antes da prévia)
 	var enabled []any
 	for _, x := range req.List("assertions") {
 		if d, _ := x.(*Doc); d != nil && d.Get("enabled") != false {
 			enabled = append(enabled, d)
 		}
 	}
-	if len(enabled) > 0 {
-		tests := []assert.Test{}
-		if rec.Str("error") == "" {
-			varsDoc := vars.BuildVars(openWS, envID, openAnc)
-			tests = assert.Evaluate(enabled, rec, func(s string) string { return vars.Render(s, varsDoc) })
+	if len(enabled) > 0 && rec.Str("error") == "" {
+		wsA, ancA := openWS, openAnc
+		if st != nil {
+			wsA = withState(openWS, baseEnv, subEnv, st)
+			if st.Vars.Len() > 0 {
+				ancA = append(append([]*Doc{}, openAnc...), pseudoFolder("_script", st.Vars))
+			}
 		}
-		report = doc.New("logs", []string{}, "tests", tests, "errors", []string{})
+		varsDoc := vars.BuildVars(wsA, envID, ancA)
+		for _, t := range assert.Evaluate(enabled, rec, func(s string) string { return vars.Render(s, varsDoc) }) {
+			rep.Tests = append(rep.Tests, t)
+		}
+	}
+	if st != nil {
+		e.persistEnvChanges(ws, baseEnv, subEnv, before, *st)
+	}
+	var report *Doc
+	if st != nil || len(enabled) > 0 {
+		report = reportDoc(rep)
 	}
 	history := e.Store.AddResponse(rec)
 	// o body vai uma vez só, no histórico: a interface só lê id e erro de "response"
@@ -374,5 +440,195 @@ func (e *Engine) resolveRef(ws *Doc) func(string) string {
 			}
 		}
 		return ""
+	}
+}
+
+// ---------- scripts ----------
+
+func chain(phase string, anc []*Doc, req *Doc) []scripts.Script {
+	var out []scripts.Script
+	for _, a := range anc {
+		if c := a.Map("scripts").Str(phase); strings.TrimSpace(c) != "" {
+			out = append(out, scripts.Script{Where: "pasta " + a.Str("name"), Code: c})
+		}
+	}
+	if c := req.Map("scripts").Str(phase); strings.TrimSpace(c) != "" {
+		out = append(out, scripts.Script{Where: req.Str("name"), Code: c})
+	}
+	return out
+}
+
+// ambiente Base e o sub-ambiente ativo (nil se nenhum)
+func envs(ws *Doc, envID string) (base, sub *Doc) {
+	for _, x := range ws.List("environments") {
+		d, _ := x.(*Doc)
+		if d == nil {
+			continue
+		}
+		if d.Get("parentId") == nil && base == nil {
+			base = d
+		}
+		if envID != "" && d.Str("id") == envID && d.Get("parentId") != nil {
+			sub = d
+		}
+	}
+	return base, sub
+}
+
+// request como os scripts veem (ScriptRequest)
+func scriptRequest(req *Doc) *Doc {
+	body := req.Map("body")
+	b := doc.New("mime", body.Get("mime"))
+	if body.Has("text") {
+		b.Set("text", body.Get("text"))
+	}
+	headers, params := req.Get("headers"), req.Get("params")
+	if headers == nil {
+		headers = []any{}
+	}
+	if params == nil {
+		params = []any{}
+	}
+	return doc.New("method", req.Get("method"), "url", req.Get("url"), "headers", cloneAny(headers), "params", cloneAny(params), "body", b)
+}
+
+func cloneAny(v any) any {
+	d := doc.New("x", v).Clone()
+	return d.Get("x")
+}
+
+// request depois do pré-script (multipart mantém os campos)
+func applyRequest(req, sr *Doc) *Doc {
+	r := req.Clone()
+	r.Set("method", sr.Get("method"))
+	r.Set("url", sr.Get("url"))
+	r.Set("headers", sr.Get("headers"))
+	r.Set("params", sr.Get("params"))
+	if !req.Map("body").Has("fields") {
+		b := req.Map("body").Clone()
+		if b == nil {
+			b = doc.New()
+		}
+		b.Set("mime", sr.Map("body").Get("mime"))
+		if sr.Map("body").Has("text") {
+			b.Set("text", sr.Map("body").Get("text"))
+		}
+		r.Set("body", b)
+	}
+	return r
+}
+
+// workspace com os ambientes como os scripts deixaram
+func withState(ws, base, sub *Doc, st *scripts.State) *Doc {
+	list := []any{}
+	for _, x := range ws.List("environments") {
+		d, _ := x.(*Doc)
+		if d == nil {
+			continue
+		}
+		switch {
+		case base != nil && d.Str("id") == base.Str("id"):
+			c := d.Clone()
+			c.Set("data", st.Base)
+			list = append(list, c)
+		case sub != nil && d.Str("id") == sub.Str("id"):
+			c := d.Clone()
+			c.Set("data", st.Env)
+			list = append(list, c)
+		default:
+			list = append(list, d)
+		}
+	}
+	out := doc.New()
+	for _, k := range ws.Keys() {
+		out.Set(k, ws.Get(k))
+	}
+	out.Set("environments", list)
+	return out
+}
+
+func pseudoFolder(id string, v *Doc) *Doc {
+	return doc.New("kind", "folder", "id", id, "name", id, "sortKey", int64(0), "headers", []any{}, "auth", doc.New("type", "inherit"), "vars", v, "children", []any{})
+}
+
+func reportDoc(r *scripts.Report) *Doc {
+	logs, tests, errs := r.Logs, r.Tests, r.Errors
+	if logs == nil {
+		logs = []string{}
+	}
+	if tests == nil {
+		tests = []any{}
+	}
+	if errs == nil {
+		errs = []string{}
+	}
+	return doc.New("logs", logs, "tests", tests, "errors", errs)
+}
+
+func same(a, b any) bool {
+	x, _ := doc.Marshal(a)
+	y, _ := doc.Marshal(b)
+	return string(x) == string(y)
+}
+
+// grava nos YAML o que os scripts mudaram nos ambientes; valor que já era cifrado ou parece segredo
+// volta cifrado pro cofre
+func (e *Engine) persistEnvChanges(ws, base, sub *Doc, before, after scripts.State) {
+	type target struct {
+		id        string
+		old, next *Doc
+	}
+	var targets []target
+	if base != nil {
+		targets = append(targets, target{base.Str("id"), before.Base, after.Base})
+	}
+	if !after.EnvIsBase && sub != nil {
+		targets = append(targets, target{sub.Str("id"), before.Env, after.Env})
+	}
+	changed := false
+	// relê do disco: num executor de coleção o ambiente pode ter mudado desde que o request começou
+	cur := e.Store.Workspace(ws.Str("id"))
+	if cur == nil {
+		cur = ws
+	}
+	for _, t := range targets {
+		var raw *Doc
+		for _, x := range cur.List("environments") {
+			if d, _ := x.(*Doc); d != nil && d.Str("id") == t.id {
+				raw = d
+			}
+		}
+		if raw == nil || same(t.old, t.next) {
+			continue
+		}
+		data := raw.Map("data").Clone()
+		if data == nil {
+			data = doc.New()
+		}
+		for _, k := range t.old.Keys() {
+			if !t.next.Has(k) {
+				data.Del(k)
+			}
+		}
+		for _, k := range t.next.Keys() {
+			v := t.next.Get(k)
+			if t.old.Has(k) && same(t.old.Get(k), v) {
+				continue
+			}
+			if s, ok := v.(string); ok && s != "" && (vault.IsEncrypted(raw.Map("data").Get(k)) || protect.LooksSecret(k)) {
+				if enc, err := e.Vault.Encrypt(s); err == nil {
+					v = enc
+				}
+			}
+			data.Set(k, v)
+		}
+		env := raw.Clone()
+		env.Set("data", data)
+		if _, err := e.Store.SaveEnvironment(ws.Str("id"), env); err == nil {
+			changed = true
+		}
+	}
+	if changed {
+		e.emit("store:changed", e.Store.List())
 	}
 }

@@ -165,3 +165,50 @@ func TestPrepareOpenNaoEnvia(t *testing.T) {
 		t.Errorf("preparado: %q %q", key, p.URL)
 	}
 }
+
+func TestScriptsEAmbientes(t *testing.T) {
+	srv, _ := api(t)
+	e, ws := setup(t, srv.URL)
+	login, _ := doc.Find(ws, "req_login")
+	req := login.Clone()
+	req.Set("scripts", doc.New(
+		"pre", "zeno.request.headers.add({ key: 'X-Pre', value: zeno.environment.get('base') ? 'ok' : 'nao' }); zeno.variables.set('esperado', 'T1')",
+		"post", "zeno.environment.set('auth_token', zeno.response.json().token); zeno.environment.set('contador', 1); zeno.test('tem token', () => zeno.expect(zeno.response.json().token).to.equal('T1'))",
+	))
+	req.Set("assertions", []any{doc.New("enabled", true, "source", "json", "path", "$.token", "op", "eq", "value", "{{ esperado }}")})
+	r, err := e.Execute(ws, req, "", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rep := r.Map("scripts")
+	b, _ := doc.Marshal(rep)
+	if strings.Count(string(b), `"ok":true`) != 2 || strings.Contains(string(b), `"ok":false`) {
+		t.Errorf("relatório: %s", b)
+	}
+	hist := e.Store.GetResponses("req_login")[0].(*doc.Doc)
+	if !strings.Contains(hist.Map("timeline").List("hops")[0].(*doc.Doc).Str("requestHead"), "X-Pre: ok") {
+		t.Error("pré-script não mexeu no request")
+	}
+	// ambiente gravado: token (nome de segredo) cifrado no YAML; contador em texto
+	yaml, _ := os.ReadFile(filepath.Join(e.Store.Dir, "w/_env/base.yaml"))
+	if !strings.Contains(string(yaml), "auth_token: $zeno$v1$") || !strings.Contains(string(yaml), "contador: 1") || strings.Contains(string(yaml), "T1") {
+		t.Errorf("ambiente gravado:\n%s", yaml)
+	}
+	// e o valor abre de volta
+	tok := e.Store.List()[0].List("environments")[0].(*doc.Doc).Map("data").Str("auth_token")
+	if p, err := e.Vault.Decrypt(tok); err != nil || p != "T1" {
+		t.Errorf("token: %q %v", p, err)
+	}
+}
+
+func TestPreScriptComErroNaoEnvia(t *testing.T) {
+	srv, logins := api(t)
+	e, ws := setup(t, srv.URL)
+	login, _ := doc.Find(ws, "req_login")
+	req := login.Clone()
+	req.Set("scripts", doc.New("pre", "throw new Error('quebrou')"))
+	r, _ := e.Execute(ws, req, "", 0)
+	if *logins != 0 || r.Map("response").Str("error") != "Não enviado: o script pré-request (Login): quebrou" {
+		t.Errorf("%d %q", *logins, r.Map("response").Str("error"))
+	}
+}
