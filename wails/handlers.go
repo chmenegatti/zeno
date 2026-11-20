@@ -214,12 +214,12 @@ func (a *App) register() {
 		if ws == nil {
 			return nil, errNoWorkspace
 		}
-		return a.execute(ws, req, envID, 0)
+		return a.engine.Execute(ws, req, envID, 0)
 	})
 	a.handle("tagPreview", func(args Args) (any, error) {
 		raw, _ := Get[string](args, 0)
 		send, _ := Get[bool](args, 1)
-		return a.tagPreview(raw, send), nil
+		return a.engine.TagPreview(raw, send), nil
 	})
 	a.handle("promptReply", func(args Args) (any, error) {
 		id, _ := Get[int](args, 0)
