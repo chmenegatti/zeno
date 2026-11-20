@@ -1,5 +1,5 @@
-// Cofre no app: segredos conhecidos, proteger workspace e abrir segredos só pro envio
-// (port de knownSecrets/protectWorkspace do index.ts e de open/collectSecrets/redactTimeline do engine.ts).
+// Cofre no app: segredos conhecidos e proteger workspace
+// (port de knownSecrets/protectWorkspace do index.ts).
 
 package main
 
@@ -8,7 +8,6 @@ import (
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/protect"
-	"github.com/chmenegatti/zeno/wails/internal/vault"
 )
 
 var secretRe = regexp.MustCompile(`\$zeno\$v1\$[0-9a-f]{8}\$[A-Za-z0-9+/=]+\$[A-Za-z0-9+/=]+`)
@@ -90,30 +89,4 @@ func (a *App) protectWorkspace(wsID string, known []string) (int, error) {
 		}
 	}
 	return len(spots), nil
-}
-
-// abre os segredos de ambientes, pastas e request só pro envio; devolve as cópias abertas e os valores
-func (a *App) openForSend(ws, req *doc.Doc, anc []*doc.Doc) (*doc.Doc, *doc.Doc, []*doc.Doc, map[string]bool, error) {
-	secrets := map[string]bool{}
-	envs, err := a.vault.DecryptDeep(ws.Get("environments"), nil)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	vault.CollectSecrets(ws.Get("environments"), envs, secrets)
-	openWS := doc.New("id", ws.Get("id"), "settings", ws.Get("settings"), "environments", envs, "children", ws.Get("children"))
-	r, err := a.vault.DecryptDeep(req, nil)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	vault.CollectSecrets(req, r, secrets)
-	openAnc := make([]*doc.Doc, len(anc))
-	for i, f := range anc {
-		o, err := a.vault.DecryptDeep(f, nil)
-		if err != nil {
-			return nil, nil, nil, nil, err
-		}
-		vault.CollectSecrets(f, o, secrets)
-		openAnc[i] = o.(*doc.Doc)
-	}
-	return openWS, r.(*doc.Doc), openAnc, secrets, nil
 }
