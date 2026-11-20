@@ -78,6 +78,7 @@ export function ResponsePane({ width }: { width: number }) {
             <span className={`rounded-md px-2 py-0.5 font-mono text-[12px] font-semibold ${statusColor(res)}`}>{res.error ? 'ERRO' : `${res.status} ${res.statusText}`}</span>
             <span className="text-dim">{res.timing.totalMs} ms</span>
             <span className="text-dim">{formatBytes(res.size)}</span>
+            {res.streamEnd && <span className="truncate text-[11.5px] text-torange" title={res.streamEnd}>stream {res.streamEnd}</span>}
             {id && sending[id] && <span className="animate-pulse text-accent">enviando…</span>}
             <div className="flex-1" />
             {history.length > 1 && (
