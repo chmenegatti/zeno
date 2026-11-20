@@ -1,5 +1,5 @@
 # Zeno em Go + Wails (migração: #53). Precisa de Go, Node e, no Linux, libgtk-3-dev e libwebkit2gtk-4.1-dev.
-.PHONY: frontend build cli deb rpm appimage run test vet
+.PHONY: frontend build cli deb rpm appimage run test vet e2e
 
 TAGS = desktop,production,webkit2_41
 
@@ -33,6 +33,10 @@ run: build
 # pacotes sem interface: não precisam de GTK nem da interface compilada
 test:
 	go test ./internal/...
+
+# ponta a ponta no app de verdade (precisa de tela; no CI: xvfb-run -a make e2e)
+e2e: build
+	bash e2e/run.sh
 
 vet: frontend
 	go vet -tags $(TAGS) ./...

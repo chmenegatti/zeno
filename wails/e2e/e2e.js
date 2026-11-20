@@ -1,0 +1,182 @@
+// Teste ponta a ponta da versão Go (#86): roda no app pelos mesmos canais da interface (window.zeno).
+// Cofre (chaveiro do sistema) e GitHub (conta) ficam de fora; têm testes próprios.
+(async () => {
+  const w = (ms) => new Promise((r) => setTimeout(r, ms))
+  while (!window.zeno || !document.body.innerText) await w(50)
+  await w(1000)
+  const z = window.zeno
+  const B = 'http://127.0.0.1:4777'
+  let pass = 0, fail = 0
+  const ok = (name, cond, detail = '') => {
+    if (cond) pass++
+    else fail++
+    console.log((cond ? 'PASS ' : 'FAIL ') + name + (cond ? '' : ' :: ' + detail))
+  }
+  const safe = async (name, fn) => {
+    try {
+      await fn()
+    } catch (e) {
+      ok(name, false, 'exceção ' + e)
+    }
+  }
+  const find = (wss, id) => {
+    const walk = (ns) => {
+      for (const n of ns) {
+        if (n.id === id) return n
+        if (n.children) {
+          const f = walk(n.children)
+          if (f) return f
+        }
+      }
+    }
+    for (const ws of wss) {
+      const f = walk(ws.children)
+      if (f) return f
+    }
+  }
+  let wss = (await z.createWorkspace('E2E'))
+  let ws = wss.find((x) => x.name === 'E2E')
+  const wsId = ws.id
+  const reload = async () => ((wss = (await z.load()).workspaces), (ws = wss.find((x) => x.id === wsId)))
+  const base = ws.environments.find((e) => e.parentId === null)
+  await z.saveEnvironment(wsId, { ...base, data: { base: B, user: 'ana', token: 'tk-e2e' } })
+  await z.saveEnvironment(wsId, { id: 'env_dev_e2e', name: 'Dev', parentId: base.id, data: { user: 'bia' }, sortKey: 1 })
+  const fld = await z.createFolder(wsId, 'API')
+  await reload()
+  const folder = find(wss, fld.id)
+  await z.saveFolder({ ...folder, headers: [{ name: 'X-Pasta', value: 'p1', enabled: true }], auth: { type: 'bearer', token: '{{ token }}' } })
+  const mk = async (name, patch) => {
+    const c = await z.createRequest(fld.id, name)
+    await reload()
+    const r = { ...find(wss, c.id), ...patch }
+    await z.saveRequest(r)
+    await reload()
+    return find(wss, c.id)
+  }
+  const send = async (r, env = null) => {
+    const res = await z.send(wsId, r, env)
+    return { res, rec: res.history[0], body: (() => { try { return JSON.parse(res.history[0].body) } catch { return null } })() }
+  }
+
+  await safe('HTTP + variáveis + herança', async () => {
+    const r = await mk('eco', { method: 'GET', url: '{{ base }}/echo', params: [{ name: 'q', value: '{{ user }}', enabled: true }] })
+    let { body } = await send(r)
+    ok('variável do base', body?.query?.q === 'ana', JSON.stringify(body?.query))
+    ;({ body } = await send(r, 'env_dev_e2e'))
+    ok('sub-ambiente vence o base', body?.query?.q === 'bia', JSON.stringify(body?.query))
+    ok('header herdado da pasta', body?.headers?.['x-pasta'] === 'p1')
+    ok('auth bearer herdada da pasta', body?.headers?.authorization === 'Bearer tk-e2e', body?.headers?.authorization)
+  })
+  await safe('bodies', async () => {
+    const j = await mk('json', { method: 'POST', url: '{{ base }}/echo', body: { mime: 'application/json', text: '{"nome":"{{ user }}"}' } })
+    let { body } = await send(j)
+    ok('POST JSON com variável', body?.method === 'POST' && body?.body === '{"nome":"ana"}' && /json/.test(body?.headers?.['content-type']), body?.body)
+    const f = await mk('form', { method: 'PUT', url: '{{ base }}/echo', body: { mime: 'application/x-www-form-urlencoded', fields: [{ name: 'a b', value: 'x&y', enabled: true }] } })
+    ;({ body } = await send(f))
+    ok('PUT form urlencoded', body?.body === 'a+b=x%26y', body?.body)
+    const m = await mk('multipart', { method: 'PATCH', url: '{{ base }}/echo', body: { mime: 'multipart/form-data', fields: [{ name: 'campo', value: 'v', enabled: true }, { name: 'arq', value: '', file: '/etc/hostname', enabled: true }] } })
+    ;({ body } = await send(m))
+    ok('PATCH multipart com arquivo', /name="campo"[\s\S]*v[\s\S]*name="arq"; filename="hostname"/.test(body?.body || ''), (body?.body || '').slice(0, 120))
+    const x = await mk('xml', { method: 'POST', url: '{{ base }}/echo', body: { mime: 'application/xml', text: '<a>1</a>' } })
+    ;({ body } = await send(x))
+    ok('XML', body?.body === '<a>1</a>' && /xml/.test(body?.headers?.['content-type']))
+  })
+  await safe('auth', async () => {
+    const b = await mk('basic', { url: '{{ base }}/echo', auth: { type: 'basic', username: 'ana', password: 's3' } })
+    let { body } = await send(b)
+    ok('Basic', body?.headers?.authorization === 'Basic ' + btoa('ana:s3'))
+    const k = await mk('apikey', { url: '{{ base }}/echo', auth: { type: 'apikey', key: 'api_key', value: 'K1', addTo: 'query' } })
+    ;({ body } = await send(k))
+    ok('API key na query', body?.query?.api_key === 'K1')
+  })
+  await safe('redirect e cookies', async () => {
+    const r = await mk('redirect', { url: '{{ base }}/redirect' })
+    const { body, rec } = await send(r)
+    ok('segue redirect', body?.query?.from === 'redirect' && rec.status === 200)
+    ok('cookie entre hops', body?.headers?.cookie === 'sessao=abc123', body?.headers?.cookie)
+    const ck = await z.cookiesList(wsId)
+    ok('jar do workspace', ck.some((c) => c.key === 'sessao' && c.value === 'abc123'))
+  })
+  await safe('cancelar', async () => {
+    const r = await mk('lento', { url: '{{ base }}/slow' })
+    const p = send(r)
+    await w(300)
+    await z.cancel(r.id)
+    const { rec } = await p
+    ok('cancela envio', !!rec.error && rec.status === 0, rec.error)
+  })
+  let login
+  await safe('scripts, asserções e encadeamento', async () => {
+    login = await mk('login', { method: 'POST', url: '{{ base }}/login', auth: { type: 'none' }, scripts: { post: "zeno.environment.set('visto', 'sim'); zeno.test('tem token', () => zeno.expect(zeno.response.json().token).to.equal('tk-e2e'))" } })
+    const r1 = await send(login)
+    ok('zeno.test', r1.res.scripts?.tests?.some((t) => t.name === 'tem token' && t.ok), JSON.stringify(r1.res.scripts))
+    await reload()
+    const env = ws.environments.find((e) => e.parentId === null)
+    ok('script grava no ambiente', env.data.visto === 'sim', JSON.stringify(env.data))
+    const me = await mk('me', { url: '{{ base }}/me', auth: { type: 'bearer', token: "{% response 'body', '" + login.id + "', 'b64::" + btoa('$.token') + "', 'never' %}" }, assertions: [{ enabled: true, source: 'status', op: 'eq', value: '200' }, { enabled: true, source: 'json', path: '$.nome', op: 'eq', value: 'Ana' }, { enabled: true, source: 'header', path: 'content-type', op: 'contains', value: 'json' }] })
+    const r2 = await send(me)
+    ok('tag {% response %} (body/JSONPath)', r2.rec.status === 200, r2.rec.status)
+    ok('asserções status/JSON/header', (r2.res.scripts?.tests || []).length === 3 && r2.res.scripts.tests.every((t) => t.ok), JSON.stringify(r2.res.scripts?.tests))
+    const pv = await z.tagPreview("{% uuid 'v4' %}", false)
+    ok('função uuid', /^[0-9a-f-]{36}$/.test(pv.value || ''), JSON.stringify(pv))
+  })
+  await safe('executor', async () => {
+    const steps = []
+    const off = z.onRunStep((s) => steps.push(s.name))
+    const rep = await z.runCollection({ wsId, folderId: fld.id, envId: null, iterations: 1, delayMs: 0, data: [{ user: 'x' }, { user: 'y' }] })
+    off()
+    ok('executor com dados (2 iterações)', rep.steps.length > 0 && rep.steps.some((s) => s.iteration === 2), rep.steps.length)
+    ok('eventos run:step', steps.length === rep.steps.length, steps.length + '/' + rep.steps.length)
+  })
+  await safe('gerar código', async () => {
+    const r = find(wss, (await reload(), wss.find((x) => x.id === wsId).children[0].children.find((c) => c.name === 'json').id))
+    const inp = await z.codeInput(wsId, r, null, true)
+    ok('request pronto pro código', inp.url === B + '/echo' && inp.body.kind === 'text' && inp.body.text === '{"nome":"ana"}', JSON.stringify(inp).slice(0, 160))
+  })
+  await safe('organização', async () => {
+    const d = await z.duplicate(login.id)
+    ok('duplicar', !!find(d.workspaces, d.id))
+    let list = await z.moveNode(d.id, wsId, 99)
+    ok('mover pra raiz', ws && list.find((x) => x.id === wsId).children.some((c) => c.id === d.id))
+    list = await z.deleteNode(d.id)
+    ok('excluir', !find(list, d.id))
+  })
+  await safe('importação', async () => {
+    for (const [nome, url] of [['Insomnia v5', B + '/fx/loja.insomnia-v5.yaml'], ['OpenAPI', B + '/fx/loja-openapi.yaml'], ['Postman', B + '/fx/loja.postman_collection.json']]) {
+      const pv = await z.importPreview({ url })
+      ok('prévia ' + nome, pv && pv.workspaces.length > 0, JSON.stringify(pv).slice(0, 120))
+      if (pv) {
+        const after = await z.importRun(pv.workspaces.map((x) => x.id), false)
+        ok('importa ' + nome, pv.workspaces.every((p) => after.some((a) => a.id === p.id)))
+      }
+    }
+  })
+  await safe('git', async () => {
+    let st = await z.gitInit(wsId)
+    ok('git init', st.repo, JSON.stringify(st).slice(0, 100))
+    ok('status lista os YAML', st.files.length > 0)
+    st = await z.gitCommit(wsId, 'primeiro')
+    ok('commit', st.files.length === 0 && st.repo, JSON.stringify(st.files))
+    const r = find(wss, login.id)
+    await z.saveRequest({ ...r, url: '{{ base }}/login?v=2' })
+    st = await z.gitStatus(wsId)
+    const f = st.files[0]
+    const diff = f ? await z.gitDiff(wsId, f.path) : ''
+    ok('diff por request', /login\?v=2/.test(diff), diff.slice(0, 100))
+  })
+  await safe('arquivos vivos', async () => {
+    let changed = false
+    z.onChanged(() => (changed = true))
+    console.log('EDITAR-AGORA ' + (await z.load()).dataDir)
+    for (let i = 0; i < 60 && !changed; i++) await w(100)
+    ok('recarrega quando o YAML muda por fora', changed)
+  })
+  await safe('plugins e estado', async () => {
+    const pl = await z.pluginsList()
+    ok('lista de plugins', Array.isArray(pl))
+    const st = (await z.load()).state
+    await z.setState({ ...st, activeWorkspaceId: wsId })
+    ok('estado salvo', (await z.load()).state.activeWorkspaceId === wsId)
+  })
+  console.log('RESULTADO ' + pass + ' ok, ' + fail + ' falhas')
+})()

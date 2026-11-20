@@ -50,4 +50,6 @@ jobs:
       - run: make test
       - run: make vet
       - run: make build
+      - name: Ponta a ponta no app (WebKitGTK)
+        run: sudo apt-get install -y xvfb && xvfb-run -a bash e2e/run.sh
       - run: make cli
