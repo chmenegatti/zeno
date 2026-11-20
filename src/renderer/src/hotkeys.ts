@@ -199,7 +199,7 @@ function onKey(e: KeyboardEvent): void {
     (hk.global || (!s.modal && !s.tagEdit)) &&
     !(hk.notInEditor && inEditor) &&
     !(hk.onlyInEditor && !inEditor) &&
-    !(hk.notInText && !!t?.matches('input,textarea,select,[contenteditable="true"]'))
+    !(hk.notInText && !!t?.matches('input,textarea,select,[role="combobox"],[contenteditable="true"]'))
   const keys = { key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey, altGraph: e.getModifierState?.('AltGraph') }
   const hk = findHotkeys(keys, ui().hotkeys).find(allowed)
   if (!hk) return
