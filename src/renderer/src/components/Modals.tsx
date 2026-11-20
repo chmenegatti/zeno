@@ -14,6 +14,7 @@ import { CommandPalette } from './CommandPalette'
 import { CookiesModal } from './Cookies'
 import { GitHubModal } from './GitHub'
 import { WorkspacesModal } from './Workspaces'
+import { encryptPassphrases, NetSection } from './NetSection'
 import { editorTags } from './Tags'
 import { ScriptsEditor } from './Scripts'
 import { LockIcon, useVaultStatus } from './Secret'
@@ -238,7 +239,10 @@ function WorkspaceModal({ ws, onClose }: { ws: Workspace; onClose: () => void })
   const { run, setWorkspaces, openModal, setApp, dataDir } = useStore.getState()
   const linked = !!ws.location?.linked
   const save = async () => {
-    await run(api.saveWorkspace({ id: ws.id, name: name.trim() || ws.name, description: description || undefined, settings }))
+    // senha de PFX digitada vai pro cofre antes de gravar (o YAML só guarda o token)
+    const safe = await run(encryptPassphrases(settings))
+    if (!safe) return
+    await run(api.saveWorkspace({ id: ws.id, name: name.trim() || ws.name, description: description || undefined, settings: safe }))
     const { workspaces } = await api.load()
     setWorkspaces(workspaces)
     onClose()
@@ -263,6 +267,7 @@ function WorkspaceModal({ ws, onClose }: { ws: Workspace; onClose: () => void })
           <input type="number" min={0} className="field w-[110px]" value={settings.timeoutMs} onChange={(e) => setSettings({ ...settings, timeoutMs: Number(e.target.value) })} />
           <span className="text-faint">ms (0 = sem limite)</span>
         </label>
+        <NetSection settings={settings} onChange={setSettings} />
         <VaultSection ws={ws} />
         <LocationSection ws={ws} dataDir={dataDir} />
         <div className="flex items-center gap-2 pt-2">

@@ -239,6 +239,7 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 	// linha do tempo: conexões abertas por este envio e o cabeçalho bruto de cada salto
 	var conns []*conn
 	hops := []any{}
+	proxyUsed := "" // proxy por onde saiu (sem senha), pra linha do tempo
 	timeline := func(headersMs, totalMs int64) *doc.Doc {
 		tl := doc.New()
 		if rb, ok := bodyText(p); ok {
@@ -266,6 +267,9 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 		tl.Set("timing", timing)
 		if len(conns) > 0 && conns[len(conns)-1].remote != nil {
 			tl.Set("remote", conns[len(conns)-1].remote)
+		}
+		if proxyUsed != "" {
+			tl.Set("proxy", proxyUsed)
 		}
 		for _, c := range conns {
 			if c.tls != nil {
@@ -296,10 +300,23 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 		return rec
 	}
 
+	// rede do workspace: proxy, CA própria e certificado de cliente (#18)
+	certs := &clientCerts{list: p.Net.ClientCerts}
+	tun := &tunnels{}
+	proxy, err := proxyFunc(p.Net, func(u *url.URL) { proxyUsed = u.Redacted() }, tun)
+	if err != nil {
+		return fail(err)
+	}
+	roots, err := rootCAs(p.Net.CAFile)
+	if err != nil {
+		return fail(err)
+	}
+
 	// TLS: verifica na mão pra registrar o erro mesmo quando o workspace aceita certificado inválido
 	var cur *conn
 	tlsCfg := &tls.Config{
-		InsecureSkipVerify: true,
+		InsecureSkipVerify:   true,
+		GetClientCertificate: certs.get,
 		VerifyConnection: func(cs tls.ConnectionState) error {
 			var verr error
 			if len(cs.PeerCertificates) == 0 {
@@ -309,7 +326,7 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 				for _, c := range cs.PeerCertificates[1:] {
 					inter.AddCert(c)
 				}
-				_, verr = cs.PeerCertificates[0].Verify(x509.VerifyOptions{DNSName: cs.ServerName, Intermediates: inter})
+				_, verr = cs.PeerCertificates[0].Verify(x509.VerifyOptions{DNSName: cs.ServerName, Intermediates: inter, Roots: roots})
 			}
 			if cur != nil {
 				t := doc.New("protocol", tlsVersion(cs.Version), "cipher", tls.CipherSuiteName(cs.CipherSuite), "authorized", verr == nil)
@@ -347,11 +364,17 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 			return nil
 		},
 	}
-	// uma conexão por envio (reaproveitada entre saltos pro mesmo host), HTTP/1.1, sem proxy do ambiente
+	// uma conexão por envio (reaproveitada entre saltos pro mesmo host), HTTP/1.1; proxy só se o workspace pedir
 	tr := &http.Transport{
-		TLSClientConfig:     tlsCfg,
-		TLSNextProto:        map[string]func(string, *tls.Conn) http.RoundTripper{},
-		DialContext:         (&net.Dialer{Timeout: 15 * time.Second}).DialContext,
+		Proxy:           proxy,
+		TLSClientConfig: tlsCfg,
+		TLSNextProto:    map[string]func(string, *tls.Conn) http.RoundTripper{},
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if px := tun.get(addr); px != nil {
+				return dialTunnel(ctx, px, addr, roots, p.InsecureTLS)
+			}
+			return (&net.Dialer{Timeout: 15 * time.Second}).DialContext(ctx, network, addr)
+		},
 		TLSHandshakeTimeout: 15 * time.Second,
 	}
 	defer tr.CloseIdleConnections()
@@ -422,6 +445,9 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 	u, method := p.URL, p.Method
 	var res *http.Response
 	for hop := 0; ; hop++ {
+		if pu, err := url.Parse(u); err == nil {
+			certs.setTarget(pu)
+		}
 		jar := ""
 		if cookies.Header != nil {
 			jar = cookies.Header(u)

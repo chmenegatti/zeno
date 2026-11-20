@@ -353,3 +353,46 @@ func TestRespostasGravadas(t *testing.T) {
 		t.Error("arquivo ficou")
 	}
 }
+
+// settings de rede (#18) sobrevivem a ler e gravar; modo desconhecido vira "none"
+func TestSettingsDeRede(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "w"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	yaml := `id: wrk_net
+name: Rede
+settings:
+  insecureTLS: false
+  timeoutMs: 5000
+  proxy: { mode: custom, url: "http://proxy:3128", noProxy: "localhost,.interno" }
+  caFile: /etc/zeno/ca.pem
+  clientCerts:
+    - { host: "*.interno", pfx: /x/c.pfx, passphrase: "$zeno$v1$abc" }
+    - { host: api.x.com, cert: /x/c.pem, key: /x/c.key }
+`
+	if err := os.WriteFile(filepath.Join(dir, "w", "workspace.yaml"), []byte(yaml), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s := New(dir)
+	s.Load()
+	set := s.Workspace("wrk_net").Map("settings")
+	b, _ := doc.Marshal(set)
+	want := `{"insecureTLS":false,"timeoutMs":5000,"proxy":{"mode":"custom","url":"http://proxy:3128","noProxy":"localhost,.interno"},"caFile":"/etc/zeno/ca.pem","clientCerts":[{"host":"*.interno","pfx":"/x/c.pfx","passphrase":"$zeno$v1$abc"},{"host":"api.x.com","cert":"/x/c.pem","key":"/x/c.key"}]}`
+	if string(b) != want {
+		t.Fatalf("settings:\n got %s\nwant %s", b, want)
+	}
+	ws := s.Workspace("wrk_net")
+	if err := s.SaveWorkspace(doc.New("id", ws.Get("id"), "name", "Rede 2", "settings", set)); err != nil {
+		t.Fatal(err)
+	}
+	s.Load()
+	b2, _ := doc.Marshal(s.Workspace("wrk_net").Map("settings"))
+	if string(b2) != want {
+		t.Errorf("depois de gravar: %s", b2)
+	}
+	set.Map("proxy").Set("mode", "outro")
+	if normSettings(set).Map("proxy").Str("mode") != "none" {
+		t.Error("modo desconhecido devia virar none")
+	}
+}

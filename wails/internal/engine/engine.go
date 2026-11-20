@@ -528,7 +528,13 @@ func (e *Engine) openForSendLocked(ws, req *doc.Doc, anc []*doc.Doc) (*doc.Doc, 
 		return nil, nil, nil, nil, nil, err
 	}
 	vault.CollectSecrets(ws.Get("environments"), envs, secrets)
-	openWS := doc.New("id", ws.Get("id"), "settings", ws.Get("settings"), "environments", envs, "children", ws.Get("children"))
+	// settings também: a senha do PFX (mTLS) fica no cofre
+	set, err := e.open(ws.Get("settings"), &locked)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+	vault.CollectSecrets(ws.Get("settings"), set, secrets)
+	openWS := doc.New("id", ws.Get("id"), "settings", set, "environments", envs, "children", ws.Get("children"))
 	r, err := e.open(req, &locked)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
