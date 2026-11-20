@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Zeno
+Exec=/opt/Zeno/zeno %U
+Terminal=false
+Type=Application
+Icon=zeno
+StartupWMClass=zeno
+Keywords=api;http;rest;insomnia;
+Comment=Cliente de API desktop: coleções em YAML, segredos criptografados e import do Insomnia.
+Categories=Development;

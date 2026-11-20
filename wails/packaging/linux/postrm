@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+case "$1" in
+  remove|purge)
+    if command -v update-alternatives >/dev/null 2>&1; then
+      update-alternatives --remove zeno /opt/Zeno/zeno || true
+    else
+      rm -f /usr/bin/zeno
+    fi
+    ;;
+esac
+exit 0

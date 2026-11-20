@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+# /usr/bin/zeno pelo update-alternatives, como no pacote do Electron (atualizar por cima funciona:
+# o postrm antigo tira o link e este o põe de volta)
+if command -v update-alternatives >/dev/null 2>&1; then
+  if [ -L /usr/bin/zeno ] && [ "$(readlink /usr/bin/zeno)" != /etc/alternatives/zeno ]; then rm -f /usr/bin/zeno; fi
+  update-alternatives --install /usr/bin/zeno zeno /opt/Zeno/zeno 100 || ln -sf /opt/Zeno/zeno /usr/bin/zeno
+else
+  ln -sf /opt/Zeno/zeno /usr/bin/zeno
+fi
+exit 0
