@@ -55,3 +55,33 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" dist/* --title "Zeno $GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+
+  # winget: PR de atualização no microsoft/winget-pkgs pelo wingetcreate (ferramenta oficial). Precisa do
+  # segredo WINGET_TOKEN (token clássico com escopo public_repo); sem ele, o job só avisa. Os outros
+  # gerenciadores se atualizam sozinhos: chmenegatti/homebrew-tap e chmenegatti/scoop-bucket conferem
+  # o último release a cada 6 horas.
+  winget:
+    needs: publish
+    if: github.ref_type == 'tag'
+    runs-on: windows-latest
+    continue-on-error: true
+    env:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+    steps:
+      - name: Sem token
+        if: env.WINGET_TOKEN == ''
+        run: echo "::notice::WINGET_TOKEN não configurado; atualize o winget à mão (packaging/README.md)"
+      # o wingetcreate.exe avulso roda sobre o .NET 6, que as imagens Windows do GitHub não trazem mais
+      - uses: actions/setup-dotnet@v4
+        if: env.WINGET_TOKEN != ''
+        with:
+          dotnet-version: 6.0.x
+      - name: PR no winget-pkgs
+        if: env.WINGET_TOKEN != ''
+        shell: pwsh
+        run: |
+          $v = "$env:GITHUB_REF_NAME".TrimStart('v')
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          .\wingetcreate.exe update ChMenegatti.Zeno --version $v `
+            --urls "https://github.com/chmenegatti/zeno/releases/download/v$v/Zeno-$v-windows-setup.exe" `
+            --submit --token $env:WINGET_TOKEN

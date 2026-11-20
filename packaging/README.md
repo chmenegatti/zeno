@@ -1,6 +1,9 @@
 # Gerenciadores de pacote
 
-Manifestos prontos pra publicar o Zeno fora do GitHub Releases. A cada release: trocar a versão e os
+Manifestos prontos pra publicar o Zeno fora do GitHub Releases. **Homebrew e Scoop se atualizam sozinhos**:
+um workflow em cada repositório confere o último release a cada 6 horas. **winget** abre o PR de atualização
+no fim do workflow Release, se o segredo `WINGET_TOKEN` (token clássico com `public_repo`) estiver configurado.
+Nos outros (AUR), a cada release: trocar a versão e os
 sha256 (o GitHub mostra o `digest` de cada asset: `gh api repos/chmenegatti/zeno/releases/tags/vX -q '.assets[]|.name+" "+.digest'`).
 
 | Onde | Arquivo | Como publicar |

@@ -91,6 +91,15 @@ sudo apt install ./zeno_*_amd64.deb
 sudo dnf install ./zeno-*.x86_64.rpm
 ```
 
+**Arch Linux and derivatives**
+
+The package isn't on the AUR yet (it isn't accepting new accounts). Build it from the `PKGBUILD` in this repository, which downloads the release `.deb`:
+
+```bash
+git clone --depth 1 https://github.com/chmenegatti/zeno.git
+cd zeno/packaging/aur && makepkg -si
+```
+
 **Any distribution (AppImage)**
 
 ```bash
@@ -98,7 +107,7 @@ chmod +x Zeno-*.AppImage
 ./Zeno-*.AppImage
 ```
 
-The AppImage uses the system's WebKitGTK; if it's missing, it tells you how to install it (`libwebkit2gtk-4.1-0` on Debian/Ubuntu, `webkit2gtk4.1` on Fedora).
+The AppImage uses the system's WebKitGTK; if it's missing, it tells you how to install it (`libwebkit2gtk-4.1-0` on Debian/Ubuntu, `webkit2gtk4.1` on Fedora, `webkit2gtk-4.1` on Arch).
 
 **Windows 10 and 11**
 
