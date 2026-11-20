@@ -9,6 +9,8 @@ interface Modal {
   kind: 'env' | 'folder' | 'workspace' | 'import' | 'prompt' | 'confirm' | 'code' | 'git' | 'run' | 'shortcuts' | 'prefs' | 'palette' | 'cookies' | 'plugins' | 'github' | 'workspaces'
   /** id do alvo (pasta/workspace) */
   id?: string
+  /** github: workspaces já marcados */
+  ids?: string[]
   /** run: pasta a rodar (sem = workspace inteiro) */
   folderId?: string
   title?: string

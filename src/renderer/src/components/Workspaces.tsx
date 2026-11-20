@@ -9,6 +9,7 @@ import { api, useStore } from '../state'
 import { kl } from '../keys'
 import { Select } from './Select'
 import { MethodBadge, Segmented } from './ui'
+import { ExportDialog } from './ExportWorkspaces'
 
 const COLORS = ['#00dbff', '#a44dff', '#00ffd4', '#d9ff65', '#ff8900', '#ff009e', '#5b8cff', '#8eaab8']
 
@@ -48,6 +49,12 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
   const [ask, setAsk] = useState<{ title: string; value: string; onOk: (v: string) => void } | null>(null)
   const [status, setStatus] = useState<Record<string, Status>>({})
   const [drag, setDrag] = useState<string | null>(null)
+  const [exporting, setExporting] = useState<string[] | null>(null)
+  // GitHub: quando cada um foi enviado/baixado e se mudou desde então
+  const [gh, setGh] = useState<Record<string, { at: number; commit: string; changed: boolean }>>({})
+  useEffect(() => {
+    api.githubWsStatus().then(setGh, () => undefined)
+  }, [workspaces])
   const search = useRef<HTMLInputElement>(null)
   const grid = useRef<HTMLDivElement>(null)
 
@@ -193,6 +200,8 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
       ['Configurações…', () => openModal({ kind: 'workspace', id: w.id })],
       ['Git…', () => openModal({ kind: 'git', id: w.id })],
       ['Rodar workspace…', () => openModal({ kind: 'run', id: w.id })],
+      ['Exportar…', () => setExporting([w.id])],
+      ['Salvar no GitHub…', () => openModal({ kind: 'github', ids: [w.id] })],
       ['Mover para pasta…', () => void run(api.moveWorkspace(w.id)).then((l) => l && setWorkspaces(l))],
       ['Abrir a pasta', () => void run(api.openWorkspaceDir(w.id))],
       ['Copiar comando zeno run', () => copyCmd(w)],
@@ -212,7 +221,7 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
     const t = e.target as HTMLElement
     const inText = t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'
     if (e.key === 'Escape') {
-      if (menu || confirm || ask || renaming) return
+      if (menu || confirm || ask || renaming || exporting) return
       if (q) setQ('')
       else onClose()
       e.preventDefault()
@@ -268,6 +277,14 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
             {st.git.files.length > 0 && <span className="text-torange"> ●{st.git.files.length}</span>}
             {st.git.ahead > 0 && <span className="text-tgreen"> ↑{st.git.ahead}</span>}
             {st.git.behind > 0 && <span className="text-tblue"> ↓{st.git.behind}</span>}
+          </span>
+        )}
+        {gh[w.id] && (
+          <span
+            className={`rounded bg-raised px-1.5 py-0.5 text-[10.5px] ${gh[w.id].changed ? 'text-torange' : 'text-dim'}`}
+            title={`GitHub: sincronizado em ${new Date(gh[w.id].at).toLocaleString('pt-BR')}${gh[w.id].commit ? ` (commit ${gh[w.id].commit.slice(0, 7)})` : ''}${gh[w.id].changed ? ' · mudou desde então' : ''}`}
+          >
+            ☁ {gh[w.id].changed ? '● mudou' : since(gh[w.id].at).replace('aberto ', '')}
           </span>
         )}
         {!!st?.secrets && <span className="rounded bg-raised px-1.5 py-0.5 text-[10.5px] text-tag" title="valores no cofre">🔒 {st.secrets}</span>}
@@ -411,6 +428,8 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
             <button className="btn btn-ghost py-0.5" onClick={() => setMeta([...sel], { pinned: true })}>★ Fixar</button>
             <button className="btn btn-ghost py-0.5" onClick={() => setAsk({ title: `Grupo de ${sel.size} workspace(s)`, value: '', onOk: (g) => setMeta([...sel], { group: g.trim() || undefined }) })}>Grupo…</button>
             <button className="btn btn-ghost py-0.5" onClick={() => (setMeta([...sel], (m) => ({ archived: !m.archived })), setSel(new Set()))}>Arquivar/desarquivar</button>
+            <button className="btn btn-ghost py-0.5" onClick={() => setExporting([...sel])}>⇡ Exportar…</button>
+            <button className="btn btn-ghost py-0.5" onClick={() => openModal({ kind: 'github', ids: [...sel] })}>☁ Salvar no GitHub…</button>
             <button className="btn btn-ghost py-0.5 text-tpink" onClick={() => setConfirm({ ids: [...sel] })}>Excluir…</button>
             <div className="flex-1" />
             <button className="btn btn-ghost py-0.5" onClick={() => setSel(new Set(visible.map((w) => w.id)))}>Selecionar todos ({kl('Ctrl+A')})</button>
@@ -471,7 +490,7 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
           if (!w) return null
           return (
             <div className="fixed inset-0 z-[60]" onMouseDown={() => setMenu(null)} onContextMenu={(e) => (e.preventDefault(), setMenu(null))}>
-              <div className="absolute min-w-[220px] rounded-lg border border-line bg-raised py-1 shadow-xl" style={{ left: Math.min(menu.x, window.innerWidth - 240), top: Math.min(menu.y, window.innerHeight - 420) }} onMouseDown={(e) => e.stopPropagation()}>
+              <div className="absolute min-w-[220px] rounded-lg border border-line bg-raised py-1 shadow-xl" style={{ left: Math.min(menu.x, window.innerWidth - 240), top: Math.min(menu.y, window.innerHeight - 480) }} onMouseDown={(e) => e.stopPropagation()}>
                 <div className="flex gap-1 px-3 py-1.5">
                   {COLORS.map((c) => (
                     <button key={c} className="h-4 w-4 rounded-full border border-black/20" style={{ background: c }} title="Cor" onClick={() => (setMeta([w.id], { color: c }), setMenu(null))} />
@@ -489,6 +508,8 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
             </div>
           )
         })()}
+
+      {exporting && <ExportDialog ids={exporting} onClose={() => setExporting(null)} />}
 
       {confirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onMouseDown={() => setConfirm(null)}>

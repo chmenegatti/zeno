@@ -12,7 +12,7 @@ const GH_ICON = (
 type Remote = { dir: string; id?: string; name: string; files: number }
 
 /** entrar no GitHub e salvar/baixar workspaces de um repositório privado */
-export function GitHubModal({ onClose }: { onClose: () => void }) {
+export function GitHubModal({ onClose, ids }: { onClose: () => void; ids?: string[] }) {
   const workspaces = useStore((s) => s.workspaces)
   const app = useStore((s) => s.app)
   const { run, notify } = useStore.getState()
@@ -23,7 +23,7 @@ export function GitHubModal({ onClose }: { onClose: () => void }) {
   const [repo, setRepo] = useState('')
   const [busy, setBusy] = useState('')
   const [remote, setRemote] = useState<Remote[] | null>(null)
-  const [pick, setPick] = useState<Set<string>>(() => new Set([activeWorkspace({ workspaces, app })?.id].filter(Boolean) as string[]))
+  const [pick, setPick] = useState<Set<string>>(() => new Set(ids?.length ? ids : ([activeWorkspace({ workspaces, app })?.id].filter(Boolean) as string[])))
 
   useEffect(() => {
     api.githubStatus().then((s) => {

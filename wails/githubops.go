@@ -4,6 +4,8 @@ package main
 // em <dataDir>/.github.json, no mesmo formato do Electron, com o token cifrado no cofre.
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"os"
@@ -23,6 +25,60 @@ type ghSaved struct {
 	github.Account
 	// token cifrado no cofre
 	Token string `json:"token"`
+}
+
+// último envio/download de cada workspace (#116), por conta → workspace, em .github-synced.json:
+// fica fora do .github.json pra sobreviver a sair e entrar de novo
+type ghSyncedFile map[string]map[string]ghSynced
+
+func (a *App) ghSyncedPath() string { return filepath.Join(a.store.Dir, ".github-synced.json") }
+
+func (a *App) ghSyncedRead() ghSyncedFile {
+	out := ghSyncedFile{}
+	if b, err := os.ReadFile(a.ghSyncedPath()); err == nil {
+		_ = json.Unmarshal(b, &out)
+	}
+	return out
+}
+
+type ghSynced struct {
+	Repo   string `json:"repo"`
+	At     int64  `json:"at"`
+	Commit string `json:"commit,omitempty"`
+	// hash dos YAML naquele momento
+	Hash string `json:"hash"`
+}
+
+// wsHash: hash dos YAML do workspace (os mesmos que vão pro GitHub)
+func wsHash(dir string) string {
+	files, err := github.WorkspaceFiles(dir)
+	if err != nil {
+		return ""
+	}
+	h := sha256.New()
+	for _, f := range files {
+		h.Write([]byte(f.Rel + "\x00" + f.Text + "\x00"))
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// ghMarkSynced: guarda o estado dos workspaces (id → pasta) como iguais aos do repositório
+func (a *App) ghMarkSynced(dirs map[string]string, commit string) {
+	g := a.ghRead()
+	if g == nil {
+		return
+	}
+	all := a.ghSyncedRead()
+	if all[g.Login] == nil {
+		all[g.Login] = map[string]ghSynced{}
+	}
+	now := time.Now().UnixMilli()
+	for id, dir := range dirs {
+		all[g.Login][id] = ghSynced{Repo: g.Repo, At: now, Commit: commit, Hash: wsHash(dir)}
+	}
+	if b, err := json.MarshalIndent(all, "", "  "); err == nil {
+		_ = os.WriteFile(a.ghSyncedPath(), b, 0o600)
+	}
 }
 
 type deviceFlow struct {
@@ -187,6 +243,7 @@ func (a *App) registerGitHub() {
 		ids, _ := Get[[]string](args, 0)
 		var list []github.LocalWorkspace
 		var names []string
+		dirs := map[string]string{}
 		for _, w := range st.List() {
 			dir := w.Map("location").Str("dir")
 			if dir == "" || !slices.Contains(ids, w.Str("id")) {
@@ -194,6 +251,7 @@ func (a *App) registerGitHub() {
 			}
 			list = append(list, github.LocalWorkspace{Dir: filepath.Base(dir), Name: w.Str("name"), LocalDir: dir})
 			names = append(names, w.Str("name"))
+			dirs[w.Str("id")] = dir
 		}
 		if len(list) == 0 {
 			return nil, errors.New("nenhum workspace escolhido")
@@ -201,8 +259,16 @@ func (a *App) registerGitHub() {
 		// data como o toLocaleString('pt-BR') do Electron
 		when := time.Now().Format("02/01/2006, 15:04:05")
 		r, err := s.Push(list, "Zeno: "+strings.Join(names, ", ")+" ("+when+")")
-		if err != nil || r == nil {
+		if err != nil {
 			return nil, err
+		}
+		commit := ""
+		if r != nil {
+			commit = r.Commit
+		}
+		a.ghMarkSynced(dirs, commit)
+		if r == nil {
+			return nil, nil
 		}
 		return r, nil
 	})
@@ -235,7 +301,30 @@ func (a *App) registerGitHub() {
 			return nil, err
 		}
 		workspaces := st.Load()
+		for _, w := range st.List() {
+			if w.Map("location").Str("dir") == target {
+				a.ghMarkSynced(map[string]string{w.Str("id"): target}, "")
+			}
+		}
 		a.Emit("store:changed", workspaces)
 		return doc.New("files", n, "workspaces", workspaces), nil
+	})
+	// situação de cada workspace no GitHub: quando foi enviado/baixado e se mudou desde então
+	a.handle("githubWsStatus", func(args Args) (any, error) {
+		g := a.ghRead()
+		out := doc.New()
+		if g == nil {
+			return out, nil
+		}
+		synced := a.ghSyncedRead()[g.Login]
+		for _, w := range st.List() {
+			sy, ok := synced[w.Str("id")]
+			if !ok || sy.Repo != g.Repo {
+				continue
+			}
+			dir := w.Map("location").Str("dir")
+			out.Set(w.Str("id"), doc.New("at", sy.At, "commit", sy.Commit, "changed", dir == "" || wsHash(dir) != sy.Hash))
+		}
+		return out, nil
 	})
 }
