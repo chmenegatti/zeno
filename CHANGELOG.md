@@ -2,6 +2,23 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [1.1.0](https://github.com/chmenegatti/zeno/compare/v1.0.0...v1.1.0) (2026-11-20)
+
+Além do REST: **GraphQL, WebSocket, SSE e gRPC**, **OAuth 2.0** completo, rede corporativa (proxy, CA própria e mTLS), **mock server** a partir de exemplos e **exportação** pro Insomnia e Postman.
+
+### Novidades
+
+* **gRPC**: URL `grpc://` ou `grpcs://`; serviços por server reflection ou arquivo `.proto`, mensagem em JSON com exemplo gerado do schema, unary, server, client e bidi streaming com log de cada mensagem, status e trailers; headers viram metadata; importa o gRPC do Insomnia ([#125](https://github.com/chmenegatti/zeno/pull/125))
+* **WebSocket**: URL `ws://` ou `wss://`; conectar, mandar o body como mensagem (com variáveis e tags), log com horário, filtro e JSON formatado; importa o WebSocket do Insomnia ([#123](https://github.com/chmenegatti/zeno/pull/123))
+* **Server-Sent Events**: respostas `text/event-stream` mostram cada evento conforme chega, com parar; aba *Eventos* no histórico ([#123](https://github.com/chmenegatti/zeno/pull/123))
+* **GraphQL**: editor com autocomplete e validação pelo schema (introspecção na URL do request, sem gravar histórico), variáveis em JSON com `{{ }}`, escolha da operação e formatação; GraphQL do Insomnia e do Postman importa sem ajuste ([#121](https://github.com/chmenegatti/zeno/pull/121))
+* **OAuth 2.0**: authorization code (com PKCE), client credentials, senha, device code e implicit; login no navegador do sistema, token em cache cifrado no cofre e renovado sozinho; herança por pasta; importa do Insomnia e do Postman ([#120](https://github.com/chmenegatti/zeno/pull/120))
+* **Rede por workspace**: proxy (do sistema ou personalizado, HTTP/HTTPS/SOCKS5, com exceções), CA própria somada às do sistema e certificado de cliente (mTLS) por host, PEM ou PFX com a senha no cofre ([#119](https://github.com/chmenegatti/zeno/pull/119))
+* **Mock server**: ★ *exemplo* salva uma resposta no request (aba *Exemplos*: status, headers, body, atraso); *Ligar mock* sobe um servidor local por workspace que responde cada rota com o exemplo (`GET {{ base_url }}/users/{{ id }}` → `GET /users/1`), com CORS liberado ([#124](https://github.com/chmenegatti/zeno/pull/124))
+* **Exportar workspaces**: zip com os YAML do Zeno, Insomnia (JSON v4) e Postman (coleção v2.1 + ambientes), de um ou vários, com prévia do que não cabe no outro formato e segredos vazios ou abertos (você escolhe) ([#122](https://github.com/chmenegatti/zeno/pull/122))
+* **GitHub na tela de workspaces**: quando cada workspace foi enviado/baixado e se mudou desde então; *Salvar no GitHub* direto do cartão e da seleção ([#122](https://github.com/chmenegatti/zeno/pull/122))
+
+
 ## [1.0.0](https://github.com/chmenegatti/zeno/compare/v0.7.1...v1.0.0) (2026-11-20)
 
 O Zeno foi reescrito em **Go** ([Wails](https://wails.io)): a janela usa o navegador do próprio sistema (WebKitGTK no Linux, WebView2 no Windows, WKWebView no macOS) no lugar do Electron. A interface é a mesma.
