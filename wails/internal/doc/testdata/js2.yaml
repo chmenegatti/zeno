@@ -1,0 +1,15 @@
+id: fld_1
+name: Pasta
+sortKey: 0.5
+headers:
+  - name: Accept
+    value: "*/*"
+    enabled: true
+auth:
+  type: basic
+  username: ana
+  password: "{{ senha }}"
+vars: {}
+scripts:
+  pre: |
+    zeno.env.set('x', 1)

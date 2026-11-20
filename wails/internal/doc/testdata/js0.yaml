@@ -1,0 +1,31 @@
+id: req_1
+name: "Listar: itens"
+description: |-
+  linha1
+  linha2
+method: GET
+url: "{{ host }}/p?a=1&b=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx fim com espaço no meio yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+params:
+  - name: q
+    value: it's
+    enabled: true
+  - name: vazio
+    value: ""
+    enabled: false
+headers: []
+body:
+  mime: application/json
+  text: |-
+    {
+      "nome": "Ana",
+      "tags": ["a", "b"]
+    }
+auth:
+  type: bearer
+  token: "{% response 'body', 'req_x', '$.t' %}"
+assertions:
+  - enabled: true
+    source: status
+    op: lt
+    value: "300"
+sortKey: 1795127002350

@@ -1,0 +1,13 @@
+id: env_criado_dev
+name: Dev
+parentId: env_ac1df4d76a4708a23e5eb4d446df682c
+color: "#00ffd4"
+data:
+  base: http://127.0.0.1:4597
+  X-API-Key: k
+  limite: 20
+  ligado: true
+  lista:
+    - 1
+    - dois
+sortKey: 1

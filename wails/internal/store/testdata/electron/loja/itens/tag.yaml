@@ -1,0 +1,13 @@
+id: req_4
+name: Tag
+method: GET
+url: "{% uuid 'v4' %}"
+params: []
+headers: []
+body:
+  mime: null
+auth:
+  type: none
+scripts:
+  pre: console.log(1)
+sortKey: 1

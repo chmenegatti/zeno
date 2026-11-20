@@ -1,0 +1,14 @@
+id: req_2
+name: Criar
+method: POST
+url: "{{ base_url }}/itens"
+params: []
+headers: []
+body:
+  mime: application/json
+  text: '{"a":1}'
+auth:
+  type: basic
+  username: u
+  password: p
+sortKey: 1

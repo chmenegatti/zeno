@@ -3,6 +3,8 @@ package vars
 import (
 	"reflect"
 	"testing"
+
+	"github.com/chmenegatti/zeno/wails/internal/doc"
 )
 
 func TestPath(t *testing.T) {
@@ -23,7 +25,7 @@ func TestPath(t *testing.T) {
 }
 
 func TestRender(t *testing.T) {
-	r := &renderer{vars: Doc{"X-API-Key": "k1", "a": Doc{"b.c": 2, "list": []any{10, 20}}, "base": "http://h", "url": "{{ base }}/v1"}, missing: map[string]bool{}, unsupported: map[string]bool{}}
+	r := &renderer{vars: doc.New("X-API-Key", "k1", "a", doc.New("b.c", int64(2), "list", []any{int64(10), int64(20)}), "base", "http://h", "url", "{{ base }}/v1"), missing: map[string]bool{}, unsupported: map[string]bool{}}
 	cases := map[string]string{
 		"{{ _['X-API-Key'] }}": "k1",
 		"{{ _.a['b.c'] }}":     "2",
@@ -43,22 +45,22 @@ func TestRender(t *testing.T) {
 }
 
 func TestPrepareHerdaAuthEHeaders(t *testing.T) {
-	ws := Doc{
-		"settings": Doc{"insecureTLS": false, "timeoutMs": 5000},
-		"environments": []any{
-			Doc{"id": "base", "parentId": nil, "data": Doc{"host": "api.local", "tk": "base-token"}},
-			Doc{"id": "dev", "parentId": "base", "data": Doc{"tk": "dev-token"}},
+	ws := doc.New(
+		"settings", doc.New("insecureTLS", false, "timeoutMs", int64(5000)),
+		"environments", []any{
+			doc.New("id", "base", "parentId", nil, "data", doc.New("host", "api.local", "tk", "base-token")),
+			doc.New("id", "dev", "parentId", "base", "data", doc.New("tk", "dev-token")),
 		},
-	}
-	folder := Doc{"kind": "folder", "headers": []any{Doc{"name": "X-Pasta", "value": "1", "enabled": true}}, "auth": Doc{"type": "bearer", "token": "{{ tk }}"}, "vars": Doc{}}
-	req := Doc{
-		"id": "r1", "method": "POST", "url": "{{ host }}/itens",
-		"params":  []any{Doc{"name": "q", "value": "a b", "enabled": true}},
-		"headers": []any{Doc{"name": "X-Req", "value": "2", "enabled": true}},
-		"body":    Doc{"mime": "application/json", "text": `{"x":1}`},
-		"auth":    Doc{"type": "inherit"},
-	}
-	p := Prepare(ws, req, []Doc{folder}, "dev")
+	)
+	folder := doc.New("kind", "folder", "headers", []any{doc.New("name", "X-Pasta", "value", "1", "enabled", true)}, "auth", doc.New("type", "bearer", "token", "{{ tk }}"), "vars", doc.New())
+	req := doc.New(
+		"id", "r1", "method", "POST", "url", "{{ host }}/itens",
+		"params", []any{doc.New("name", "q", "value", "a b", "enabled", true)},
+		"headers", []any{doc.New("name", "X-Req", "value", "2", "enabled", true)},
+		"body", doc.New("mime", "application/json", "text", `{"x":1}`),
+		"auth", doc.New("type", "inherit"),
+	)
+	p := Prepare(ws, req, []*Doc{folder}, "dev")
 	if p.URL != "http://api.local/itens?q=a+b" {
 		t.Errorf("URL = %q", p.URL)
 	}

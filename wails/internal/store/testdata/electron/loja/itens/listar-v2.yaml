@@ -1,0 +1,21 @@
+id: req_1
+name: Listar v2
+method: GET
+url: "{{ _.base_url }}/itens"
+params:
+  - name: page
+    value: "1"
+    enabled: true
+  - name: x
+    value: y
+    enabled: false
+headers:
+  - name: Accept
+    value: application/json
+    enabled: true
+body:
+  mime: null
+auth:
+  type: bearer
+  token: "{{ _.token }}"
+sortKey: 2

@@ -1,0 +1,39 @@
+id: req_d50e4827e7ded5643501e32d9246e98a
+name: Request com tudo
+description: |-
+  várias
+  linhas
+method: GET
+url: "{{ base }}/v1/itens?ativo=true"
+params:
+  - name: q
+    value: it's
+    enabled: true
+headers:
+  - name: X-Api-Key
+    value: "{{ _['X-API-Key'] }}"
+    enabled: false
+body:
+  mime: application/json
+  text: |-
+    {
+      "nome": "Ana",
+      "preco": 10.5
+    }
+auth:
+  type: bearer
+  token: "{% response 'body', 'req_x', '$.token', 'when-expired', 3600 %}"
+scripts:
+  pre: |
+    zeno.env.set('t', 1)
+assertions:
+  - enabled: true
+    source: status
+    op: lt
+    value: "300"
+  - enabled: true
+    source: json
+    path: $.id
+    op: exists
+sendCookies: false
+sortKey: 1795134516318

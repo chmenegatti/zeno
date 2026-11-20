@@ -1,0 +1,58 @@
+id: env_dev
+name: Desenvolvimento
+parentId: env_base
+color: "#00ffd4"
+data:
+  base_url: http://127.0.0.1:4597
+  versao: v1
+  limite: 20
+  ativo: true
+  nada: null
+  lista:
+    - 1
+    - dois
+    - tres: 3
+  obj: {}
+  senha: $zeno$v1$abc==
+  X-API-Key: k
+  com espaço: sim
+  num_texto: "123"
+  bool_texto: "true"
+  data: 2026-11-19
+  hash: "a #b"
+  ponto: 1.5
+  neg: -2
+  emoji: olá ✓
+  tab: a	b
+  trail: "fim "
+  lead: " começo"
+  multi_trail: |
+    a
+    b
+  colon: "a: b"
+  url_q: http://x?a=1#f
+  star: "*x"
+  amp: "&x"
+  bang: "!x"
+  pct: "%x"
+  at: "@x"
+  back: "`x"
+  quote: '"x"'
+  sq: "'x'"
+  dash: "- x"
+  q: ?x
+  pipe: "|x"
+  gt: ">x"
+  brace: "{x}"
+  brack: "[x]"
+  comma: a, b
+  tilde: "~"
+  yes: yes
+  no: no
+  on: on
+  octal: "0755"
+  hex: "0x1F"
+  exp: "1e3"
+  inf: ".inf"
+  empty: ""
+sortKey: 1
