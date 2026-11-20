@@ -7,6 +7,7 @@ TAGS = desktop,production,webkit2_41
 frontend:
 	cd .. && npx electron-vite build
 	rm -rf frontend/dist && mkdir -p frontend && cp -r ../out/renderer frontend/dist
+	cp ../build/icons/512x512.png frontend/icon.png
 
 build: frontend
 	CGO_ENABLED=1 go build -tags $(TAGS) -trimpath -ldflags "-s -w" -o build/zeno .
