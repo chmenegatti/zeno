@@ -1,9 +1,11 @@
 name: Pacotes Go
 
-# Pacotes da versão Go (migração: #53, fase 6 #80). Por enquanto só artefatos do workflow; o release
-# continua sendo o do Electron até a troca (fase 7).
+# Pacotes da versão Go nos três sistemas: .deb, .rpm e AppImage (Linux), instalador e .zip (Windows),
+# .dmg universal (macOS) e a CLI de cada um. Em PR/push ficam como artefatos; o release.yml chama este
+# workflow na tag e publica tudo.
 
 on:
+  workflow_call:
   workflow_dispatch:
   push:
     branches: [main]
@@ -16,8 +18,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: go-packages-${{ github.ref }}
-  cancel-in-progress: true
+  group: go-packages-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   linux:
@@ -48,7 +50,10 @@ jobs:
       - run: make deb
       - run: make rpm
       - run: make appimage
-      - run: make cli
+      - name: CLI
+        run: |
+          make cli
+          tar -C build -czf "build/Zeno-$(node -p "require('../package.json').version")-linux-cli.tar.gz" zeno-cli
       - name: Conferir o .deb
         run: |
           dpkg-deb -I build/*.deb
@@ -60,7 +65,7 @@ jobs:
             wails/build/*.deb
             wails/build/*.rpm
             wails/build/*.AppImage
-            wails/build/zeno-cli
+            wails/build/*-linux-cli.tar.gz
           if-no-files-found: error
 
   windows:
