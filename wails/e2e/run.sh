@@ -2,7 +2,9 @@
 # Teste ponta a ponta da versão Go (#86): sobe o servidor de teste, abre o app numa pasta de dados
 # temporária e roda e2e.js pelos mesmos canais da interface. Precisa de tela (no CI: xvfb-run).
 # Sai com erro se algum PASS virar FAIL. Uso: make e2e (depois de make build).
-set -u
+set -u -o pipefail
+# commit do teste de git: identidade própria (o runner do CI não tem)
+export GIT_AUTHOR_NAME=Zeno GIT_AUTHOR_EMAIL=e2e@zeno.local GIT_COMMITTER_NAME=Zeno GIT_COMMITTER_EMAIL=e2e@zeno.local
 here=$(cd "$(dirname "$0")" && pwd)
 data=$(mktemp -d)
 node "$here/srv.mjs" >/dev/null 2>&1 &
@@ -16,5 +18,8 @@ out=$(ZENO_DATA_DIR=$data ZENO_SCRIPT="$(cat "$here/e2e.js")" timeout 180 "$here
     *"[renderer]"*) echo "${line#*\[renderer\] }" ;;
   esac
 done)
+status=$?
 echo "$out"
+# o app tem que sair sozinho no fim do roteiro (timeout = travou)
+[ "$status" -eq 0 ] || { echo "app saiu com $status"; exit 1; }
 echo "$out" | grep -q "RESULTADO .* 0 falhas"
