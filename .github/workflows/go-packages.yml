@@ -103,11 +103,12 @@ jobs:
         run: |
           v=$(node -p "require('../package.json').version")
           cd build/bin && 7z a "../Zeno-$v-windows-portable.zip" zeno.exe zeno-cli.exe
+          mv Zeno-amd64-installer.exe "../Zeno-$v-windows-setup.exe"
           ls -la .. .
       - uses: actions/upload-artifact@v7
         with:
           name: zeno-windows
           path: |
-            wails/build/bin/*installer.exe
+            wails/build/*-windows-setup.exe
             wails/build/*-windows-portable.zip
           if-no-files-found: error
