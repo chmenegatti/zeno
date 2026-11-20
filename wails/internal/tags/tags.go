@@ -304,9 +304,19 @@ func Extract(res *doc.Doc, field, filterRaw string) (string, error) {
 	}
 	filter := DecodeFilter(filterRaw)
 	if field == "header" {
-		for _, h := range res.List("headers") {
-			if p, ok := h.([]any); ok && len(p) == 2 && strings.EqualFold(doc.AsStr(p[0]), filter) {
-				return doc.AsStr(p[1]), nil
+		// recém-enviada: [][2]string; lida do histórico: []any
+		switch hs := res.Get("headers").(type) {
+		case [][2]string:
+			for _, p := range hs {
+				if strings.EqualFold(p[0], filter) {
+					return p[1], nil
+				}
+			}
+		case []any:
+			for _, h := range hs {
+				if p, ok := h.([]any); ok && len(p) == 2 && strings.EqualFold(doc.AsStr(p[0]), filter) {
+					return doc.AsStr(p[1]), nil
+				}
 			}
 		}
 		return "", fmt.Errorf("header %q não está na resposta", filter)

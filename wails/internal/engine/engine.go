@@ -121,11 +121,20 @@ func (e *Engine) Latest(id string) *Doc {
 
 // Execute: envia o request (resolvendo tags e mandando as dependências de {% response %})
 func (e *Engine) Execute(ws, req *Doc, envID string, depth int) (*Doc, error) {
+	return e.ExecuteWith(ws, req, envID, depth, nil)
+}
+
+// ExecuteWith: Execute com variáveis extras (linha de dados do executor, --var da CLI), que valem
+// sobre ambiente e pastas
+func (e *Engine) ExecuteWith(ws, req *Doc, envID string, depth int, extraVars *Doc) (*Doc, error) {
 	_, anc := doc.Find(ws, req.Str("id"))
 	// segredos do cofre abertos só aqui, só pro envio
 	openWS, openReq, openAnc, secrets, err := e.openForSend(ws, req, anc)
 	if err != nil {
 		return nil, err
+	}
+	if extraVars != nil && extraVars.Len() > 0 {
+		openAnc = append(append([]*Doc{}, openAnc...), pseudoFolder("_data", extraVars))
 	}
 
 	// ---------- scripts: pastas de fora pra dentro, depois o request ----------

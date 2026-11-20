@@ -50,6 +50,11 @@ func TestExtract(t *testing.T) {
 	eq(t, v, "K")
 	v, _ = Extract(res("", now), "header", b64("x-session"))
 	eq(t, v, "abc")
+	// resposta recém-enviada (dependência): headers como [][2]string
+	fresh := res("", now)
+	fresh.Set("headers", [][2]string{{"X-Session", "abc"}})
+	v, _ = Extract(fresh, "header", b64("x-session"))
+	eq(t, v, "abc")
 	v, _ = Extract(res(`{"a":[{"id":1},{"id":2}]}`, now), "body", "$.a[-1].id")
 	eq(t, v, "2")
 	v, _ = Extract(res(`{"a":[{"id":1},{"id":2}]}`, now), "body", "$..id")

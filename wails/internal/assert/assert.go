@@ -154,9 +154,9 @@ func Evaluate(assertions []any, res *doc.Doc, resolve func(string) string) []Tes
 		case "header":
 			key := strings.ToLower(strings.TrimSpace(path))
 			var hs []string
-			for _, h := range res.List("headers") {
-				if p, ok := h.([]any); ok && len(p) == 2 && strings.ToLower(doc.AsStr(p[0])) == key {
-					hs = append(hs, doc.AsStr(p[1]))
+			for _, p := range headerPairs(res.Get("headers")) {
+				if strings.ToLower(p[0]) == key {
+					hs = append(hs, p[1])
 				}
 			}
 			found = len(hs) > 0
@@ -226,3 +226,20 @@ func Evaluate(assertions []any, res *doc.Doc, resolve func(string) string) []Tes
 type errText string
 
 func (e errText) Error() string { return string(e) }
+
+// headerPairs: headers da resposta como pares; o envio grava [][2]string, o histórico lido do disco []any
+func headerPairs(v any) [][2]string {
+	switch x := v.(type) {
+	case [][2]string:
+		return x
+	case []any:
+		out := [][2]string{}
+		for _, h := range x {
+			if p, ok := h.([]any); ok && len(p) == 2 {
+				out = append(out, [2]string{doc.AsStr(p[0]), doc.AsStr(p[1])})
+			}
+		}
+		return out
+	}
+	return nil
+}

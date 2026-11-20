@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Loja &lt;&amp;&gt; &quot;API&quot; &apos;v2&apos;" tests="5" failures="2" time="1.234">
+  <testsuite name="Loja &lt;&amp;&gt; &quot;API&quot; &apos;v2&apos; #1" tests="3" failures="2" time="0.073">
+    <testcase classname="Loja &lt;&amp;&gt; &quot;API&quot; &apos;v2&apos;" name="login" time="0.063"/>
+    <testcase classname="Loja &lt;&amp;&gt; &quot;API&quot; &apos;v2&apos; / Usuários / Admin" name="me &lt;eu&gt;" time="0.010">
+      <failure message="status = 200: valor: 401">GET http://x/me?a=1&amp;b=2 -&gt; 401
+status = 200: valor: 401
+$.name existe</failure>
+    </testcase>
+    <testcase classname="Loja &lt;&amp;&gt; &quot;API&quot; &apos;v2&apos; / Usuários" name="erro" time="0.000">
+      <failure message="connect ECONNREFUSED">GET http://nada -&gt; 0
+connect ECONNREFUSED</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Loja &lt;&amp;&gt; &quot;API&quot; &apos;v2&apos; #2" tests="2" failures="0" time="0.004">
+    <testcase classname="Loja &lt;&amp;&gt; &quot;API&quot; &apos;v2&apos;" name="login" time="0.001"/>
+    <testcase classname="Loja &lt;&amp;&gt; &quot;API&quot; &apos;v2&apos;" name="vazio" time="0.003"/>
+  </testsuite>
+</testsuites>
