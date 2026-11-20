@@ -357,10 +357,10 @@ func TestOAuth2NoEnvio(t *testing.T) {
 }
 
 func TestIntrospectSemHistorico(t *testing.T) {
-	var gotBody, gotAuth, gotCT string
+	var gotBody, gotAuth, gotCT, gotCookie string
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
-		gotBody, gotAuth, gotCT = string(b), r.Header.Get("Authorization"), r.Header.Get("Content-Type")
+		gotBody, gotAuth, gotCT, gotCookie = string(b), r.Header.Get("Authorization"), r.Header.Get("Content-Type"), r.Header.Get("Cookie")
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"data":{"__schema":{}}}`))
 	}))
@@ -377,6 +377,15 @@ func TestIntrospectSemHistorico(t *testing.T) {
 	}
 	if !strings.Contains(gotBody, "__schema") || gotAuth != "Bearer tk" || gotCT != "application/json" {
 		t.Errorf("body %q auth %q ct %q", gotBody, gotAuth, gotCT)
+	}
+	// cookies do workspace vão, a menos que o request desligue
+	e.Cookies.Store(ws.Str("id"), api.URL, []string{"sessao=s1; Path=/"})
+	if _, err := e.Introspect(ws, req, "", false); err != nil || gotCookie != "sessao=s1" {
+		t.Fatalf("cookie %q %v", gotCookie, err)
+	}
+	req.Set("sendCookies", false)
+	if _, err := e.Introspect(ws, req, "", false); err != nil || gotCookie != "" {
+		t.Fatalf("sendCookies=false mandou %q %v", gotCookie, err)
 	}
 	e.Store.Flush()
 	if raw, _ := os.ReadFile(e.Store.ResponsesFile("req_login")); len(raw) > 0 && strings.Contains(string(raw), "__schema") {

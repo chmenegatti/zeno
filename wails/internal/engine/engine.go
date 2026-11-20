@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/chmenegatti/zeno/wails/internal/oauth2"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -901,7 +902,12 @@ func (e *Engine) Introspect(ws, req *Doc, envID string, interactive bool) (*Doc,
 		p.Headers = append(p.Headers, [2]string{"Authorization", strings.TrimSpace(p.OAuth2.Prefix + " " + tok.Access)})
 	}
 	wsID := ws.Str("id")
-	rec := httpc.Send("", p, httpc.CookieHooks{Header: func(u string) string { return e.Cookies.Header(wsID, u) }})
+	var hooks httpc.CookieHooks
+	if req.Get("sendCookies") != false {
+		hooks.Header = func(u string) string { return e.Cookies.Header(wsID, u) }
+	}
+	// id próprio: não cancela o envio do request nem outra introspecção em andamento
+	rec := httpc.Send("introspect:"+req.Str("id")+":"+strconv.FormatInt(time.Now().UnixNano(), 36), p, hooks)
 	body := ""
 	if rec.Str("bodyEncoding") == "utf8" {
 		body = rec.Str("body")
