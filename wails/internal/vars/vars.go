@@ -65,17 +65,29 @@ func lookup(vars *Doc, p string) (any, bool) {
 
 type renderer struct {
 	vars        *Doc
+	tags        map[string]string
 	missing     map[string]bool
 	unsupported map[string]bool
+}
+
+// Render resolve {{ variáveis }} (tags ficam como estão), como render(text, vars).value no Electron
+func Render(text string, vars *Doc) string {
+	r := &renderer{vars: vars, missing: map[string]bool{}, unsupported: map[string]bool{}}
+	return r.render(text, 0)
 }
 
 func (r *renderer) render(in string, depth int) string {
 	if !strings.Contains(in, "{{") && !strings.Contains(in, "{%") {
 		return in
 	}
-	for _, t := range tagRe.FindAllString(in, -1) {
-		r.unsupported[t] = true
-	}
+	// tags já resolvidas entram no lugar; as outras ficam e viram aviso
+	in = tagRe.ReplaceAllStringFunc(in, func(tag string) string {
+		if v, ok := r.tags[tag]; ok {
+			return v
+		}
+		r.unsupported[tag] = true
+		return tag
+	})
 	return varRe.ReplaceAllStringFunc(in, func(whole string) string {
 		p := varRe.FindStringSubmatch(whole)[1]
 		v, ok := lookup(r.vars, p)
@@ -179,8 +191,8 @@ type Part struct {
 }
 
 // Prepare monta o request final: variáveis, auth e headers herdados (port de prepare.ts)
-func Prepare(ws, req *Doc, anc []*Doc, envID string) Prepared {
-	r := &renderer{vars: BuildVars(ws, envID, anc), missing: map[string]bool{}, unsupported: map[string]bool{}}
+func Prepare(ws, req *Doc, anc []*Doc, envID string, tagValues map[string]string) Prepared {
+	r := &renderer{vars: BuildVars(ws, envID, anc), tags: tagValues, missing: map[string]bool{}, unsupported: map[string]bool{}}
 	R := func(s string) string { return r.render(s, 0) }
 	u := strings.TrimSpace(R(req.Str("url")))
 	if u != "" && !schRe.MatchString(u) && !strings.HasPrefix(u, "{{") && !strings.HasPrefix(u, "{%") {
