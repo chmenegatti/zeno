@@ -1,0 +1,8 @@
+id: fld_1
+name: Itens
+sortKey: 5
+headers: []
+auth:
+  type: inherit
+vars:
+  base_url: https://pasta.local

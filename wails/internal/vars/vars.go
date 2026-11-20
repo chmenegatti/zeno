@@ -6,7 +6,6 @@ package vars
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"net/url"
 	"regexp"
@@ -42,16 +41,15 @@ func Path(p string) []string {
 	return parts
 }
 
-func lookup(vars Doc, p string) (any, bool) {
+func lookup(vars *Doc, p string) (any, bool) {
 	var cur any = vars
 	for _, part := range Path(p) {
 		switch c := cur.(type) {
-		case Doc:
-			v, ok := c[part]
-			if !ok {
+		case *Doc:
+			if !c.Has(part) {
 				return nil, false
 			}
-			cur = v
+			cur = c.Get(part)
 		case []any:
 			i, err := strconv.Atoi(part)
 			if err != nil || i < 0 || i >= len(c) {
@@ -66,7 +64,7 @@ func lookup(vars Doc, p string) (any, bool) {
 }
 
 type renderer struct {
-	vars        Doc
+	vars        *Doc
 	missing     map[string]bool
 	unsupported map[string]bool
 }
@@ -93,52 +91,53 @@ func (r *renderer) render(in string, depth int) string {
 			return x
 		case nil:
 			return "null"
-		case Doc, []any:
+		case *Doc, []any:
 			b, _ := json.Marshal(x)
 			return string(b)
 		default:
-			return fmt.Sprint(x)
+			return doc.AsStr(x)
 		}
 	})
 }
 
-func deepMerge(a, b Doc) Doc {
-	out := Doc{}
-	for k, v := range a {
-		out[k] = v
+func deepMerge(a, b *Doc) *Doc {
+	out := a.Clone()
+	if out == nil {
+		out = doc.New()
 	}
-	for k, v := range b {
-		pa, okA := out[k].(Doc)
-		pb, okB := v.(Doc)
+	for _, k := range b.Keys() {
+		v := b.Get(k)
+		pa, okA := out.Get(k).(*Doc)
+		pb, okB := v.(*Doc)
 		if okA && okB {
-			out[k] = deepMerge(pa, pb)
+			out.Set(k, deepMerge(pa, pb))
 		} else {
-			out[k] = v
+			out.Set(k, v)
 		}
 	}
 	return out
 }
 
 // BuildVars: base → sub-ambiente ativo → pastas (da raiz até a mais próxima)
-func BuildVars(ws Doc, envID string, folders []Doc) Doc {
-	vars := Doc{}
-	envs, _ := ws["environments"].([]any)
+func BuildVars(ws *Doc, envID string, folders []*Doc) *Doc {
+	vars := doc.New()
+	envs := ws.List("environments")
 	for _, e := range envs {
-		if d := e.(Doc); d["parentId"] == nil {
-			if data, ok := d["data"].(Doc); ok {
+		if d, _ := e.(*Doc); d != nil && d.Get("parentId") == nil {
+			if data := d.Map("data"); data != nil {
 				vars = deepMerge(vars, data)
 			}
 		}
 	}
 	for _, e := range envs {
-		if d := e.(Doc); envID != "" && doc.Str(d, "id") == envID && d["parentId"] != nil {
-			if data, ok := d["data"].(Doc); ok {
+		if d, _ := e.(*Doc); d != nil && envID != "" && d.Str("id") == envID && d.Get("parentId") != nil {
+			if data := d.Map("data"); data != nil {
 				vars = deepMerge(vars, data)
 			}
 		}
 	}
 	for _, f := range folders {
-		if v, ok := f["vars"].(Doc); ok {
+		if v := f.Map("vars"); v != nil {
 			vars = deepMerge(vars, v)
 		}
 	}
@@ -151,11 +150,11 @@ func kvs(v any) []kv {
 	arr, _ := v.([]any)
 	out := []kv{}
 	for _, it := range arr {
-		m, _ := it.(Doc)
-		if m == nil || m["enabled"] == false || doc.Str(m, "name") == "" {
+		m, _ := it.(*Doc)
+		if m == nil || m.Get("enabled") == false || m.Str("name") == "" {
 			continue
 		}
-		out = append(out, kv{doc.Str(m, "name"), doc.Str(m, "value")})
+		out = append(out, kv{m.Str("name"), m.Str("value")})
 	}
 	return out
 }
@@ -174,22 +173,22 @@ type Prepared struct {
 }
 
 // Prepare monta o request final: variáveis, auth e headers herdados (port de prepare.ts)
-func Prepare(ws, req Doc, anc []Doc, envID string) Prepared {
+func Prepare(ws, req *Doc, anc []*Doc, envID string) Prepared {
 	r := &renderer{vars: BuildVars(ws, envID, anc), missing: map[string]bool{}, unsupported: map[string]bool{}}
 	R := func(s string) string { return r.render(s, 0) }
-	u := strings.TrimSpace(R(doc.Str(req, "url")))
+	u := strings.TrimSpace(R(req.Str("url")))
 	if u != "" && !schRe.MatchString(u) && !strings.HasPrefix(u, "{{") && !strings.HasPrefix(u, "{%") {
 		u = "http://" + u
 	}
 	query := [][2]string{}
-	for _, p := range kvs(req["params"]) {
+	for _, p := range kvs(req.Get("params")) {
 		query = append(query, [2]string{R(p.name), R(p.value)})
 	}
 	// headers das pastas (raiz primeiro) + do request; request vence em nome igual
 	order := []string{}
 	hm := map[string]kv{}
 	for _, f := range anc {
-		for _, h := range kvs(f["headers"]) {
+		for _, h := range kvs(f.Get("headers")) {
 			k := strings.ToLower(h.name)
 			if _, ok := hm[k]; !ok {
 				order = append(order, k)
@@ -197,7 +196,7 @@ func Prepare(ws, req Doc, anc []Doc, envID string) Prepared {
 			hm[k] = h
 		}
 	}
-	for _, h := range kvs(req["headers"]) {
+	for _, h := range kvs(req.Get("headers")) {
 		k := strings.ToLower(h.name)
 		if _, ok := hm[k]; !ok {
 			order = append(order, k)
@@ -216,29 +215,29 @@ func Prepare(ws, req Doc, anc []Doc, envID string) Prepared {
 		}
 		return false
 	}
-	auth, _ := req["auth"].(Doc)
-	for i := len(anc) - 1; doc.Str(auth, "type") == "inherit" && i >= 0; i-- {
-		auth, _ = anc[i]["auth"].(Doc)
+	auth := req.Map("auth")
+	for i := len(anc) - 1; auth.Str("type") == "inherit" && i >= 0; i-- {
+		auth = anc[i].Map("auth")
 	}
-	switch doc.Str(auth, "type") {
+	switch auth.Str("type") {
 	case "basic":
 		if !has("authorization") {
-			headers = append(headers, [2]string{"Authorization", "Basic " + base64.StdEncoding.EncodeToString([]byte(R(doc.Str(auth, "username"))+":"+R(doc.Str(auth, "password"))))})
+			headers = append(headers, [2]string{"Authorization", "Basic " + base64.StdEncoding.EncodeToString([]byte(R(auth.Str("username"))+":"+R(auth.Str("password"))))})
 		}
 	case "bearer":
 		if !has("authorization") {
-			pre := R(doc.Str(auth, "prefix"))
+			pre := R(auth.Str("prefix"))
 			if pre == "" {
 				pre = "Bearer"
 			}
-			headers = append(headers, [2]string{"Authorization", strings.TrimSpace(pre + " " + R(doc.Str(auth, "token")))})
+			headers = append(headers, [2]string{"Authorization", strings.TrimSpace(pre + " " + R(auth.Str("token")))})
 		}
 	case "apikey":
-		if doc.Str(auth, "key") != "" {
-			if doc.Str(auth, "addTo") == "query" {
-				query = append(query, [2]string{R(doc.Str(auth, "key")), R(doc.Str(auth, "value"))})
+		if auth.Str("key") != "" {
+			if auth.Str("addTo") == "query" {
+				query = append(query, [2]string{R(auth.Str("key")), R(auth.Str("value"))})
 			} else {
-				headers = append(headers, [2]string{R(doc.Str(auth, "key")), R(doc.Str(auth, "value"))})
+				headers = append(headers, [2]string{R(auth.Str("key")), R(auth.Str("value"))})
 			}
 		}
 	}
@@ -253,13 +252,13 @@ func Prepare(ws, req Doc, anc []Doc, envID string) Prepared {
 		}
 		u += sep + strings.Join(parts, "&")
 	}
-	p := Prepared{Method: doc.Str(req, "method"), URL: u, BodyKind: "none"}
-	body, _ := req["body"].(Doc)
-	mime := doc.Str(body, "mime")
+	p := Prepared{Method: req.Str("method"), URL: u, BodyKind: "none"}
+	body := req.Map("body")
+	mime := body.Str("mime")
 	switch {
 	case mime == "application/x-www-form-urlencoded":
 		p.BodyKind = "form"
-		for _, f := range kvs(body["fields"]) {
+		for _, f := range kvs(body.Get("fields")) {
 			p.Form = append(p.Form, [2]string{R(f.name), R(f.value)})
 		}
 		if !has("content-type") {
@@ -267,7 +266,7 @@ func Prepare(ws, req Doc, anc []Doc, envID string) Prepared {
 		}
 	case mime != "" && mime != "multipart/form-data":
 		p.BodyKind = "text"
-		p.Text = R(doc.Str(body, "text"))
+		p.Text = R(body.Str("text"))
 		if !has("content-type") {
 			ct := mime
 			if mime == "application/graphql" {
@@ -277,9 +276,9 @@ func Prepare(ws, req Doc, anc []Doc, envID string) Prepared {
 		}
 	}
 	p.Headers = headers
-	settings, _ := ws["settings"].(Doc)
-	p.InsecureTLS = settings["insecureTLS"] == true
-	p.TimeoutMs = doc.Num(settings, "timeoutMs", 30000)
+	settings := ws.Map("settings")
+	p.InsecureTLS = settings.Get("insecureTLS") == true
+	p.TimeoutMs = settings.Num("timeoutMs", 30000)
 	for m := range r.missing {
 		p.Missing = append(p.Missing, m)
 	}

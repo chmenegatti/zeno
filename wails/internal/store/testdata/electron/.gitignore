@@ -1,0 +1,7 @@
+# gerado pelo Zeno: respostas, cookies, estado da interface e chave do cofre ficam só na máquina
+.responses/
+.vault/
+.cookies/
+.github.json
+state.json
+links.json

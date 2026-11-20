@@ -1,0 +1,7 @@
+id: env_base
+name: Base
+parentId: null
+data:
+  base_url: https://base.local
+  token: t0
+sortKey: 0

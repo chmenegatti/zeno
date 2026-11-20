@@ -1,0 +1,5 @@
+id: wrk_1
+name: Loja
+settings:
+  insecureTLS: false
+  timeoutMs: 30000

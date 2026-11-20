@@ -55,25 +55,26 @@ func isText(ct string, body []byte) bool {
 }
 
 // Send executa o request preparado e devolve o ResponseRecord (mesmo formato do Electron)
-func Send(reqID string, p vars.Prepared) doc.Doc {
+func Send(reqID string, p vars.Prepared) *doc.Doc {
 	start := time.Now()
-	rec := doc.Doc{
-		"id":           "res_" + strconv.FormatInt(start.UnixMilli(), 36),
-		"requestId":    reqID,
-		"at":           start.UnixMilli(),
-		"method":       p.Method,
-		"url":          p.URL,
-		"status":       0,
-		"statusText":   "",
-		"headers":      [][2]string{},
-		"body":         "",
-		"bodyEncoding": "utf8",
-		"size":         0,
-		"timing":       doc.Doc{"headersMs": 0, "totalMs": 0},
-	}
-	fail := func(err error) doc.Doc {
-		rec["error"] = err.Error()
-		rec["timing"] = doc.Doc{"headersMs": 0, "totalMs": ms(time.Since(start))}
+	// mesma ordem de campos do ResponseRecord do Electron
+	rec := doc.New(
+		"id", "res_"+strconv.FormatInt(start.UnixMilli(), 36),
+		"requestId", reqID,
+		"at", start.UnixMilli(),
+		"method", p.Method,
+		"url", p.URL,
+		"status", 0,
+		"statusText", "",
+		"headers", [][2]string{},
+		"body", "",
+		"bodyEncoding", "utf8",
+		"size", 0,
+		"timing", doc.New("headersMs", 0, "totalMs", 0),
+	)
+	fail := func(err error) *doc.Doc {
+		rec.Set("error", err.Error())
+		rec.Set("timing", doc.New("headersMs", 0, "totalMs", math.Round(ms(time.Since(start)))))
 		return rec
 	}
 
@@ -88,6 +89,10 @@ func Send(reqID string, p vars.Prepared) doc.Doc {
 			v.Add(f[0], f[1])
 		}
 		reqBody = v.Encode()
+	}
+	// como o Electron: GET e HEAD não levam body, mesmo que o request tenha um guardado
+	if p.Method == "GET" || p.Method == "HEAD" {
+		reqBody = ""
 	}
 	if reqBody != "" {
 		body = strings.NewReader(reqBody)
@@ -151,28 +156,29 @@ func Send(reqID string, p vars.Prepared) doc.Doc {
 			headers = append(headers, [2]string{strings.ToLower(k), v})
 		}
 	}
-	rec["status"] = res.StatusCode
-	rec["statusText"] = strings.TrimPrefix(res.Status, strconv.Itoa(res.StatusCode)+" ")
-	rec["headers"] = headers
-	rec["size"] = len(data)
+	rec.Set("status", res.StatusCode)
+	rec.Set("statusText", strings.TrimPrefix(res.Status, strconv.Itoa(res.StatusCode)+" "))
+	rec.Set("headers", headers)
+	rec.Set("size", len(data))
 	if isText(res.Header.Get("Content-Type"), data) {
-		rec["body"] = string(data)
+		rec.Set("body", string(data))
 	} else {
-		rec["body"] = base64.StdEncoding.EncodeToString(data)
-		rec["bodyEncoding"] = "base64"
+		rec.Set("body", base64.StdEncoding.EncodeToString(data))
+		rec.Set("bodyEncoding", "base64")
 	}
 	// como no Electron: tempo do resumo em ms inteiros; a linha do tempo mantém a fração
-	rec["timing"] = doc.Doc{"headersMs": math.Round(ms(headersAt.Sub(start))), "totalMs": math.Round(ms(end.Sub(start)))}
+	rec.Set("timing", doc.New("headersMs", math.Round(ms(headersAt.Sub(start))), "totalMs", math.Round(ms(end.Sub(start)))))
 
-	timing := doc.Doc{"ttfbMs": 0.0, "downloadMs": ms(end.Sub(headersAt)), "totalMs": ms(end.Sub(start))}
+	timing := doc.New()
+	ttfb := 0.0
 	if !dnsStart.IsZero() {
-		timing["dnsMs"] = ms(dnsDone.Sub(dnsStart))
+		timing.Set("dnsMs", ms(dnsDone.Sub(dnsStart)))
 	}
 	if !connStart.IsZero() {
-		timing["connectMs"] = ms(connDone.Sub(connStart))
+		timing.Set("connectMs", ms(connDone.Sub(connStart)))
 	}
 	if !tlsStart.IsZero() {
-		timing["tlsMs"] = ms(tlsDone.Sub(tlsStart))
+		timing.Set("tlsMs", ms(tlsDone.Sub(tlsStart)))
 	}
 	if !firstByte.IsZero() {
 		ref := connDone
@@ -182,35 +188,36 @@ func Send(reqID string, p vars.Prepared) doc.Doc {
 		if ref.IsZero() {
 			ref = start
 		}
-		timing["ttfbMs"] = ms(firstByte.Sub(ref))
+		ttfb = ms(firstByte.Sub(ref))
 	}
 	var head strings.Builder
 	fmt.Fprintf(&head, "%s %s HTTP/1.1\r\nHost: %s\r\n", p.Method, req.URL.RequestURI(), req.URL.Host)
 	for _, h := range p.Headers {
 		fmt.Fprintf(&head, "%s: %s\r\n", h[0], h[1])
 	}
-	tl := doc.Doc{
-		"hops":   []any{doc.Doc{"method": p.Method, "url": p.URL, "requestHead": head.String(), "status": res.StatusCode, "statusText": rec["statusText"], "headers": headers, "atMs": ms(headersAt.Sub(start))}},
-		"timing": timing,
-	}
+	timing.Set("ttfbMs", ttfb)
+	timing.Set("downloadMs", ms(end.Sub(headersAt)))
+	timing.Set("totalMs", ms(end.Sub(start)))
+	tl := doc.New("hops", []any{doc.New("method", p.Method, "url", p.URL, "requestHead", head.String(), "status", res.StatusCode, "statusText", rec.Get("statusText"), "headers", headers, "atMs", ms(headersAt.Sub(start)))})
 	if reqBody != "" {
-		tl["requestBody"] = reqBody
+		tl.Set("requestBody", reqBody)
 	}
+	tl.Set("timing", timing)
 	if tcp, ok := remote.(*net.TCPAddr); ok {
-		tl["remote"] = doc.Doc{"address": tcp.IP.String(), "port": tcp.Port}
+		tl.Set("remote", doc.New("address", tcp.IP.String(), "port", tcp.Port))
 	}
 	if tlsState != nil {
-		t := doc.Doc{"protocol": tls.VersionName(tlsState.Version), "cipher": tls.CipherSuiteName(tlsState.CipherSuite), "authorized": !p.InsecureTLS}
+		t := doc.New("protocol", tls.VersionName(tlsState.Version), "cipher", tls.CipherSuiteName(tlsState.CipherSuite), "authorized", !p.InsecureTLS)
 		if len(tlsState.PeerCertificates) > 0 {
 			c := tlsState.PeerCertificates[0]
-			t["subject"] = c.Subject.CommonName
-			t["issuer"] = c.Issuer.CommonName
-			t["validFrom"] = c.NotBefore.Format(time.RFC1123)
-			t["validTo"] = c.NotAfter.Format(time.RFC1123)
-			t["altNames"] = strings.Join(c.DNSNames, ", ")
+			t.Set("subject", c.Subject.CommonName)
+			t.Set("issuer", c.Issuer.CommonName)
+			t.Set("validFrom", c.NotBefore.Format(time.RFC1123))
+			t.Set("validTo", c.NotAfter.Format(time.RFC1123))
+			t.Set("altNames", strings.Join(c.DNSNames, ", "))
 		}
-		tl["tls"] = t
+		tl.Set("tls", t)
 	}
-	rec["timeline"] = tl
+	rec.Set("timeline", tl)
 	return rec
 }
