@@ -106,6 +106,9 @@
           <article class="card" style="--c: var(--blue)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></div><h3>Linha do tempo</h3><p>O request exatamente como saiu, cada redirect, DNS, TLS, espera e o certificado do servidor.</p></article>
           <article class="card" style="--c: var(--green)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></div><h3>Gerar código</h3><p>20 linguagens e 37 bibliotecas, coloridas como numa IDE, com variáveis e tags já resolvidas. Do cURL ao Rust.</p></article>
           <article class="card" style="--c: var(--purple)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-6 3-11 6"/></svg></div><h3>Git integrado</h3><p>Workspace no repo do projeto: status por request, diff, commit, pull, push e branches.</p></article>
+          <article class="card" style="--c: var(--pink)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h4l3-8 4 16 3-8h2"/></svg></div><h3>Além do REST</h3><p>GraphQL com autocomplete pelo schema, WebSocket, Server-Sent Events ao vivo e gRPC com reflection ou <code>.proto</code>.</p></article>
+          <article class="card" style="--c: var(--orange)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>OAuth 2.0 e rede da empresa</h3><p>Todos os fluxos, login no navegador e token renovado sozinho. Proxy, CA própria e certificado de cliente (mTLS).</p></article>
+          <article class="card" style="--c: var(--lime)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg></div><h3>Mock server</h3><p>Salve uma resposta como exemplo e ligue um servidor local que responde cada rota do workspace com ela.</p></article>
         </div>
       </div>
     </section>
@@ -140,6 +143,38 @@
           </ul>
         </div>
         <div class="shot"><img src="img/restag.webp" alt="Editor da tag de resposta com prévia" loading="lazy" width="1400" height="843" /></div>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="wrap feature">
+        <div class="txt">
+          <span class="kicker">gRPC</span>
+          <h2>gRPC sem gerar código</h2>
+          <p>Coloque <code>grpc://</code> ou <code>grpcs://</code> na URL, clique em Descobrir e escolha o método. A mensagem é JSON, com exemplo gerado a partir do schema; headers viram metadata e a auth é a mesma do HTTP.</p>
+          <ul class="checks">
+            <li>Server reflection ou um arquivo <code>.proto</code></li>
+            <li>Unary, server, client e bidi streaming, cada mensagem com horário</li>
+            <li>Status, headers e trailers da chamada</li>
+          </ul>
+        </div>
+        <div class="shot"><img src="img/grpc.webp" alt="Chamada gRPC com o log da resposta" loading="lazy" width="1400" height="843" /></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap feature rev">
+        <div class="txt">
+          <span class="kicker">GraphQL, WebSocket e SSE</span>
+          <h2>Consultas e streams no mesmo lugar</h2>
+          <p>O editor de GraphQL busca o schema da sua API e completa campos e argumentos. URLs <code>ws://</code> abrem uma conexão WebSocket com log de mensagens, e respostas <code>text/event-stream</code> mostram cada evento conforme chega.</p>
+          <ul class="checks">
+            <li>Variáveis em JSON com <code>{{ variáveis }}</code> do ambiente</li>
+            <li>Mensagens do WebSocket com variáveis e tags resolvidas</li>
+            <li>GraphQL importado do Insomnia e do Postman; WebSocket e gRPC do Insomnia</li>
+          </ul>
+        </div>
+        <div class="shot"><img src="img/graphql.webp" alt="Editor de GraphQL com schema e resposta" loading="lazy" width="1400" height="843" /></div>
       </div>
     </section>
 
@@ -201,6 +236,7 @@
             <li>Um commit por envio, uma pasta por workspace</li>
             <li>Token cifrado no cofre; segredos continuam cifrados no repo</li>
             <li>Não precisa de git instalado: tudo pela API do GitHub</li>
+            <li>Exporte pro Insomnia, Postman ou um zip dos YAML quando precisar</li>
           </ul>
         </div>
         <div class="shot"><img src="img/github.webp" alt="Salvar coleções no GitHub" loading="lazy" width="1400" height="843" /></div>
