@@ -133,9 +133,11 @@ func Scan(ws *Doc, extraKnown []string) Result {
 	}
 	authAndHeaders := func(kind string, n *Doc, where string) {
 		a := n.Map("auth")
-		field := map[string]string{"basic": "password", "bearer": "token", "apikey": "value"}[a.Str("type")]
-		if field != "" && IsLiteral(a.Get(field)) {
-			add(Spot{kind, n.Str("id"), Path{"auth", field}, where + " · auth " + a.Str("type")}, a.Str(field))
+		fields := map[string][]string{"basic": {"password"}, "bearer": {"token"}, "apikey": {"value"}, "oauth2": {"clientSecret", "password"}}[a.Str("type")]
+		for _, field := range fields {
+			if IsLiteral(a.Get(field)) {
+				add(Spot{kind, n.Str("id"), Path{"auth", field}, where + " · auth " + a.Str("type")}, a.Str(field))
+			}
 		}
 		for i, h := range n.List("headers") {
 			hd, _ := h.(*Doc)

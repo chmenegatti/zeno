@@ -10,6 +10,8 @@ http.createServer((req, res) => {
     const json = (code, v, h = {}) => { res.writeHead(code, { 'content-type': 'application/json', ...h }); res.end(JSON.stringify(v)) }
     if (u.pathname === '/echo') return json(200, { method: req.method, query: Object.fromEntries(u.searchParams), headers: req.headers, body })
     if (u.pathname === '/redirect') { res.writeHead(302, { location: '/echo?from=redirect', 'set-cookie': 'sessao=abc123; Path=/' }); return res.end() }
+    // OAuth 2.0 client credentials (Basic cliente:segredo)
+    if (u.pathname === '/token') return req.headers.authorization === 'Basic ' + Buffer.from('cliente:segredo').toString('base64') && /grant_type=client_credentials/.test(body) ? json(200, { access_token: 'oauth-e2e', token_type: 'Bearer', expires_in: 3600 }) : json(401, { error: 'invalid_client' })
     if (u.pathname === '/login') return json(200, { token: 'tk-e2e' })
     if (u.pathname === '/me') return req.headers.authorization === 'Bearer tk-e2e' ? json(200, { nome: 'Ana' }) : json(401, { erro: 'sem token' })
     if (u.pathname === '/slow') return setTimeout(() => json(200, { ok: true }), 3000)

@@ -15,6 +15,39 @@ export type Auth =
   | { type: 'basic'; username: string; password: string }
   | { type: 'bearer'; token: string; prefix?: string }
   | { type: 'apikey'; key: string; value: string; addTo: 'header' | 'query' }
+  | OAuth2Auth
+
+export type OAuthGrant = 'authorization_code' | 'client_credentials' | 'password' | 'implicit' | 'device_code'
+
+/** OAuth 2.0 (#9): o token não vai pro YAML; fica em cache cifrado no cofre, por request/pasta */
+export interface OAuth2Auth {
+  type: 'oauth2'
+  grantType: OAuthGrant
+  authUrl?: string
+  tokenUrl?: string
+  clientId?: string
+  clientSecret?: string
+  scope?: string
+  audience?: string
+  /** vazio = http://127.0.0.1:<porta livre>/callback */
+  redirectUri?: string
+  pkce?: boolean
+  username?: string
+  password?: string
+  /** client_id/secret no corpo (body) ou Basic no header (padrão) */
+  clientAuth?: 'header' | 'body'
+  /** prefixo do header; padrão Bearer */
+  prefix?: string
+}
+
+/** token em cache (sem o valor) */
+export interface OAuthTokenStatus {
+  type?: string
+  valid: boolean
+  hasRefresh: boolean
+  expiresAt?: number
+  scope?: string
+}
 
 export type AuthType = Auth['type']
 

@@ -191,3 +191,27 @@ func (w *warner) warn(m string) {
 	}
 	w.list = append(w.list, m)
 }
+
+// oauth2Auth: auth oauth2 do Zeno (#9) a partir dos campos do Insomnia/Postman; só as chaves com valor
+func oauth2Auth(grant, authURL, tokenURL, clientID, secret, scope, audience, redirect string, pkce bool, user, pass, clientAuth, prefix string) *Doc {
+	switch grant {
+	case "client_credentials", "password", "implicit", "device_code":
+	default:
+		grant = "authorization_code"
+	}
+	d := doc.New("type", "oauth2", "grantType", grant)
+	for _, kv := range [][2]string{{"authUrl", authURL}, {"tokenUrl", tokenURL}, {"clientId", clientID}, {"clientSecret", secret}, {"scope", scope}, {"audience", audience}, {"redirectUri", redirect}} {
+		if kv[1] != "" {
+			d.Set(kv[0], kv[1])
+		}
+	}
+	if pkce {
+		d.Set("pkce", true)
+	}
+	for _, kv := range [][2]string{{"username", user}, {"password", pass}, {"clientAuth", clientAuth}, {"prefix", prefix}} {
+		if kv[1] != "" {
+			d.Set(kv[0], kv[1])
+		}
+	}
+	return d
+}

@@ -4,9 +4,13 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/chmenegatti/zeno/wails/internal/engine"
+	"github.com/chmenegatti/zeno/wails/internal/oauth2"
+	"github.com/chmenegatti/zeno/wails/internal/vars"
 	"os"
 	"path/filepath"
 	goruntime "runtime"
@@ -258,6 +262,63 @@ func (a *App) register() {
 			return nil, errors.New("request não encontrado")
 		}
 		return a.engine.CodeInput(ws, req, envID, resolveVars)
+	})
+	// OAuth 2.0 (#9): status, obter/renovar agora, limpar e cancelar a espera do navegador
+	oauthOf := func(args Args) (*vars.OAuth2, error) {
+		wsID, _ := Get[string](args, 0)
+		req, err := Get[*Doc](args, 1)
+		if err != nil || req == nil {
+			return nil, errors.New("request não encontrado")
+		}
+		envID, _ := Get[string](args, 2)
+		ws := st.Workspace(wsID)
+		if ws == nil {
+			return nil, errNoWorkspace
+		}
+		return a.engine.OAuthPrepared(ws, req, envID)
+	}
+	tokenStatus := func(t *oauth2.Token) any {
+		if t == nil || t.Access == "" {
+			return nil
+		}
+		d := doc.New("type", t.Type, "hasRefresh", t.Refresh != "", "valid", t.Valid())
+		if !t.Expiry.IsZero() {
+			d.Set("expiresAt", t.Expiry.UnixMilli())
+		}
+		if t.Scope != "" {
+			d.Set("scope", t.Scope)
+		}
+		return d
+	}
+	a.handle("oauthStatus", func(args Args) (any, error) {
+		o, err := oauthOf(args)
+		if err != nil {
+			return nil, err
+		}
+		return tokenStatus(a.engine.OAuth.Status(engine.OAuthConfig(o))), nil
+	})
+	a.handle("oauthToken", func(args Args) (any, error) {
+		o, err := oauthOf(args)
+		if err != nil {
+			return nil, err
+		}
+		t, err := a.engine.OAuth.Token(context.Background(), engine.OAuthConfig(o), true)
+		if err != nil {
+			return nil, err
+		}
+		return tokenStatus(t), nil
+	})
+	a.handle("oauthClear", func(args Args) (any, error) {
+		o, err := oauthOf(args)
+		if err != nil {
+			return nil, err
+		}
+		a.engine.OAuth.Clear(o.Owner)
+		return nil, nil
+	})
+	a.handle("oauthCancel", func(Args) (any, error) {
+		a.engine.OAuth.Cancel()
+		return nil, nil
 	})
 	a.handle("tagPreview", func(args Args) (any, error) {
 		raw, _ := Get[string](args, 0)

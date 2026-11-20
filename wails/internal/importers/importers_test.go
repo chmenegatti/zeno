@@ -26,6 +26,11 @@ func golden(t *testing.T, name string, r Result, err error) {
 		got, _ = doc.MarshalIndent(r.Doc())
 	}
 	got = append(got, '\n')
+	// ZENO_UPDATE_GOLDEN=1: regrava (depois de revisar o diff no git)
+	if os.Getenv("ZENO_UPDATE_GOLDEN") != "" {
+		_ = os.WriteFile(filepath.Join("testdata", "golden", name+".json"), got, 0o644)
+		return
+	}
 	if string(got) != string(want) {
 		os.WriteFile(filepath.Join(t.TempDir(), name+".json"), got, 0o644)
 		t.Errorf("%s diferente do Electron\n--- Go\n%s\n--- Electron\n%s", name, got, want)

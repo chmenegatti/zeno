@@ -74,7 +74,8 @@
                 "mime": null
               },
               "auth": {
-                "type": "none"
+                "type": "oauth2",
+                "grantType": "authorization_code"
               },
               "scripts": {
                 "pre": "console.log(1)"
@@ -120,7 +121,5 @@
       ]
     }
   ],
-  "warnings": [
-    "Loja / Itens / Tag: auth \"oauth2\" não suportada (ficou sem auth)"
-  ]
+  "warnings": []
 }

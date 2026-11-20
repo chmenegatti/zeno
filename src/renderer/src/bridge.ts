@@ -76,6 +76,8 @@ if (!w.zeno) {
     onResponse: on('response:added'),
     onRunStep: on('run:step'),
     onPrompt: on('prompt:ask'),
+    onOAuthWait: on('oauth:wait'),
+    onOAuthDone: on('oauth:done'),
     setZoom: (f: number) => {
       document.documentElement.style.setProperty('zoom', String(f))
     }

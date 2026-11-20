@@ -322,6 +322,17 @@ func insAuth(a *Doc, where string, w *warner) *Doc {
 		return doc.New("type", "none")
 	case "basic":
 		return doc.New("type", "basic", "username", s("username"), "password", s("password"))
+	case "oauth2":
+		clientAuth := ""
+		if a.Get("credentialsInBody") == true {
+			clientAuth = "body"
+		}
+		grant := s("grantType")
+		if grant == "refresh_token" {
+			grant = "authorization_code"
+		}
+		return oauth2Auth(grant, s("authorizationUrl"), s("accessTokenUrl"), s("clientId"), s("clientSecret"), s("scope"), s("audience"),
+			s("redirectUrl"), a.Get("usePkce") == true, s("username"), s("password"), clientAuth, s("tokenPrefix"))
 	case "bearer":
 		d := doc.New("type", "bearer", "token", s("token"))
 		if p := s("prefix"); p != "" {

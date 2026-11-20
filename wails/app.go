@@ -17,6 +17,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/engine"
 	"github.com/chmenegatti/zeno/wails/internal/keyring"
+	"github.com/chmenegatti/zeno/wails/internal/oauth2"
 	"github.com/chmenegatti/zeno/wails/internal/plugins"
 	"github.com/chmenegatti/zeno/wails/internal/store"
 	"github.com/chmenegatti/zeno/wails/internal/vault"
@@ -58,7 +59,7 @@ type App struct {
 func NewApp() *App {
 	st := store.New(store.DefaultDataDir())
 	// "zeno": mesmo item do chaveiro que o Electron usa (application=zeno)
-	a := &App{store: st, cookies: cookies.New(st.Dir), vault: vault.New(st.Dir, keyring.System("zeno")), handlers: map[string]handler{}}
+	a := &App{store: st, cookies: cookies.New(st.Dir), vault: vault.New(st.Dir, systemKeyring()), handlers: map[string]handler{}}
 	a.prompts = prompts{waiting: map[int]chan *promptAnswer{}, memory: map[string]string{}}
 	// plugins em <dataDir>/plugins; desligados ficam em state.json
 	a.plugins = plugins.New(filepath.Join(st.Dir, "plugins"), func(id string) bool {
@@ -70,7 +71,13 @@ func NewApp() *App {
 		return false
 	})
 	a.plugins.Load()
-	a.engine = &engine.Engine{Store: st, Cookies: a.cookies, Vault: a.vault, Plugins: a.plugins, Hooks: engine.Hooks{Emit: a.Emit, Ask: a.askPrompt}}
+	// OAuth 2.0 (#9): login no navegador do sistema, aviso na interface enquanto espera
+	oauth := &oauth2.Manager{Dir: st.Dir, Vault: a.vault, Interactive: true, Hooks: oauth2.Hooks{
+		Open: func(u string) { runtime.BrowserOpenURL(a.ctx, u) },
+		Wait: func(msg, u, code string) { a.Emit("oauth:wait", doc.New("message", msg, "url", u, "code", code)) },
+		Done: func() { a.Emit("oauth:done") },
+	}}
+	a.engine = &engine.Engine{OAuth: oauth, Store: st, Cookies: a.cookies, Vault: a.vault, Plugins: a.plugins, Hooks: engine.Hooks{Emit: a.Emit, Ask: a.askPrompt}}
 	a.register()
 	return a
 }
@@ -135,4 +142,12 @@ func (a *App) Call(channel string, args []string) (any, error) {
 	}
 	defer a.trim.after()
 	return a.bodies.offload(res), err
+}
+
+// systemKeyring: o chaveiro do sistema; ZENO_NO_KEYRING=1 desliga (teste ponta a ponta)
+func systemKeyring() keyring.Protector {
+	if os.Getenv("ZENO_NO_KEYRING") != "" {
+		return keyring.None()
+	}
+	return keyring.System("zeno")
 }

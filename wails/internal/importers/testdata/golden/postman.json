@@ -148,7 +148,8 @@
             "mime": null
           },
           "auth": {
-            "type": "none"
+            "type": "oauth2",
+            "grantType": "authorization_code"
           },
           "scripts": {
             "pre": "console.log(1)"
@@ -160,7 +161,6 @@
   ],
   "warnings": [
     "Loja Postman / Produtos / Obter produto: variável dinâmica $randomInt não suportada",
-    "Loja Postman / Login OAuth: auth \"oauth2\" não suportada (ficou sem auth)",
     "Loja Postman: scripts da coleção copiados para cada item do primeiro nível"
   ]
 }
