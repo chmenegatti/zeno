@@ -2,7 +2,7 @@
 
 package keyring
 
-// macOS: senha aleatória no Keychain ("<app> Safe Storage", conta <app>) criada pelo próprio app — a
+// macOS: senha aleatória no Keychain ("Zeno Safe Storage", conta Zeno, como o Electron) criada pelo próprio app — a
 // lista de acesso do item fica com o app, como no Chromium/Electron — e a chave mestra cifrada no
 // formato OSCrypt do Mac: "v10" + AES-128-CBC com PBKDF2-SHA1(senha, "saltysalt", 1003 iterações).
 
@@ -100,7 +100,9 @@ func (k *keychain) Unprotect(data []byte) (string, error) {
 	return string(out), err
 }
 
-// System: Keychain do usuário, item "<app> Safe Storage"
+// System: Keychain do usuário, item "<App> Safe Storage" / conta "<App>", o mesmo que o Electron cria
+// (app.getName() = productName "Zeno")
 func System(app string) Protector {
-	return &keychain{service: app + " Safe Storage", account: app}
+	name := MacKeychainName(app)
+	return &keychain{service: name + " Safe Storage", account: name}
 }
