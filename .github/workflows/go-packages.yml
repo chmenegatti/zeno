@@ -1,0 +1,61 @@
+name: Pacotes Go
+
+# Pacotes da versão Go (migração: #53, fase 6 #80). Por enquanto só artefatos do workflow; o release
+# continua sendo o do Electron até a troca (fase 7).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['wails/**', 'src/renderer/**', 'src/shared/**', '.github/workflows/go-packages.yml']
+  pull_request:
+    paths: ['wails/packaging/**', 'wails/Makefile', '.github/workflows/go-packages.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: go-packages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: wails
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: wails/go.mod
+          cache-dependency-path: wails/go.sum
+      - name: Dependências do sistema (GTK e WebKitGTK)
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+      - run: npm ci
+        working-directory: .
+      - name: appimagetool
+        run: |
+          curl -sSL -o "$RUNNER_TEMP/appimagetool" https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage
+          chmod +x "$RUNNER_TEMP/appimagetool"
+          sudo apt-get install -y libfuse2t64
+          echo "APPIMAGETOOL=$RUNNER_TEMP/appimagetool" >> "$GITHUB_ENV"
+      - run: make deb
+      - run: make appimage
+      - run: make cli
+      - name: Conferir o .deb
+        run: |
+          dpkg-deb -I build/*.deb
+          dpkg-deb -c build/*.deb
+      - uses: actions/upload-artifact@v7
+        with:
+          name: zeno-linux
+          path: |
+            wails/build/*.deb
+            wails/build/*.AppImage
+            wails/build/zeno-cli
+          if-no-files-found: error
