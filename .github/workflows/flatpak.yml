@@ -54,8 +54,8 @@ jobs:
       - name: git e ssh no runtime (integração git do Zeno)
         run: |
           for b in git ssh; do
-            p=$(find / -path "*/runtime/org.gnome.Platform/*/51/active/files/bin/$b" 2>/dev/null | head -1)
-            echo "$b: ${p:-ausente no org.gnome.Platform}"
+            f=$FLATPAK_SYSTEM_DIR/runtime/org.gnome.Platform/x86_64/51/active/files/bin/$b
+            if [ -x "$f" ]; then echo "$b: $f"; else echo "$b: ausente no org.gnome.Platform"; fi
           done
 
       - name: Linter do Flathub (repositório)
