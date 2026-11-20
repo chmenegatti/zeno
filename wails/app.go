@@ -11,6 +11,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/chmenegatti/zeno/wails/internal/cookies"
 	"github.com/chmenegatti/zeno/wails/internal/store"
 	"github.com/chmenegatti/zeno/wails/internal/watch"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -34,13 +35,15 @@ type handler func(a Args) (any, error)
 type App struct {
 	ctx      context.Context
 	store    *store.Store
+	cookies  *cookies.Cookies
 	mu       sync.RWMutex
 	handlers map[string]handler
 	watcher  *watch.Watcher
 }
 
 func NewApp() *App {
-	a := &App{store: store.New(store.DefaultDataDir()), handlers: map[string]handler{}}
+	st := store.New(store.DefaultDataDir())
+	a := &App{store: st, cookies: cookies.New(st.Dir), handlers: map[string]handler{}}
 	a.register()
 	return a
 }

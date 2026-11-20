@@ -1,0 +1,42 @@
+{
+  "version": "tough-cookie@6.0.2",
+  "storeType": "MemoryCookieStore",
+  "rejectPublicSuffixes": false,
+  "enableLooseMode": true,
+  "allowSpecialUseDomain": true,
+  "prefixSecurity": "silent",
+  "cookies": [
+    {
+      "key": "sessao",
+      "value": "abc",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "httpOnly": true,
+      "hostOnly": true,
+      "creation": "2026-11-20T01:07:05.580Z",
+      "lastAccessed": "2026-11-20T01:07:05.580Z"
+    },
+    {
+      "key": "pref",
+      "value": "1",
+      "maxAge": 3600,
+      "domain": "exemplo.com",
+      "path": "/app",
+      "secure": true,
+      "hostOnly": false,
+      "creation": "2026-11-20T01:07:05.580Z",
+      "lastAccessed": "2026-11-20T01:07:05.580Z"
+    },
+    {
+      "key": "tema",
+      "value": "escuro",
+      "expires": "2031-01-01T00:00:00.000Z",
+      "domain": "exemplo.com",
+      "path": "/",
+      "hostOnly": true,
+      "pathIsDefault": true,
+      "creation": "2026-11-20T01:07:05.583Z",
+      "lastAccessed": "2026-11-20T01:07:05.583Z"
+    }
+  ]
+}
