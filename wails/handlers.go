@@ -518,12 +518,13 @@ func (a *App) register() {
 		return nil, nil
 	})
 
+	a.registerGitHub()
+
 	// ---------- ainda não portados: valores vazios pra interface abrir ----------
 	empty := func(v any) handler { return func(Args) (any, error) { return v, nil } }
 	for _, c := range []string{"codeTargets"} {
 		a.handle(c, empty([]any{}))
 	}
-	a.handle("githubStatus", empty(doc.New("account", nil, "deviceAvailable", false)))
 }
 
 // workspace vinculado ou movido: o watcher passa a vigiar a pasta nova

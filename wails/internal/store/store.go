@@ -874,3 +874,6 @@ func foldKey(s string) string {
 		return r
 	}, t)
 }
+
+// LocaleCompare: ordem de nomes como o localeCompare do Electron
+func LocaleCompare(a, b string) int { return localeCompare(a, b) }
