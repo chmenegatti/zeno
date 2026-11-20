@@ -30,14 +30,9 @@ jobs:
       - name: Metainfo (AppStream)
         run: appstreamcli validate --no-net --explain packaging/flatpak/com.cesarmenegatti.Zeno.metainfo.xml
 
+      # a imagem já traz o flatpak-builder-lint
       - name: Linter do Flathub (manifesto)
-        run: |
-          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak install --user -y --noninteractive flathub org.flatpak.Builder
-          # o lint chama o flatpak-builder no sandbox, que cria .flatpak-builder na pasta atual
-          mkdir -p .flatpak-builder && chmod 777 .flatpak-builder
-          command -v flatpak-builder-lint || true
-          flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest packaging/flatpak/com.cesarmenegatti.Zeno.yml
+        run: flatpak-builder-lint manifest packaging/flatpak/com.cesarmenegatti.Zeno.yml
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
@@ -51,7 +46,7 @@ jobs:
         # sem o espelho de screenshots do Flathub, o lint do repo sempre acusa
         # appstream-screenshots-not-mirrored-in-ostree: esse erro não conta aqui
         run: |
-          flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo repo > lint.json || true
+          flatpak-builder-lint repo repo > lint.json || true
           cat lint.json
           python3 - <<'PY'
           import json, sys
