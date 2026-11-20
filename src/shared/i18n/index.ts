@@ -27,6 +27,11 @@ export function t(pt: string, vars?: Record<string, string | number>): string {
   return vars ? s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m)) : s
 }
 
+/** marca um texto como chave sem traduzir agora (constantes de módulo): renderize com t(valor) */
+export function tk(pt: string): string {
+  return pt
+}
+
 /** locale pra datas e números (toLocaleString) */
 export function locale(): string {
   return current === 'pt' ? 'pt-BR' : 'en-US'

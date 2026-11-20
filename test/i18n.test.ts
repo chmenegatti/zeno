@@ -12,8 +12,8 @@ function files(dir: string): string[] {
   })
 }
 
-// literais passados pra t(): t('…'), t("…") e t(`…`) sem ${}
-const CALL = /\bt\(\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"|`((?:[^`\\$]|\\.)*)`)/g
+// literais passados pra t()/tk(): t('…'), t("…") e t(`…`) sem ${}
+const CALL = /\bt[k]?\(\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"|`((?:[^`\\$]|\\.)*)`)/g
 const unescape = (s: string): string => s.replace(/\\(['"`\\])/g, '$1').replace(/\\n/g, '\n')
 
 describe('i18n', () => {
