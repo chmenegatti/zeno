@@ -105,6 +105,15 @@
     const intro = await z.graphqlIntrospect(wsId, { ...r, body: { mime: 'application/json', text: JSON.stringify({ query: '{ __schema { queryType { name } } }' }) } }, null, false)
     ok('introspecção sem histórico', JSON.parse(intro.body)?.data?.__schema?.queryType?.name === 'Query' && (await z.responses(r.id)).length === 1, intro.body)
   })
+  await safe('exportar', async () => {
+    const ins = await z.exportPreview([wsId], 'insomnia', false)
+    ok('prévia Insomnia', ins.name === 'E2E.insomnia.json' && ins.size > 500, JSON.stringify(ins))
+    const zp = await z.exportPreview([wsId], 'zeno', false)
+    ok('prévia zip Zeno', zp.name === 'E2E.zeno.zip' && zp.size > 200, JSON.stringify(zp))
+    const pm = await z.exportPreview([wsId], 'postman', false)
+    ok('prévia Postman', /^E2E\.postman(\.zip|_collection\.json)$/.test(pm.name) && pm.warnings.length > 0, JSON.stringify(pm))
+    ok('status GitHub sem conta', JSON.stringify(await z.githubWsStatus()) === '{}')
+  })
   await safe('redirect e cookies', async () => {
     const r = await mk('redirect', { url: '{{ base }}/redirect' })
     const { body, rec } = await send(r)

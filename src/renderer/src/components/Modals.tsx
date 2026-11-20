@@ -58,7 +58,7 @@ export function Modals() {
     case 'prefs':
       return <PrefsModal onClose={close} />
     case 'github':
-      return <GitHubModal onClose={close} />
+      return <GitHubModal onClose={close} ids={modal.ids} />
     case 'plugins':
       return <PluginsModal onClose={close} />
     case 'cookies':

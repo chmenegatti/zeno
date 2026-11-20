@@ -4,6 +4,8 @@ package main
 // em <dataDir>/.github.json, no mesmo formato do Electron, com o token cifrado no cofre.
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"os"
@@ -23,6 +25,45 @@ type ghSaved struct {
 	github.Account
 	// token cifrado no cofre
 	Token string `json:"token"`
+	// último envio/download de cada workspace (#116): pra tela de workspaces dizer se mudou desde então
+	Synced map[string]ghSynced `json:"synced,omitempty"`
+}
+
+type ghSynced struct {
+	Repo   string `json:"repo"`
+	At     int64  `json:"at"`
+	Commit string `json:"commit,omitempty"`
+	// hash dos YAML naquele momento
+	Hash string `json:"hash"`
+}
+
+// wsHash: hash dos YAML do workspace (os mesmos que vão pro GitHub)
+func wsHash(dir string) string {
+	files, err := github.WorkspaceFiles(dir)
+	if err != nil {
+		return ""
+	}
+	h := sha256.New()
+	for _, f := range files {
+		h.Write([]byte(f.Rel + "\x00" + f.Text + "\x00"))
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// ghMarkSynced: guarda o estado dos workspaces (id → pasta) como iguais aos do repositório
+func (a *App) ghMarkSynced(dirs map[string]string, commit string) {
+	g := a.ghRead()
+	if g == nil {
+		return
+	}
+	if g.Synced == nil {
+		g.Synced = map[string]ghSynced{}
+	}
+	now := time.Now().UnixMilli()
+	for id, dir := range dirs {
+		g.Synced[id] = ghSynced{Repo: g.Repo, At: now, Commit: commit, Hash: wsHash(dir)}
+	}
+	_ = a.ghWrite(g)
 }
 
 type deviceFlow struct {
@@ -89,10 +130,16 @@ func (a *App) ghLogin(token, via string) (any, error) {
 		return nil, err
 	}
 	repo := github.DefaultRepo
-	if old := a.ghRead(); old != nil && old.Repo != "" {
-		repo = old.Repo
+	var synced map[string]ghSynced
+	if old := a.ghRead(); old != nil {
+		if old.Repo != "" {
+			repo = old.Repo
+		}
+		if old.Login == u.Login {
+			synced = old.Synced
+		}
 	}
-	g := &ghSaved{Account: github.Account{Login: u.Login, Name: u.Name, Avatar: u.AvatarURL, Repo: repo, Via: via}, Token: enc}
+	g := &ghSaved{Account: github.Account{Login: u.Login, Name: u.Name, Avatar: u.AvatarURL, Repo: repo, Via: via}, Token: enc, Synced: synced}
 	if err := a.ghWrite(g); err != nil {
 		return nil, err
 	}
@@ -187,6 +234,7 @@ func (a *App) registerGitHub() {
 		ids, _ := Get[[]string](args, 0)
 		var list []github.LocalWorkspace
 		var names []string
+		dirs := map[string]string{}
 		for _, w := range st.List() {
 			dir := w.Map("location").Str("dir")
 			if dir == "" || !slices.Contains(ids, w.Str("id")) {
@@ -194,6 +242,7 @@ func (a *App) registerGitHub() {
 			}
 			list = append(list, github.LocalWorkspace{Dir: filepath.Base(dir), Name: w.Str("name"), LocalDir: dir})
 			names = append(names, w.Str("name"))
+			dirs[w.Str("id")] = dir
 		}
 		if len(list) == 0 {
 			return nil, errors.New("nenhum workspace escolhido")
@@ -201,8 +250,16 @@ func (a *App) registerGitHub() {
 		// data como o toLocaleString('pt-BR') do Electron
 		when := time.Now().Format("02/01/2006, 15:04:05")
 		r, err := s.Push(list, "Zeno: "+strings.Join(names, ", ")+" ("+when+")")
-		if err != nil || r == nil {
+		if err != nil {
 			return nil, err
+		}
+		commit := ""
+		if r != nil {
+			commit = r.Commit
+		}
+		a.ghMarkSynced(dirs, commit)
+		if r == nil {
+			return nil, nil
 		}
 		return r, nil
 	})
@@ -235,7 +292,29 @@ func (a *App) registerGitHub() {
 			return nil, err
 		}
 		workspaces := st.Load()
+		for _, w := range st.List() {
+			if w.Map("location").Str("dir") == target {
+				a.ghMarkSynced(map[string]string{w.Str("id"): target}, "")
+			}
+		}
 		a.Emit("store:changed", workspaces)
 		return doc.New("files", n, "workspaces", workspaces), nil
+	})
+	// situação de cada workspace no GitHub: quando foi enviado/baixado e se mudou desde então
+	a.handle("githubWsStatus", func(args Args) (any, error) {
+		g := a.ghRead()
+		out := doc.New()
+		if g == nil {
+			return out, nil
+		}
+		for _, w := range st.List() {
+			sy, ok := g.Synced[w.Str("id")]
+			if !ok || sy.Repo != g.Repo {
+				continue
+			}
+			dir := w.Map("location").Str("dir")
+			out.Set(w.Str("id"), doc.New("at", sy.At, "commit", sy.Commit, "changed", dir == "" || wsHash(dir) != sy.Hash))
+		}
+		return out, nil
 	})
 }

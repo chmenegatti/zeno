@@ -1,6 +1,8 @@
 import type { InsomniaKey } from './hotkeys'
 import type { CookieInfo, GitHubAccount, PluginInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, SendInput, OAuthTokenStatus, Workspace, WorkspaceDoc } from './types'
 
+export type ExportFormat = 'zeno' | 'insomnia' | 'postman'
+
 export interface Created {
   workspaces: Workspace[]
   id: string
@@ -145,6 +147,11 @@ export interface ZenoApi {
   githubList(): Promise<{ dir: string; id?: string; name: string; files: number }[]>
   /** envia num commit só; null = nada mudou */
   githubPush(wsIds: string[]): Promise<{ commit: string; files: number; url: string } | null>
+  /** por workspace: quando foi enviado/baixado do GitHub e se mudou desde então (#116) */
+  githubWsStatus(): Promise<Record<string, { at: number; commit: string; changed: boolean }>>
+  /** exportar (#116): prévia sem gravar e salvar (abre o diálogo); secrets=true leva os valores do cofre abertos */
+  exportPreview(ids: string[], format: ExportFormat, secrets: boolean): Promise<{ name: string; size: number; warnings: string[]; blanked: number }>
+  exportSave(ids: string[], format: ExportFormat, secrets: boolean): Promise<string | null>
   githubPull(dir: string, remoteId?: string): Promise<{ files: number; workspaces: Workspace[] }>
   /** esquece os valores lembrados dos prompts */
   promptForget(): Promise<void>
