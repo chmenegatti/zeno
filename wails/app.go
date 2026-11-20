@@ -83,7 +83,7 @@ func NewApp() *App {
 	}}
 	a.engine = &engine.Engine{OAuth: oauth, Store: st, Cookies: a.cookies, Vault: a.vault, Plugins: a.plugins, Hooks: engine.Hooks{Emit: a.Emit, Ask: a.askPrompt}}
 	a.sockets = &ws.Manager{Emit: func(e ws.Event) { a.Emit("ws:event", e) }}
-	a.mocks = &mock.Manager{Workspace: st.Workspace, OnHit: func(h mock.Hit) { a.Emit("mock:hit", h) }}
+	a.mocks = &mock.Manager{Workspace: st.WorkspaceSnapshot, OnHit: func(h mock.Hit) { a.Emit("mock:hit", h) }}
 	a.register()
 	return a
 }

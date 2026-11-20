@@ -291,6 +291,19 @@ func (s *Store) Workspace(id string) *Doc {
 	return nil
 }
 
+// WorkspaceSnapshot: cópia do workspace feita sob o lock, pra ler fora da goroutine da interface
+// (mock server) sem disputar com gravações
+func (s *Store) WorkspaceSnapshot(id string) *Doc {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, w := range s.workspaces {
+		if w.Str("id") == id {
+			return w.Clone()
+		}
+	}
+	return nil
+}
+
 // PathOf: arquivo ou pasta de um nó
 func (s *Store) PathOf(id string) string {
 	s.mu.Lock()

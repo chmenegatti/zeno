@@ -77,6 +77,14 @@ func TestServidor(t *testing.T) {
 	if res.StatusCode != 201 || body != `{"id":"padrão"}` || res.Header.Get("X-A") != "1" || res.Header.Get("Content-Type") == "" || res.Header.Get("Access-Control-Allow-Origin") != "*" {
 		t.Errorf("users/1: %d %s %v", res.StatusCode, body, res.Header)
 	}
+	// barra final: /users e /users/ são rotas diferentes
+	routes := []Route{{Method: "GET", Segs: []string{"users"}, ReqID: "a"}, {Method: "GET", Segs: []string{"users"}, Slash: true, ReqID: "b"}}
+	if Match(routes, "GET", "/users/").ReqID != "b" || Match(routes, "GET", "/users").ReqID != "a" {
+		t.Error("barra final")
+	}
+	if Match(routes[:1], "GET", "/users/").ReqID != "a" {
+		t.Error("sem a rota com barra, /users/ cai na sem")
+	}
 	// rota fixa ganha da com parâmetro
 	if _, body = get("GET", "/users/me"); body != `{"eu":true}` {
 		t.Errorf("me: %s", body)

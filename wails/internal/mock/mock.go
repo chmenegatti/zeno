@@ -27,9 +27,11 @@ const DefaultPort = 4010
 
 // Route: método + path (segmentos; "" = parâmetro) de um request com exemplo
 type Route struct {
-	Method  string
-	Path    string
-	Segs    []string
+	Method string
+	Path   string
+	Segs   []string
+	// path termina em "/" (/users/ e /users são rotas diferentes)
+	Slash   bool
 	ReqID   string
 	ReqName string
 	Example *Doc
@@ -112,14 +114,16 @@ func Routes(ws *Doc) []Route {
 				segs[i] = ""
 			}
 		}
-		out = append(out, Route{Method: strings.ToUpper(n.Str("method")), Path: p, Segs: segs, ReqID: n.Str("id"), ReqName: n.Str("name"), Example: ex})
+		out = append(out, Route{Method: strings.ToUpper(n.Str("method")), Path: p, Segs: segs, Slash: len(p) > 1 && strings.HasSuffix(p, "/"), ReqID: n.Str("id"), ReqName: n.Str("name"), Example: ex})
 	})
 	return out
 }
 
-// Match: rota com mais segmentos fixos iguais ao path pedido (empate: a primeira da árvore)
+// Match: rota com mais segmentos fixos iguais ao path pedido; barra final igual desempata (/users/
+// vs /users); empate: a primeira da árvore
 func Match(routes []Route, method, path string) *Route {
 	segs := segments(path)
+	slash := len(path) > 1 && strings.HasSuffix(path, "/")
 	var best *Route
 	bestScore := -1
 	for i := range routes {
@@ -140,6 +144,9 @@ func Match(routes []Route, method, path string) *Route {
 				ok = false
 				break
 			}
+			score += 2
+		}
+		if r.Slash == slash {
 			score++
 		}
 		if ok && score > bestScore {

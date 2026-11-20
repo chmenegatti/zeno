@@ -13,7 +13,7 @@ import (
 )
 
 func (a *App) mockStatus(wsID string) (any, error) {
-	ws := a.store.Workspace(wsID)
+	ws := a.store.WorkspaceSnapshot(wsID)
 	if ws == nil {
 		return nil, errNoWorkspace
 	}
