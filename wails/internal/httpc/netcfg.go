@@ -255,12 +255,21 @@ func dialTunnel(ctx context.Context, proxy *url.URL, addr string, roots *x509.Ce
 		conn.Close()
 		return nil, fmt.Errorf("proxy %s recusou o túnel: %s", proxy.Host, res.Status)
 	}
+	// o destino pode falar primeiro (HTTP/2 manda SETTINGS logo, como no gRPC sem TLS): o que já veio
+	// junto com a resposta do CONNECT é do túnel
 	if br.Buffered() > 0 {
-		conn.Close()
-		return nil, fmt.Errorf("proxy %s mandou dados antes do túnel", proxy.Host)
+		return &bufConn{Conn: conn, r: br}, nil
 	}
 	return conn, nil
 }
+
+// bufConn: conexão que entrega primeiro o que ficou no buffer da leitura do CONNECT
+type bufConn struct {
+	net.Conn
+	r *bufio.Reader
+}
+
+func (c *bufConn) Read(p []byte) (int, error) { return c.r.Read(p) }
 
 // NetClient (#6): cliente HTTP/1.1 com a rede do workspace (proxy, CA própria, certificado de
 // cliente, TLS inválido aceito ou não) pra quem não passa pelo Send, como o WebSocket. target é a
