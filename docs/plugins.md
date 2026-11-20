@@ -129,6 +129,7 @@ module.exports.importers = [
 
 - **Contexto próprio:** cada plugin roda num contexto `vm` separado do app.
 - **`require` limitado:** liberado só para `crypto`, `url`, `buffer`, `util`, `querystring`, `string_decoder`, `punycode`, `events`, `assert`, `zlib` e arquivos dentro da própria pasta do plugin (`require('./lib/x')`).
+- **Versão Go (em migração, #53):** os plugins rodam num interpretador JavaScript próprio (goja), não no Node. Funcionam `crypto` (`createHash`, `createHmac`, `randomBytes`, `randomUUID`, `timingSafeEqual`), `url`, `buffer`, `util`, `querystring`, `events` e `assert`, além de `setTimeout`, promises, `Buffer`, `URL`, `TextEncoder`/`TextDecoder`, `atob`/`btoa` e `structuredClone`. Ainda não há `string_decoder`, `punycode` e `zlib`: o plugin que pedir um deles mostra a mensagem na tela de plugins.
 - **Sem acesso direto:** `fs`, rede, processos e `node_modules` de fora não estão disponíveis.
 - **Tempo:**
   - carregar: até 2 s;

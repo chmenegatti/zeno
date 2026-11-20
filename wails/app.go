@@ -9,11 +9,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/chmenegatti/zeno/wails/internal/cookies"
+	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/engine"
 	"github.com/chmenegatti/zeno/wails/internal/keyring"
+	"github.com/chmenegatti/zeno/wails/internal/plugins"
 	"github.com/chmenegatti/zeno/wails/internal/store"
 	"github.com/chmenegatti/zeno/wails/internal/vault"
 	"github.com/chmenegatti/zeno/wails/internal/watch"
@@ -41,6 +44,7 @@ type App struct {
 	cookies  *cookies.Cookies
 	vault    *vault.Vault
 	engine   *engine.Engine
+	plugins  *plugins.Plugins
 	mu       sync.RWMutex
 	handlers map[string]handler
 	watcher  *watch.Watcher
@@ -52,7 +56,17 @@ func NewApp() *App {
 	// "zeno": mesmo item do chaveiro que o Electron usa (application=zeno)
 	a := &App{store: st, cookies: cookies.New(st.Dir), vault: vault.New(st.Dir, keyring.System("zeno")), handlers: map[string]handler{}}
 	a.prompts = prompts{waiting: map[int]chan *promptAnswer{}, memory: map[string]string{}}
-	a.engine = &engine.Engine{Store: st, Cookies: a.cookies, Vault: a.vault, Hooks: engine.Hooks{Emit: a.Emit, Ask: a.askPrompt}}
+	// plugins em <dataDir>/plugins; desligados ficam em state.json
+	a.plugins = plugins.New(filepath.Join(st.Dir, "plugins"), func(id string) bool {
+		for _, x := range st.GetState().List("disabledPlugins") {
+			if doc.AsStr(x) == id {
+				return true
+			}
+		}
+		return false
+	})
+	a.plugins.Load()
+	a.engine = &engine.Engine{Store: st, Cookies: a.cookies, Vault: a.vault, Plugins: a.plugins, Hooks: engine.Hooks{Emit: a.Emit, Ask: a.askPrompt}}
 	a.register()
 	return a
 }
