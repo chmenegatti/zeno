@@ -33,6 +33,11 @@ func eq(t *testing.T, got, want any) {
 }
 
 func TestParseArgs(t *testing.T) {
+	for _, empty := range []string{"{% %}", "{%%}", "{%  \t %}"} {
+		n, a := ParseArgs(empty)
+		eq(t, n, "")
+		eq(t, a, []string{})
+	}
 	n, a := ParseArgs("{% response 'body', 'req_tok', 'b64::JC50', 'always', 60 %}")
 	eq(t, n, "response")
 	eq(t, a, []string{"body", "req_tok", "b64::JC50", "always", "60"})

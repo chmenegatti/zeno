@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/tags"
 )
 
 // Dir: pasta de dados do Insomnia (mesma do appData do Electron em cada sistema)
@@ -439,11 +440,8 @@ func Convert(docs []*Doc, insecureTLS bool) Result {
 				for _, h := range arr(r.Get("headers")) {
 					texts = append(texts, str(obj(h).Get("value")))
 				}
-				for _, t := range texts {
-					if strings.Contains(t, "{%") {
-						w.warn(where + ": usa template tag {% %} (não suportada)")
-						break
-					}
+				if unknown := unknownTags(texts); len(unknown) > 0 {
+					w.warn(fmt.Sprintf("%s: usa a tag %s, que o Zeno não tem (só com plugin)", where, strings.Join(unknown, ", ")))
 				}
 				nodes = append(nodes, r)
 			}
@@ -506,4 +504,25 @@ func sortWorkspaces(ws []*Doc) {
 			ws[j-1], ws[j] = ws[j], ws[j-1]
 		}
 	}
+}
+
+var tagRe = regexp.MustCompile(`\{%[\s\S]*?%\}`)
+
+// tags que o Zeno tem (parseTag do shared/tagdef.ts); as outras precisam de plugin
+var knownTags = map[string]bool{"uuid": true, "now": true, "response": true, "timestamp": true, "faker": true, "hash": true, "base64": true, "file": true, "prompt": true, "jsonpath": true}
+
+// unknownTags: nomes das tags {% %} que o Zeno não tem, sem repetir, na ordem ("{% nome %}")
+func unknownTags(texts []string) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, t := range texts {
+		for _, m := range tagRe.FindAllString(t, -1) {
+			name, _ := tags.ParseArgs(m)
+			if !knownTags[name] && !seen[name] {
+				seen[name] = true
+				out = append(out, "{% "+name+" %}")
+			}
+		}
+	}
+	return out
 }

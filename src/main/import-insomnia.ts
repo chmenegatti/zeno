@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { Auth, Body, BodyField, Environment, Folder, KV, RequestDoc, TreeNode, Workspace } from '../shared/types'
 import { sortNodes } from '../shared/tree'
+import { parseTag } from '../shared/tagdef'
 
 /** registro bruto do Insomnia (campos que usamos) */
 export interface InsDoc {
@@ -245,8 +246,15 @@ export function convert(docs: InsDoc[], opts: { insecureTLS?: boolean } = {}): P
 
   const sortKey = (d: InsDoc): number => (typeof d.metaSortKey === 'number' ? d.metaSortKey : 0)
 
+  // só avisa das tags que o Zeno não tem (response, uuid, timestamp, faker… funcionam); as outras precisam de plugin
   const checkTags = (where: string, ...texts: (string | undefined)[]): void => {
-    if (texts.some((t) => t && t.includes('{%'))) warn(`${where}: usa template tag {% %} (não suportada)`)
+    const unknown: string[] = []
+    for (const t of texts)
+      for (const m of (t ?? '').match(/\{%[\s\S]*?%\}/g) ?? []) {
+        const tag = parseTag(m)
+        if (tag.name === 'other' && !unknown.includes(tag.tag)) unknown.push(tag.tag)
+      }
+    if (unknown.length) warn(`${where}: usa a tag ${unknown.map((n) => `{% ${n} %}`).join(', ')}, que o Zeno não tem (só com plugin)`)
   }
 
   const buildNodes = (parentId: string, trail: string): TreeNode[] => {

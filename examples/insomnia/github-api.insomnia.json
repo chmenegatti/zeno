@@ -1,0 +1,413 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-11-20T12:00:00.000Z",
+  "__export_source": "zeno.examples",
+  "resources": [
+    {
+      "_id": "wrk_zeno_github_api",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "GitHub API (teste do Zeno)",
+      "description": "Requests pra API pública do GitHub: variáveis, encadeamento com {% response %}, scripts, HTML, imagem e token no cofre.",
+      "scope": "collection",
+      "modified": 1795180000000,
+      "created": 1795180000000
+    },
+    {
+      "_id": "env_zeno_gh_base",
+      "_type": "environment",
+      "parentId": "wrk_zeno_github_api",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "https://api.github.com",
+        "owner": "chmenegatti",
+        "repo": "zeno",
+        "usuario": "octocat",
+        "busca": "api client language:go",
+        "github_token": ""
+      },
+      "metaSortKey": 0,
+      "modified": 1795180000000,
+      "created": 1795180000000
+    },
+    {
+      "_id": "env_zeno_gh_golang",
+      "_type": "environment",
+      "parentId": "env_zeno_gh_base",
+      "name": "golang/go",
+      "data": {
+        "owner": "golang",
+        "repo": "go",
+        "usuario": "golang"
+      },
+      "color": "#00ADD8",
+      "metaSortKey": 1,
+      "modified": 1795180000000,
+      "created": 1795180000000
+    },
+    {
+      "_id": "fld_zeno_gh_publico",
+      "_type": "request_group",
+      "parentId": "wrk_zeno_github_api",
+      "name": "Público (sem token)",
+      "description": "",
+      "environment": {},
+      "metaSortKey": 0,
+      "modified": 1795180000000,
+      "created": 1795180000000
+    },
+    {
+      "_id": "fld_zeno_gh_token",
+      "_type": "request_group",
+      "parentId": "wrk_zeno_github_api",
+      "name": "Autenticado (precisa de token)",
+      "description": "Ponha um token em github_token (Base) e marque como segredo: vai pro cofre.",
+      "environment": {},
+      "metaSortKey": 1,
+      "modified": 1795180000000,
+      "created": 1795180000000
+    },
+    {
+      "_id": "req_gh_rate",
+      "_type": "request",
+      "parentId": "fld_zeno_gh_publico",
+      "name": "Limite de requisições",
+      "description": "",
+      "method": "GET",
+      "url": "{{ _.base_url }}/rate_limit",
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/vnd.github+json"
+        },
+        {
+          "name": "X-GitHub-Api-Version",
+          "value": "2022-11-28"
+        }
+      ],
+      "body": {},
+      "authentication": {},
+      "metaSortKey": 0,
+      "modified": 1795180000000,
+      "created": 1795180000000,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingFollowRedirects": "global",
+      "afterResponseScript": "insomnia.test('limite maior que zero', () => insomnia.expect(insomnia.response.json().rate.limit).to.be.above(0));\ninsomnia.test('status 200', () => insomnia.expect(insomnia.response.code).to.equal(200));"
+    },
+    {
+      "_id": "req_gh_user",
+      "_type": "request",
+      "parentId": "fld_zeno_gh_publico",
+      "name": "Usuário",
+      "description": "",
+      "method": "GET",
+      "url": "{{ _.base_url }}/users/{{ _.usuario }}",
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/vnd.github+json"
+        },
+        {
+          "name": "X-GitHub-Api-Version",
+          "value": "2022-11-28"
+        }
+      ],
+      "body": {},
+      "authentication": {},
+      "metaSortKey": 1,
+      "modified": 1795180000000,
+      "created": 1795180000000,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_gh_avatar",
+      "_type": "request",
+      "parentId": "fld_zeno_gh_publico",
+      "name": "Avatar do usuário (imagem)",
+      "description": "URL vem da resposta de \"Usuário\" ({% response %}). Mostra a imagem na resposta.",
+      "method": "GET",
+      "url": "{% response 'body', 'req_gh_user', 'b64::JC5hdmF0YXJfdXJs', 'never', 60 %}",
+      "parameters": [],
+      "headers": [],
+      "body": {},
+      "authentication": {},
+      "metaSortKey": 2,
+      "modified": 1795180000000,
+      "created": 1795180000000,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_gh_repo",
+      "_type": "request",
+      "parentId": "fld_zeno_gh_publico",
+      "name": "Repositório",
+      "description": "",
+      "method": "GET",
+      "url": "{{ _.base_url }}/repos/{{ _.owner }}/{{ _.repo }}",
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/vnd.github+json"
+        },
+        {
+          "name": "X-GitHub-Api-Version",
+          "value": "2022-11-28"
+        }
+      ],
+      "body": {},
+      "authentication": {},
+      "metaSortKey": 3,
+      "modified": 1795180000000,
+      "created": 1795180000000,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingFollowRedirects": "global",
+      "afterResponseScript": "const r = insomnia.response.json();\ninsomnia.environment.set('default_branch', r.default_branch);\ninsomnia.test('tem branch padrão', () => insomnia.expect(r.default_branch).to.be.a('string'));"
+    },
+    {
+      "_id": "req_gh_branch",
+      "_type": "request",
+      "parentId": "fld_zeno_gh_publico",
+      "name": "Branch padrão",
+      "description": "Nome do branch vem de \"Repositório\"; reenvia se a resposta tiver mais de 5 minutos.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/repos/{{ _.owner }}/{{ _.repo }}/branches/{% response 'body', 'req_gh_repo', 'b64::JC5kZWZhdWx0X2JyYW5jaA==', 'when-expired', 300 %}",
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/vnd.github+json"
+        },
+        {
+          "name": "X-GitHub-Api-Version",
+          "value": "2022-11-28"
+        }
+      ],
+      "body": {},
+      "authentication": {},
+      "metaSortKey": 4,
+      "modified": 1795180000000,
+      "created": 1795180000000,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_gh_commits",
+      "_type": "request",
+      "parentId": "fld_zeno_gh_publico",
+      "name": "Commits recentes",
+      "description": "",
+      "method": "GET",
+      "url": "{{ _.base_url }}/repos/{{ _.owner }}/{{ _.repo }}/commits",
+      "parameters": [
+        {
+          "name": "per_page",
+          "value": "5"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/vnd.github+json"
+        },
+        {
+          "name": "X-GitHub-Api-Version",
+          "value": "2022-11-28"
+        }
+      ],
+      "body": {},
+      "authentication": {},
+      "metaSortKey": 5,
+      "modified": 1795180000000,
+      "created": 1795180000000,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_gh_search",
+      "_type": "request",
+      "parentId": "fld_zeno_gh_publico",
+      "name": "Buscar repositórios",
+      "description": "",
+      "method": "GET",
+      "url": "{{ _.base_url }}/search/repositories",
+      "parameters": [
+        {
+          "name": "q",
+          "value": "{{ _.busca }}"
+        },
+        {
+          "name": "sort",
+          "value": "stars"
+        },
+        {
+          "name": "per_page",
+          "value": "5"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/vnd.github+json"
+        },
+        {
+          "name": "X-GitHub-Api-Version",
+          "value": "2022-11-28"
+        }
+      ],
+      "body": {},
+      "authentication": {},
+      "metaSortKey": 6,
+      "modified": 1795180000000,
+      "created": 1795180000000,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_gh_release",
+      "_type": "request",
+      "parentId": "fld_zeno_gh_publico",
+      "name": "Release mais recente do Zeno",
+      "description": "",
+      "method": "GET",
+      "url": "{{ _.base_url }}/repos/chmenegatti/zeno/releases/latest",
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/vnd.github+json"
+        },
+        {
+          "name": "X-GitHub-Api-Version",
+          "value": "2022-11-28"
+        }
+      ],
+      "body": {},
+      "authentication": {},
+      "metaSortKey": 7,
+      "modified": 1795180000000,
+      "created": 1795180000000,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_gh_markdown",
+      "_type": "request",
+      "parentId": "fld_zeno_gh_publico",
+      "name": "Markdown → HTML",
+      "description": "Resposta em HTML: aba Visual.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/markdown",
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/vnd.github+json"
+        },
+        {
+          "name": "X-GitHub-Api-Version",
+          "value": "2022-11-28"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"text\": \"# Olá do **Zeno**\\n\\n- request feito pelo Zeno\\n- resposta em HTML\",\n  \"mode\": \"markdown\"\n}"
+      },
+      "authentication": {},
+      "metaSortKey": 8,
+      "modified": 1795180000000,
+      "created": 1795180000000,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_gh_me",
+      "_type": "request",
+      "parentId": "fld_zeno_gh_token",
+      "name": "Minha conta",
+      "description": "",
+      "method": "GET",
+      "url": "{{ _.base_url }}/user",
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/vnd.github+json"
+        },
+        {
+          "name": "X-GitHub-Api-Version",
+          "value": "2022-11-28"
+        }
+      ],
+      "body": {},
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.github_token }}"
+      },
+      "metaSortKey": 0,
+      "modified": 1795180000000,
+      "created": 1795180000000,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_gh_myrepos",
+      "_type": "request",
+      "parentId": "fld_zeno_gh_token",
+      "name": "Meus repositórios",
+      "description": "",
+      "method": "GET",
+      "url": "{{ _.base_url }}/user/repos",
+      "parameters": [
+        {
+          "name": "per_page",
+          "value": "10"
+        },
+        {
+          "name": "sort",
+          "value": "updated"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/vnd.github+json"
+        },
+        {
+          "name": "X-GitHub-Api-Version",
+          "value": "2022-11-28"
+        }
+      ],
+      "body": {},
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.github_token }}"
+      },
+      "metaSortKey": 1,
+      "modified": 1795180000000,
+      "created": 1795180000000,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingFollowRedirects": "global"
+    }
+  ]
+}

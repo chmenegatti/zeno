@@ -26,7 +26,8 @@ describe('import Insomnia (NeDB)', () => {
   it('avisa o que não converteu', () => {
     expect(warnings.some((w) => w.includes('oauth2'))).toBe(true)
     expect(warnings.some((w) => w.includes('scripts'))).toBe(false)
-    expect(warnings.some((w) => w.includes('{% %}'))).toBe(true)
+    // {% uuid %} é do Zeno: sem aviso
+    expect(warnings.some((w) => w.includes('{%'))).toBe(false)
   })
   it('prepare resolve com env + vars da pasta', () => {
     const { node, ancestors } = findNode(ws, 'req_1')!
@@ -36,5 +37,15 @@ describe('import Insomnia (NeDB)', () => {
     const c = prepare(ws, findNode(ws, 'req_2')!.node as RequestDoc, [], null)
     expect(c.input.headers).toContainEqual(['Authorization', `Basic ${Buffer.from('u:p').toString('base64')}`])
     expect(c.input.headers).toContainEqual(['Content-Type', 'application/json'])
+  })
+})
+
+describe('aviso de template tags', () => {
+  const doc = (url: string, extra: Record<string, unknown> = {}) => ({ _id: 'req_t', type: 'Request', parentId: 'wrk_t', name: 'T', method: 'GET', url, ...extra })
+  const run = (url: string): string[] =>
+    convert([{ _id: 'wrk_t', type: 'Workspace', parentId: null, name: 'W' }, doc(url)] as never).warnings.filter((w) => w.includes('tag'))
+  it('tags do Zeno não geram aviso; as outras dizem qual', () => {
+    expect(run("https://x/{% uuid 'v4' %}/{% response 'body', 'req_1', '', 'never' %}/{% timestamp 'unix' %}")).toEqual([])
+    expect(run("https://x/{% minha_tag 'a' %}/{% outra %}/{% minha_tag 'b' %}")).toEqual(['W / T: usa a tag {% minha_tag %}, {% outra %}, que o Zeno não tem (só com plugin)'])
   })
 })
