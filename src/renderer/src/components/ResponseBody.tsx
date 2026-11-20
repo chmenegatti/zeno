@@ -8,6 +8,19 @@ import { api, useStore } from '../state'
 import { formatBytes, Segmented } from './ui'
 import { CodeEditor, langFor } from './CodeEditor'
 
+// linha gigante (ex.: prévia de 256 KB sem quebra): quebrar custa caro no navegador; rola na horizontal
+const longLine = (s: string): boolean => {
+  if (s.length <= 20000) return false
+  // qualquer linha, não só a primeira (ex.: cabeçalho curto e depois um JSON minificado)
+  for (let start = 0; start < s.length; ) {
+    const nl = s.indexOf('\n', start)
+    const end = nl === -1 ? s.length : nl
+    if (end - start > 20000) return true
+    start = end + 1
+  }
+  return false
+}
+
 export function contentType(r: ResponseRecord): string | undefined {
   return r.headers.find(([k]) => k.toLowerCase() === 'content-type')?.[1]
 }
@@ -118,7 +131,7 @@ export function TextBody({ res, requestId, pretty }: { res: ResponseRecord; requ
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="min-h-0 flex-1 overflow-auto">
-        <CodeEditor value={shown} readOnly lang={result && 'value' in result && isJson ? 'json' : lang} onView={(v) => (view.current = v)} extra={clickExt} />
+        <CodeEditor value={shown} readOnly wrap={!longLine(shown)} lang={result && 'value' in result && isJson ? 'json' : lang} onView={(v) => (view.current = v)} extra={clickExt} />
       </div>
       <div className="flex items-center gap-2 border-t border-line px-2 py-1.5">
         <input

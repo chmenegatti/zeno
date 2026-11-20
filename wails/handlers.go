@@ -4,12 +4,16 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/filename"
 	"github.com/chmenegatti/zeno/wails/internal/httpc"
 	"github.com/chmenegatti/zeno/wails/internal/vars"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -30,6 +34,41 @@ func list(wss []*Doc, err error) (any, error) {
 		return nil, err
 	}
 	return wss, nil
+}
+
+// headers do histórico (JSON: [[nome, valor], …])
+func pairs(l []any) [][2]string {
+	out := make([][2]string, 0, len(l))
+	for _, h := range l {
+		if p, ok := h.([]any); ok && len(p) == 2 {
+			out = append(out, [2]string{doc.AsStr(p[0]), doc.AsStr(p[1])})
+		}
+	}
+	return out
+}
+
+// pasta de downloads do usuário (XDG no Linux), ou a pasta pessoal
+func downloadsDir() string {
+	home, _ := os.UserHomeDir()
+	if b, err := os.ReadFile(filepath.Join(home, ".config", "user-dirs.dirs")); err == nil {
+		for _, l := range strings.Split(string(b), "\n") {
+			if v, ok := strings.CutPrefix(strings.TrimSpace(l), "XDG_DOWNLOAD_DIR="); ok {
+				d := strings.ReplaceAll(strings.Trim(v, `"`), "$HOME", home)
+				if fi, err := os.Stat(d); err == nil && fi.IsDir() {
+					return d
+				}
+			}
+		}
+	}
+	if d := filepath.Join(home, "Downloads"); dirExists(d) {
+		return d
+	}
+	return home
+}
+
+func dirExists(p string) bool {
+	fi, err := os.Stat(p)
+	return err == nil && fi.IsDir()
 }
 
 func nowKey() float64 { return float64(time.Now().UnixMilli()) }
@@ -157,9 +196,14 @@ func (a *App) register() {
 		p := vars.Prepare(ws, req, anc, envID)
 		rec := httpc.Send(req.Str("id"), p)
 		history := st.AddResponse(rec)
-		var resp any = rec
+		// o body vai uma vez só, no histórico: a interface só lê id e erro de "response"
+		// (JSON de 2,7 MB: 6,6 MB pela ponte com o body duplicado, 222 ms; metade sem ele)
+		resp := rec
 		if len(history) > 0 {
-			resp = history[0]
+			if h, ok := history[0].(*Doc); ok && h.Str("id") == rec.Str("id") {
+				resp = h.Clone()
+				resp.Set("body", "")
+			}
 		}
 		warnings := []string{}
 		for _, t := range p.Unsupported {
@@ -188,6 +232,33 @@ func (a *App) register() {
 			return nil, err
 		}
 		return st.ResponseBody(rec)
+	})
+	// salva o body numa pasta escolhida; nome sugerido pelo Content-Disposition, URL ou tipo
+	a.handle("saveResponse", func(args Args) (any, error) {
+		reqID, _ := Get[string](args, 0)
+		resID, _ := Get[string](args, 1)
+		rec, err := st.FindResponse(reqID, resID)
+		if err != nil {
+			return nil, err
+		}
+		dest, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+			DefaultDirectory: downloadsDir(),
+			DefaultFilename:  filename.Suggest(pairs(rec.List("headers")), rec.Str("url")),
+		})
+		if err != nil || dest == "" {
+			return nil, err
+		}
+		body, err := st.ResponseBody(rec)
+		if err != nil {
+			return nil, err
+		}
+		data := []byte(body)
+		if rec.Str("bodyEncoding") == "base64" {
+			if data, err = base64.StdEncoding.DecodeString(body); err != nil {
+				return nil, err
+			}
+		}
+		return dest, os.WriteFile(dest, data, 0o644)
 	})
 	a.handle("clearResponses", func(args Args) (any, error) {
 		id, _ := Get[string](args, 0)
