@@ -138,7 +138,28 @@
         },
         {
           "kind": "request",
-          "id": "req_c38e06337f3209acf76e23df",
+          "id": "req_2f1b1d15e5926571815744ca",
+          "name": "Produtos GraphQL",
+          "method": "POST",
+          "url": "{{baseUrl}}/graphql",
+          "params": [],
+          "headers": [],
+          "body": {
+            "mime": "application/graphql",
+            "text": "{\n  \"query\": \"query P($id: ID!) { produto(id: $id) { nome } }\",\n  \"variables\": {\n    \"id\": \"p-1\"\n  }\n}"
+          },
+          "auth": {
+            "type": "bearer",
+            "token": "{{token}}"
+          },
+          "scripts": {
+            "pre": "console.log(1)"
+          },
+          "sortKey": 2
+        },
+        {
+          "kind": "request",
+          "id": "req_5e3e02dd0d0b77385eeb3c95",
           "name": "Login OAuth",
           "method": "POST",
           "url": "{{baseUrl}}/oauth",
@@ -154,7 +175,7 @@
           "scripts": {
             "pre": "console.log(1)"
           },
-          "sortKey": 2
+          "sortKey": 3
         }
       ]
     }

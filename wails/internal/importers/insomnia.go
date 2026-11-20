@@ -370,9 +370,6 @@ func insBody(b *Doc, where string, w *warner) *Doc {
 		}
 		return doc.New("mime", mime, "fields", fields)
 	}
-	if mime == "application/graphql" {
-		w.warn(where + ": body GraphQL importado como texto")
-	}
 	return doc.New("mime", mime, "text", coalesce(b.Get("text"), ""))
 }
 

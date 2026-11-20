@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { prepare } from '@shared/prepare'
 import { effectiveAuth } from '@shared/tree'
 import type { Auth, AuthType, Body, RequestDoc } from '@shared/types'
@@ -12,6 +12,7 @@ import { SecretInput } from './Secret'
 import { hasScripts, ScriptsEditor } from './Scripts'
 import { AssertionsEditor } from './Runner'
 import { editorTags, TemplateInput } from './Tags'
+import type { GraphQLCtx } from './GraphQLBody'
 import { maskSecrets } from '@shared/secret'
 import { askSchedule, stopSend } from '../sendSchedule'
 import { parseCurl } from '@shared/curl'
@@ -19,6 +20,8 @@ import { beautifyJson } from '@shared/format'
 import { Select } from './Select'
 import { kl } from '../keys'
 import { newOAuth2, OAuthFields, OAuthTokenPanel } from './OAuth'
+
+const GraphQLBody = lazy(() => import('./GraphQLBody'))
 
 type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'assertions' | 'notes'
 
@@ -29,7 +32,7 @@ const BODY_TYPES: { mime: string | null; label: string }[] = [
   { mime: 'text/plain', label: 'Texto' },
   { mime: 'application/x-www-form-urlencoded', label: 'Form URL-encoded' },
   { mime: 'multipart/form-data', label: 'Multipart' },
-  { mime: 'application/graphql', label: 'GraphQL (texto)' }
+  { mime: 'application/graphql', label: 'GraphQL' }
 ]
 
 const AUTH_LABEL: Record<AuthType, string> = {
@@ -169,7 +172,7 @@ export function RequestPane() {
             )}
           </div>
         )}
-        {section === 'body' && <BodyEditor body={req.body} onChange={(body) => update({ body })} />}
+        {section === 'body' && <BodyEditor body={req.body} onChange={(body) => update({ body })} gql={{ wsId: cur.ws.id, req, envId }} />}
         {section === 'auth' && <AuthEditor auth={req.auth} inherited={effectiveAuth({ ...req, auth: { type: 'inherit' } }, ancestors)} onChange={(auth) => update({ auth })} oauthCtx={{ wsId: cur.ws.id, req, envId }} />}
         {section === 'scripts' && <ScriptsEditor scripts={req.scripts} onChange={(scripts) => update({ scripts })} />}
         {section === 'assertions' && <AssertionsEditor list={req.assertions ?? []} onChange={(assertions) => update({ assertions: assertions.length ? assertions : undefined })} />}
@@ -181,7 +184,7 @@ export function RequestPane() {
   )
 }
 
-function BodyEditor({ body, onChange }: { body: Body; onChange: (b: Body) => void }) {
+function BodyEditor({ body, onChange, gql }: { body: Body; onChange: (b: Body) => void; gql: GraphQLCtx }) {
   const isForm = body.mime === 'application/x-www-form-urlencoded' || body.mime === 'multipart/form-data'
   const setMime = (mime: string | null) => {
     const toForm = mime === 'application/x-www-form-urlencoded' || mime === 'multipart/form-data'
@@ -216,7 +219,12 @@ function BodyEditor({ body, onChange }: { body: Body; onChange: (b: Body) => voi
           />
         </div>
       )}
-      {body.mime !== null && !isForm && (
+      {body.mime === 'application/graphql' && (
+        <Suspense fallback={<p className="px-3 text-faint">carregando editor GraphQL…</p>}>
+          <GraphQLBody text={body.text ?? ''} onChange={(text) => onChange({ ...body, text })} ctx={gql} tags={editorTags} />
+        </Suspense>
+      )}
+      {body.mime !== null && body.mime !== 'application/graphql' && !isForm && (
         <div className="flex min-h-0 flex-1 flex-col border-t border-line">
           <div className="min-h-0 flex-1">
             <CodeEditor value={body.text ?? ''} lang={langFor(body.mime)} onChange={(text) => onChange({ ...body, text })} tags={editorTags} />

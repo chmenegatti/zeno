@@ -882,3 +882,29 @@ func (e *Engine) OAuthPrepared(ws, req *Doc, envID string) (*vars.OAuth2, error)
 	}
 	return p.OAuth2, nil
 }
+
+// Introspect (#4): manda o request como está (o renderer já trocou o body pela consulta de
+// introspecção do GraphQL) com URL, headers, auth e cookies do workspace, sem scripts, plugins nem
+// histórico. Devolve só status, body e erro. interactive=false (busca automática) não abre login
+// OAuth: usa só o token em cache.
+func (e *Engine) Introspect(ws, req *Doc, envID string, interactive bool) (*Doc, error) {
+	ws = e.withOverlay(ws)
+	p, _, err := e.PrepareOpen(ws, req.Str("id"), envID, req)
+	if err != nil {
+		return nil, err
+	}
+	if interactive && p.OAuth2 != nil && e.OAuth != nil && !e.OAuth.Status(OAuthConfig(p.OAuth2)).Valid() {
+		tok, err := e.oauthToken(p.OAuth2, false)
+		if err != nil {
+			return nil, err
+		}
+		p.Headers = append(p.Headers, [2]string{"Authorization", strings.TrimSpace(p.OAuth2.Prefix + " " + tok.Access)})
+	}
+	wsID := ws.Str("id")
+	rec := httpc.Send("", p, httpc.CookieHooks{Header: func(u string) string { return e.Cookies.Header(wsID, u) }})
+	body := ""
+	if rec.Str("bodyEncoding") == "utf8" {
+		body = rec.Str("body")
+	}
+	return doc.New("status", rec.Get("status"), "body", body, "error", rec.Get("error")), nil
+}

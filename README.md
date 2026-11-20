@@ -47,6 +47,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 | | |
 |---|---|
 | **HTTP completo** | Todos os métodos, params, headers, body JSON/XML/texto/form/multipart com arquivo, redirects, timeout e cancelamento |
+| **GraphQL** | Editor de consulta com autocomplete e validação pelo schema (introspecção na URL do request, com headers e auth), variáveis em JSON com `{{ }}`, escolha da operação e formatação; importa o GraphQL do Insomnia e do Postman |
 | **Autenticação** | Basic, Bearer, API key (header ou query) e **OAuth 2.0** (authorization code com PKCE, client credentials, senha, device code e implicit; login no navegador do sistema, token em cache cifrado no cofre e renovado sozinho), com herança da pasta |
 | **Ambientes e variáveis** | `{{ var }}` e `{{ _.var }}` com herança Base → sub-ambiente → pasta; editor com `Ctrl+E`, troca com `Ctrl+Shift+E` |
 | **Badges de variáveis** | Variáveis aparecem como badges em todos os campos e editores, com autocomplete ao digitar `{{`; clique pra ver, editar, criar ou mover |
@@ -329,8 +330,7 @@ sortKey: 1
 
 Os próximos passos estão nas [issues abertas](https://github.com/chmenegatti/zeno/issues), entre eles:
 
-- GraphQL, gRPC, WebSocket e SSE
-- OAuth 2.0, proxy e mTLS
+- gRPC, WebSocket e SSE
 - mock server
 - assinatura dos pacotes de Windows e macOS
 

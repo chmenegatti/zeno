@@ -96,6 +96,15 @@
     const st = await z.oauthStatus(wsId, r, null)
     ok('token em cache', st && st.valid, JSON.stringify(st))
   })
+  await safe('GraphQL', async () => {
+    const text = '{\n  "query": "query P($id: ID!) { produto(id: $id) { nome } }",\n  "operationName": "P",\n  "variables": { "id": "{{ user }}" }\n}'
+    const r = await mk('graphql', { method: 'POST', url: '{{ base }}/graphql', body: { mime: 'application/graphql', text } })
+    const { rec } = await send(r)
+    const out = JSON.parse(rec.body || '{}')
+    ok('GraphQL com variáveis', out?.data?.produto?.nome === 'Caneta ana', rec.body)
+    const intro = await z.graphqlIntrospect(wsId, { ...r, body: { mime: 'application/json', text: JSON.stringify({ query: '{ __schema { queryType { name } } }' }) } }, null, false)
+    ok('introspecção sem histórico', JSON.parse(intro.body)?.data?.__schema?.queryType?.name === 'Query' && (await z.responses(r.id)).length === 1, intro.body)
+  })
   await safe('redirect e cookies', async () => {
     const r = await mk('redirect', { url: '{{ base }}/redirect' })
     const { body, rec } = await send(r)
