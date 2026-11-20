@@ -1,0 +1,6 @@
+{"_id":"req_1","type":"Request","parentId":"fld_1","name":"Listar","method":"get","url":"{{ _.base_url }}/itens","body":{},"parameters":[{"name":"page","value":"1"},{"name":"x","value":"y","disabled":true}],"headers":[{"name":"Accept","value":"application/json"}],"authentication":{"type":"bearer","token":"{{ _.token }}"},"metaSortKey":2}
+{"_id":"req_2","type":"Request","parentId":"wrk_1","name":"Criar","method":"POST","url":"{{ base_url }}/itens","body":{"mimeType":"application/json","text":"{\"a\":1}"},"parameters":[],"headers":[],"authentication":{"type":"basic","username":"u","password":"p"},"metaSortKey":1}
+{"_id":"req_3","type":"Request","parentId":"wrk_1","name":"Apagado","method":"GET","url":"x","metaSortKey":3}
+{"_id":"req_1","type":"Request","parentId":"fld_1","name":"Listar v2","method":"GET","url":"{{ _.base_url }}/itens","body":{},"parameters":[{"name":"page","value":"1"},{"name":"x","value":"y","disabled":true}],"headers":[{"name":"Accept","value":"application/json"}],"authentication":{"type":"bearer","token":"{{ _.token }}"},"metaSortKey":2}
+{"$$deleted":true,"_id":"req_3"}
+{"_id":"req_4","type":"Request","parentId":"fld_1","name":"Tag","method":"GET","url":"{% uuid 'v4' %}","authentication":{"type":"oauth2"},"preRequestScript":"console.log(1)","metaSortKey":1}

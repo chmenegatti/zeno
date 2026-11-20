@@ -1,0 +1,127 @@
+{
+  "workspaces": [
+    {
+      "id": "wrk_1",
+      "name": "Loja",
+      "settings": {
+        "insecureTLS": true,
+        "timeoutMs": 30000
+      },
+      "environments": [
+        {
+          "id": "env_base",
+          "name": "Base",
+          "parentId": null,
+          "data": {
+            "base_url": "https://base.local",
+            "token": "t0"
+          },
+          "sortKey": 0
+        },
+        {
+          "id": "env_dev",
+          "name": "Dev",
+          "parentId": "env_base",
+          "color": "#00ff00",
+          "data": {
+            "token": "t-dev"
+          },
+          "sortKey": 0
+        }
+      ],
+      "children": [
+        {
+          "kind": "request",
+          "id": "req_2",
+          "name": "Criar",
+          "method": "POST",
+          "url": "{{ base_url }}/itens",
+          "params": [],
+          "headers": [],
+          "body": {
+            "mime": "application/json",
+            "text": "{\"a\":1}"
+          },
+          "auth": {
+            "type": "basic",
+            "username": "u",
+            "password": "p"
+          },
+          "sortKey": 1
+        },
+        {
+          "kind": "folder",
+          "id": "fld_1",
+          "name": "Itens",
+          "sortKey": 5,
+          "headers": [],
+          "auth": {
+            "type": "inherit"
+          },
+          "vars": {
+            "base_url": "https://pasta.local"
+          },
+          "children": [
+            {
+              "kind": "request",
+              "id": "req_4",
+              "name": "Tag",
+              "method": "GET",
+              "url": "{% uuid 'v4' %}",
+              "params": [],
+              "headers": [],
+              "body": {
+                "mime": null
+              },
+              "auth": {
+                "type": "none"
+              },
+              "scripts": {
+                "pre": "console.log(1)"
+              },
+              "sortKey": 1
+            },
+            {
+              "kind": "request",
+              "id": "req_1",
+              "name": "Listar v2",
+              "method": "GET",
+              "url": "{{ _.base_url }}/itens",
+              "params": [
+                {
+                  "name": "page",
+                  "value": "1",
+                  "enabled": true
+                },
+                {
+                  "name": "x",
+                  "value": "y",
+                  "enabled": false
+                }
+              ],
+              "headers": [
+                {
+                  "name": "Accept",
+                  "value": "application/json",
+                  "enabled": true
+                }
+              ],
+              "body": {
+                "mime": null
+              },
+              "auth": {
+                "type": "bearer",
+                "token": "{{ _.token }}"
+              },
+              "sortKey": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "Loja / Itens / Tag: auth \"oauth2\" não suportada (ficou sem auth)",
+    "Loja / Itens / Tag: usa template tag {% %} (não suportada)"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "workspaces": [
+    {
+      "id": "wrk_1d2f4d1d51c4459305f89224",
+      "name": "R",
+      "settings": {
+        "insecureTLS": false,
+        "timeoutMs": 30000
+      },
+      "environments": [
+        {
+          "id": "env_27e45d6daa776c8ad2fca5d6",
+          "name": "Base",
+          "parentId": null,
+          "data": {
+            "base_url": "https://x.test/api/v3"
+          },
+          "sortKey": 0
+        }
+      ],
+      "children": []
+    }
+  ],
+  "warnings": []
+}

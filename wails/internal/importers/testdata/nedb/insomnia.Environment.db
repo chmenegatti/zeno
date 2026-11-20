@@ -1,0 +1,2 @@
+{"_id":"env_base","type":"Environment","parentId":"wrk_1","name":"Base","data":{"base_url":"https://base.local","token":"t0"}}
+{"_id":"env_dev","type":"Environment","parentId":"env_base","name":"Dev","color":"#00ff00","data":{"token":"t-dev"}}

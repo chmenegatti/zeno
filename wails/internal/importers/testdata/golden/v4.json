@@ -1,0 +1,51 @@
+{
+  "workspaces": [
+    {
+      "id": "wrk_a",
+      "name": "A",
+      "settings": {
+        "insecureTLS": false,
+        "timeoutMs": 30000
+      },
+      "environments": [],
+      "children": [
+        {
+          "kind": "request",
+          "id": "req_a",
+          "name": "R",
+          "method": "POST",
+          "url": "http://x",
+          "params": [],
+          "headers": [],
+          "body": {
+            "mime": "multipart/form-data",
+            "fields": [
+              {
+                "name": "f",
+                "value": "",
+                "enabled": true,
+                "file": "/tmp/a"
+              },
+              {
+                "name": "n",
+                "value": "v",
+                "enabled": false
+              }
+            ]
+          },
+          "auth": {
+            "type": "apikey",
+            "key": "Cookie",
+            "value": "k=v",
+            "addTo": "header"
+          },
+          "sendCookies": false,
+          "sortKey": 0
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "A / R: API key em cookie virou header Cookie"
+  ]
+}

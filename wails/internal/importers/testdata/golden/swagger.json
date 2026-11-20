@@ -1,0 +1,99 @@
+{
+  "workspaces": [
+    {
+      "id": "wrk_79ad97a21c83db6aca315c56",
+      "name": "Loja v2",
+      "description": "Versão 2",
+      "settings": {
+        "insecureTLS": false,
+        "timeoutMs": 30000
+      },
+      "environments": [
+        {
+          "id": "env_f88b907b8671917ff7492bdf",
+          "name": "Base",
+          "parentId": null,
+          "data": {
+            "base_url": "https://loja.test/api",
+            "username": "",
+            "password": "",
+            "itemId": "0"
+          },
+          "sortKey": 0
+        }
+      ],
+      "children": [
+        {
+          "kind": "folder",
+          "id": "fld_b09f572ebdc0267dda9a5ea2",
+          "name": "itens",
+          "sortKey": 1,
+          "headers": [],
+          "auth": {
+            "type": "inherit"
+          },
+          "vars": {},
+          "children": [
+            {
+              "kind": "request",
+              "id": "req_1fa0d00bccee3c48dbb47355",
+              "name": "Atualizar item",
+              "method": "PUT",
+              "url": "{{ base_url }}/itens/{{ itemId }}",
+              "params": [
+                {
+                  "name": "status",
+                  "value": "ativo",
+                  "enabled": false
+                }
+              ],
+              "headers": [],
+              "body": {
+                "mime": "application/json",
+                "text": "{\n  \"nome\": \"Lápis\"\n}"
+              },
+              "auth": {
+                "type": "basic",
+                "username": "{{ username }}",
+                "password": "{{ password }}"
+              },
+              "sortKey": 0
+            },
+            {
+              "kind": "request",
+              "id": "req_3b255192341f0c44b4c1c26e",
+              "name": "Anexar",
+              "method": "POST",
+              "url": "{{ base_url }}/itens/{{ itemId }}/anexo",
+              "params": [],
+              "headers": [],
+              "body": {
+                "mime": "multipart/form-data",
+                "fields": [
+                  {
+                    "name": "nota",
+                    "value": "",
+                    "enabled": true
+                  },
+                  {
+                    "name": "arquivo",
+                    "value": "",
+                    "enabled": true,
+                    "file": ""
+                  }
+                ]
+              },
+              "auth": {
+                "type": "basic",
+                "username": "{{ username }}",
+                "password": "{{ password }}"
+              },
+              "sortKey": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "warnings": []
+}
