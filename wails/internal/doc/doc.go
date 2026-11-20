@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"sort"
 )
 
@@ -227,9 +228,7 @@ func MarshalIndent(v any) ([]byte, error) {
 
 // UnmarshalJSON lê guardando a ordem; objetos aninhados também viram *Doc.
 func (d *Doc) UnmarshalJSON(data []byte) error {
-	dec := json.NewDecoder(bytes.NewReader(data))
-	dec.UseNumber()
-	v, err := decodeJSON(dec)
+	v, err := FromJSON(data)
 	if err != nil {
 		return err
 	}
@@ -241,11 +240,19 @@ func (d *Doc) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// FromJSON decodifica um valor JSON qualquer guardando a ordem dos objetos.
+// FromJSON decodifica um valor JSON qualquer guardando a ordem dos objetos. Como o JSON.parse:
+// texto depois do valor (fora espaços) é erro.
 func FromJSON(data []byte) (any, error) {
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
-	return decodeJSON(dec)
+	v, err := decodeJSON(dec)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		return nil, fmt.Errorf("texto depois do JSON")
+	}
+	return v, nil
 }
 
 func decodeJSON(dec *json.Decoder) (any, error) {

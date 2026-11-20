@@ -39,3 +39,14 @@ func TestIdaEVolta(t *testing.T) {
 		}
 	}
 }
+
+func TestFromJSONRecusaTextoDepois(t *testing.T) {
+	for _, bad := range []string{`{"a":1} xyz`, `[1]]`, `1 2`, ``} {
+		if _, err := FromJSON([]byte(bad)); err == nil {
+			t.Errorf("%q deveria falhar", bad)
+		}
+	}
+	if v, err := FromJSON([]byte(" {\"a\":1}\n ")); err != nil || v.(*Doc).Get("a") != int64(1) {
+		t.Errorf("espaços em volta: %v %v", v, err)
+	}
+}

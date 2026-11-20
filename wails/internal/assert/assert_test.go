@@ -61,8 +61,10 @@ func TestCadaOperador(t *testing.T) {
 }
 
 func TestJSONInvalidoViraFalha(t *testing.T) {
-	r := Evaluate([]any{a("json", "exists", "", "$.a")}, doc.New("body", "<html>", "bodyEncoding", "utf8"), nil)
-	if len(r) != 1 || r[0].OK || r[0].Error != "resposta não é JSON" {
-		t.Errorf("%+v", r)
+	for _, body := range []string{"<html>", `{"a":1} lixo`} {
+		r := Evaluate([]any{a("json", "exists", "", "$.a")}, doc.New("body", body, "bodyEncoding", "utf8"), nil)
+		if len(r) != 1 || r[0].OK || r[0].Error != "resposta não é JSON" {
+			t.Errorf("%q: %+v", body, r)
+		}
 	}
 }
