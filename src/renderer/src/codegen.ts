@@ -1,7 +1,16 @@
 // "Gerar código" com o httpsnippet (o mesmo gerador do Insomnia): 21 linguagens, várias bibliotecas cada.
 
+// antes do httpsnippet: ele precisa ver o form-data do Node, não o FormData nativo
+import { restoreFormData } from './shims/hide-formdata'
 import { availableTargets, HTTPSnippet, type HarRequest } from 'httpsnippet'
-import type { SendInput } from '../shared/types'
+import type { SendInput } from '@shared/types'
+
+restoreFormData()
+
+// o alvo HTTP/1.1 do httpsnippet calcula o Content-Length com Buffer.byteLength(texto, 'ascii'), que
+// no Node é o número de unidades UTF-16 (1 byte por unidade); no navegador não há Buffer
+const g = globalThis as { Buffer?: unknown }
+if (typeof g.Buffer === 'undefined') g.Buffer = { byteLength: (s: string): number => s.length }
 
 export interface CodeTarget {
   key: string

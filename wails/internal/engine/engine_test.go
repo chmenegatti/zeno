@@ -239,3 +239,38 @@ module.exports.responseHooks = [(c) => { if (c.response.getStatusCode() !== 200)
 		t.Errorf("body: %q avisos %v", b, r.Get("warnings"))
 	}
 }
+
+func TestCodeInput(t *testing.T) {
+	srv, logins := api(t)
+	e, ws := setup(t, srv.URL)
+	me, _ := doc.Find(ws, "req_me")
+	req := me.Clone()
+	lit, _ := e.Vault.Encrypt("literal-aberto")
+	req.Set("headers", append(req.List("headers"), doc.New("name", "X-Lit", "value", lit, "enabled", true)))
+
+	// sem resolver: {{ variáveis }} como referência, segredo literal do request decifrado
+	in, err := e.CodeInput(ws, req, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := json.Marshal(in)
+	for _, want := range []string{`{"requestId":"req_me","method":"GET","url":"{{ base }}/me","headers":[`, `["X-Key","{{ api_key }}"]`, `["X-Lit","literal-aberto"]`, `"body":{"kind":"none"},"insecureTLS":false,"timeoutMs":5000}`} {
+		if !strings.Contains(string(b), want) {
+			t.Errorf("sem resolver: falta %s em %s", want, b)
+		}
+	}
+	// resolvendo: variáveis e segredos do ambiente abertos, sem enviar dependência
+	in, err = e.CodeInput(ws, req, "", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ = json.Marshal(in)
+	for _, want := range []string{`"url":"` + srv.URL + `/me"`, `["X-Key","chave-secreta"]`, `["X-Lit","literal-aberto"]`} {
+		if !strings.Contains(string(b), want) {
+			t.Errorf("resolvendo: falta %s em %s", want, b)
+		}
+	}
+	if *logins != 0 {
+		t.Error("gerar código não pode enviar dependência")
+	}
+}

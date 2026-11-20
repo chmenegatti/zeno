@@ -218,6 +218,24 @@ func (a *App) register() {
 		}
 		return a.engine.Execute(ws, req, envID, 0)
 	})
+	// request pronto pra "Gerar código" (o código sai no renderer, com o httpsnippet)
+	a.handle("codeInput", func(args Args) (any, error) {
+		wsID, _ := Get[string](args, 0)
+		req, err := Get[*Doc](args, 1)
+		if err != nil {
+			return nil, err
+		}
+		envID, _ := Get[string](args, 2)
+		resolveVars, _ := Get[bool](args, 3)
+		ws := st.Workspace(wsID)
+		if ws == nil {
+			return nil, errors.New("workspace não encontrado")
+		}
+		if req == nil {
+			return nil, errors.New("request não encontrado")
+		}
+		return a.engine.CodeInput(ws, req, envID, resolveVars)
+	})
 	a.handle("tagPreview", func(args Args) (any, error) {
 		raw, _ := Get[string](args, 0)
 		send, _ := Get[bool](args, 1)
@@ -520,11 +538,6 @@ func (a *App) register() {
 
 	a.registerGitHub()
 
-	// ---------- ainda não portados: valores vazios pra interface abrir ----------
-	empty := func(v any) handler { return func(Args) (any, error) { return v, nil } }
-	for _, c := range []string{"codeTargets"} {
-		a.handle(c, empty([]any{}))
-	}
 }
 
 // workspace vinculado ou movido: o watcher passa a vigiar a pasta nova
