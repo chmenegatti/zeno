@@ -916,5 +916,9 @@ func normSettings(set *Doc) *Doc {
 	if len(certs) > 0 {
 		out.Set("clientCerts", certs)
 	}
+	// mock server (#20): porta escolhida
+	if m := set.Map("mock"); m != nil && m.Num("port", 0) > 0 {
+		out.Set("mock", doc.New("port", num(m.Num("port", 0))))
+	}
 	return out
 }

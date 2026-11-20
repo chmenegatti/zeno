@@ -96,6 +96,22 @@ export function ResponsePane({ width }: { width: number }) {
                 ))}
               </Select>
             )}
+            {!res.error && cur && (
+              <button
+                className="btn btn-ghost px-1.5 py-0.5 text-[11.5px]"
+                title="Salva esta resposta como exemplo do request (o mock do workspace responde com ela)"
+                onClick={async () => {
+                  const { run, notify, updateRequest } = useStore.getState()
+                  const ex = await run(api.exampleFromResponse(id!, res.id))
+                  if (!ex) return
+                  const list = cur.req.examples ?? []
+                  updateRequest({ ...cur.req, examples: [...list, { ...ex, name: `${ex.name} (${list.length + 1})` }] })
+                  notify('Exemplo salvo (aba Exemplos do request)')
+                }}
+              >
+                ★ exemplo
+              </button>
+            )}
             <button
               className="btn btn-ghost px-1.5 py-0.5 text-[11.5px]"
               title="Limpar histórico"

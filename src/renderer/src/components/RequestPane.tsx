@@ -21,10 +21,11 @@ import { beautifyJson } from '@shared/format'
 import { Select } from './Select'
 import { kl } from '../keys'
 import { newOAuth2, OAuthFields, OAuthTokenPanel } from './OAuth'
+import { ExamplesEditor } from './Mock'
 
 const GraphQLBody = lazy(() => import('./GraphQLBody'))
 
-type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'assertions' | 'notes'
+type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'assertions' | 'notes' | 'examples'
 
 const BODY_TYPES: { mime: string | null; label: string }[] = [
   { mime: null, label: 'Sem body' },
@@ -147,6 +148,7 @@ export function RequestPane() {
             { id: 'auth', label: <>Auth<span className="ml-1 text-[10.5px] text-faint">{req.auth.type === 'inherit' ? '↑' : req.auth.type === 'none' ? '' : req.auth.type === 'oauth2' ? 'OAuth2' : AUTH_LABEL[req.auth.type]}</span></> },
             { id: 'scripts', label: <>Scripts{hasScripts(req.scripts) ? <span className="ml-1 text-[10.5px] text-tpurple">●</span> : ancestors.some((a) => hasScripts(a.scripts)) ? <span className="ml-1 text-[10.5px] text-faint">↑</span> : null}</> },
             { id: 'assertions', label: <>Asserções<Count n={req.assertions?.filter((a) => a.enabled).length ?? 0} /></> },
+            ...(wsMode ? [] : [{ id: 'examples' as const, label: <>Exemplos<Count n={req.examples?.length ?? 0} /></> }]),
             { id: 'notes', label: 'Notas' }
           ]}
         />
@@ -184,6 +186,7 @@ export function RequestPane() {
         {section === 'auth' && <AuthEditor auth={req.auth} inherited={effectiveAuth({ ...req, auth: { type: 'inherit' } }, ancestors)} onChange={(auth) => update({ auth })} oauthCtx={{ wsId: cur.ws.id, req, envId }} />}
         {section === 'scripts' && <ScriptsEditor scripts={req.scripts} onChange={(scripts) => update({ scripts })} />}
         {section === 'assertions' && <AssertionsEditor list={req.assertions ?? []} onChange={(assertions) => update({ assertions: assertions.length ? assertions : undefined })} />}
+        {section === 'examples' && <ExamplesEditor ws={cur.ws} req={req} onChange={(examples) => update({ examples })} />}
         {section === 'notes' && (
           <textarea className="h-full w-full resize-none bg-transparent p-3 outline-none" placeholder="Anotações sobre este request…" value={req.description ?? ''} onChange={(e) => update({ description: e.target.value })} />
         )}

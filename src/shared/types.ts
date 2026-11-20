@@ -84,7 +84,20 @@ export interface RequestDoc {
   sendCookies?: boolean
   /** false = não guarda os Set-Cookie da resposta */
   storeCookies?: boolean
+  /** respostas de exemplo (#20): o mock do workspace responde a rota com o padrão (ou o primeiro) */
+  examples?: Example[]
   sortKey: number
+}
+
+export interface Example {
+  id: string
+  name: string
+  status: number
+  headers: KV[]
+  body: string
+  bodyEncoding?: 'base64'
+  delayMs?: number
+  default?: boolean
 }
 
 export const ASSERT_SOURCES = ['status', 'header', 'json', 'body', 'time'] as const
@@ -139,6 +152,8 @@ export interface WorkspaceSettings {
   caFile?: string
   /** certificados de cliente (mTLS) por host: PEM (cert + key) ou PFX com senha (no cofre) */
   clientCerts?: ClientCert[]
+  /** mock server (#20): porta (padrão 4010) */
+  mock?: { port: number }
 }
 
 export interface ClientCert {
