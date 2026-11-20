@@ -127,6 +127,10 @@ func (a *App) execute(ws, req *Doc, envID string, depth int) (*Doc, error) {
 			values, errs, err := tags.Resolve(p.Unsupported, ctx)
 			var pc *tags.ErrPromptCancelled
 			if errors.As(err, &pc) {
+				// dependência: a pergunta cancelada sobe e o envio principal também para
+				if depth > 0 {
+					return nil, err
+				}
 				// cancelou a pergunta: não envia nem grava no histórico
 				rec := doc.New("id", httpc.ResponseID(time.Now()), "requestId", req.Get("id"), "at", time.Now().UnixMilli(),
 					"method", req.Get("method"), "url", req.Get("url"), "status", 0, "statusText", "", "headers", []any{},
