@@ -1,6 +1,6 @@
 # Rodar coleções no GitHub Actions
 
-O `zeno run` roda uma pasta ou um workspace inteiro e sai com código `≠ 0` quando algum request ou teste falha, então o job do CI falha junto. Opções em [Linha de comando](../README.md#linha-de-comando-ci).
+O `zeno run` roda uma pasta ou um workspace inteiro e sai com código `≠ 0` quando algum request ou teste falha, então o job do CI falha junto. Opções em [Linha de comando](../README.pt-BR.md#linha-de-comando-ci).
 
 ## Workspace no repositório
 

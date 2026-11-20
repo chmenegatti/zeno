@@ -93,8 +93,8 @@ O workflow de release gera `.deb` e AppImage e publica no GitHub com as notas do
 
 Toda release também atualiza:
 
-- **README.md**: recursos novos na tabela e nas seções, atalhos e capturas.
-- **Site** (`site/`, publicado no GitHub Pages pelo workflow *Site*): textos das seções, capturas em `site/img/` (WebP, 1400×843, dados de exemplo, nunca dados reais). Os links de download e a versão do selo vêm da API de releases, então não precisam de edição.
+- **README.md** (inglês) e **README.pt-BR.md**: recursos novos na tabela e nas seções, atalhos e capturas, nas duas línguas.
+- **Site** (`site/`, publicado no GitHub Pages pelo workflow *Site*; inglês em `site/index.html`, português em `site/pt/index.html`): textos das seções nas duas línguas, `softwareVersion` do JSON-LD, capturas em `site/img/` (WebP, 1400×843, dados de exemplo, nunca dados reais). Os links de download e a versão do selo vêm da API de releases, então não precisam de edição.
 
 ## Código de conduta
 

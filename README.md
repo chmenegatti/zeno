@@ -1,79 +1,83 @@
 <div align="center">
 
-<img src="docs/logo.png" width="112" alt="Logo do Zeno" />
+**English** · [Português](README.pt-BR.md)
+
+<img src="docs/logo.png" width="112" alt="Zeno logo" />
 
 # Zeno
 
-**Cliente de API desktop focado: uma tela, sem abas, coleções em YAML e segredos criptografados.**
+**A focused desktop API client for REST, GraphQL, gRPC and WebSocket: one screen, no tabs, YAML collections and encrypted secrets.**
 
 [![Release](https://img.shields.io/github/v/release/chmenegatti/zeno?color=00dbff&label=release)](https://github.com/chmenegatti/zeno/releases/latest)
 [![CI](https://github.com/chmenegatti/zeno/actions/workflows/ci.yml/badge.svg)](https://github.com/chmenegatti/zeno/actions/workflows/ci.yml)
-[![Licença MIT](https://img.shields.io/github/license/chmenegatti/zeno?color=a44dff)](LICENSE)
-![Plataformas](https://img.shields.io/badge/Linux%20·%20Windows%20·%20macOS-002233)
-[![Contribuições bem-vindas](https://img.shields.io/badge/PRs-bem--vindos-00ffd4)](CONTRIBUTING.md)
-[![Site](https://img.shields.io/badge/site-cesarmenegatti.com%2Fzeno-a44dff)](https://www.cesarmenegatti.com/zeno/)
+[![MIT License](https://img.shields.io/github/license/chmenegatti/zeno?color=a44dff)](LICENSE)
+![Platforms](https://img.shields.io/badge/Linux%20·%20Windows%20·%20macOS-002233)
+[![Contributions welcome](https://img.shields.io/badge/PRs-welcome-00ffd4)](CONTRIBUTING.md)
+[![Website](https://img.shields.io/badge/site-cesarmenegatti.com%2Fzeno-a44dff)](https://www.cesarmenegatti.com/zeno/)
 
-**[Site](https://www.cesarmenegatti.com/zeno/)** · [Instalação](#instalação) · [Recursos](#recursos) · [Primeiros passos](#primeiros-passos) · [Cofre de segredos](#cofre-de-segredos) · [Scripts](#scripts-e-testes) · [Git](#git-e-trabalho-em-equipe) · [Roadmap](#roadmap) · [Contribuir](CONTRIBUTING.md)
+A local-first, tab-less alternative to Insomnia and Postman: no account, no cloud, and your collections are plain YAML files you can keep in your git repo.
 
-<img src="docs/screenshot.png" alt="Tela do Zeno: coleções à esquerda, request no meio e resposta à direita" width="100%" />
+**[Website](https://www.cesarmenegatti.com/zeno/)** · [Installation](#installation) · [Features](#features) · [Getting started](#getting-started) · [Secrets vault](#secrets-vault) · [Scripts](#scripts-and-tests) · [Git](#git-and-teamwork) · [Roadmap](#roadmap) · [Contributing](CONTRIBUTING.md)
+
+<img src="docs/demo.gif" alt="Zeno: REST, GraphQL with schema autocomplete, gRPC, timeline, command palette, code generation and themes" width="100%" />
 
 </div>
 
-## Por que o Zeno?
+## Why Zeno?
 
-Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez mais cheias. O Zeno vai no sentido oposto:
+Popular API clients keep piling on tabs, cloud accounts and ever more crowded screens. Zeno goes the other way:
 
-- **Uma tela só.** Lateral com as coleções, request no meio, resposta à direita. Clicar num request troca o conteúdo; nada se empilha.
-- **Seus dados são arquivos.** Cada request é um arquivo YAML legível, numa pasta sua. Dá pra versionar no git, revisar em PR e editar no seu editor favorito.
-- **Segredos não vazam.** Senhas e tokens ficam criptografados no próprio YAML, com a chave guardada no chaveiro do sistema.
-- **Migração sem dor.** Importa as coleções do Insomnia direto da pasta dele, incluindo ambientes e encadeamento de tokens.
-- **Local primeiro.** Sem conta, sem telemetria, sem sincronização obrigatória.
-- **Leve.** Feito em Go, com a janela no navegador do próprio sistema: pacote de 8 a 24 MB e cerca de 220 MB de memória com o app parado.
-- **Do seu jeito.** 20 temas, atalhos iguais aos do Insomnia (e editáveis), paleta de comandos e plugins no formato do Insomnia.
+- **One screen.** Collections in the sidebar, request in the middle, response on the right. Clicking a request swaps the content; nothing piles up.
+- **Your data is files.** Every request is a readable YAML file in a folder you own. Version it in git, review it in PRs and edit it in your favorite editor.
+- **Secrets don't leak.** Passwords and tokens are encrypted inside the YAML itself, with the key stored in the OS keychain.
+- **Painless migration.** Imports Insomnia collections straight from its data folder, including environments and token chaining.
+- **Local-first.** No account, no telemetry, no mandatory sync.
+- **Lightweight.** Built in Go, rendering in the OS's own web view: an 8–24 MB package and about 220 MB of memory when idle.
+- **Your way.** 20 themes, Insomnia-compatible (and remappable) shortcuts, a command palette and Insomnia-format plugins.
 
 <table>
   <tr>
-    <td width="50%"><img src="site/img/timeline.webp" alt="Linha do tempo com redirect" /><br /><sub><b>Linha do tempo</b>: o request como saiu, redirects, tempos e TLS</sub></td>
-    <td width="50%"><img src="site/img/code.webp" alt="Gerar código" /><br /><sub><b>Gerar código</b> em 20 linguagens, colorido e com tags resolvidas</sub></td>
+    <td width="50%"><img src="site/img/timeline.webp" alt="Timeline with a redirect" /><br /><sub><b>Timeline</b>: the request as it went out, redirects, timings and TLS</sub></td>
+    <td width="50%"><img src="site/img/code.webp" alt="Code generation" /><br /><sub><b>Code generation</b> in 20 languages, highlighted and with tags resolved</sub></td>
   </tr>
   <tr>
-    <td width="50%"><img src="site/img/restag.webp" alt="Editor da tag de resposta" /><br /><sub><b>Encadeamento</b> com <code>{% response %}</code> e prévia do valor</sub></td>
-    <td width="50%"><img src="site/img/themes.webp" alt="Temas" /><br /><sub><b>20 temas</b>, escuros e claros</sub></td>
+    <td width="50%"><img src="site/img/restag.webp" alt="Response tag editor" /><br /><sub><b>Chaining</b> with <code>{% response %}</code> and a value preview</sub></td>
+    <td width="50%"><img src="site/img/themes.webp" alt="Themes" /><br /><sub><b>20 themes</b>, dark and light</sub></td>
   </tr>
 </table>
 
-## Recursos
+## Features
 
 | | |
 |---|---|
-| **HTTP completo** | Todos os métodos, params, headers, body JSON/XML/texto/form/multipart com arquivo, redirects, timeout e cancelamento |
-| **GraphQL** | Editor de consulta com autocomplete e validação pelo schema (introspecção na URL do request, com headers e auth), variáveis em JSON com `{{ }}`, escolha da operação e formatação; importa o GraphQL do Insomnia e do Postman |
-| **WebSocket e SSE** | URL `ws://`/`wss://` vira conexão WebSocket: conectar, mandar o body como mensagem (com variáveis e tags), log com horário de enviadas/recebidas, filtro e JSON formatado; respostas `text/event-stream` mostram cada evento conforme chega, com parar e aba *Eventos* no histórico. Auth, cookies, proxy e mTLS iguais ao HTTP |
-| **gRPC** | URL `grpc://host:porta` (ou `grpcs://` com TLS) vira chamada gRPC: serviços e métodos por server reflection ou por um arquivo `.proto`, mensagem em JSON com exemplo gerado do schema, unary, server, client e bidi streaming com log de cada mensagem e horário, status e trailers; headers viram metadata, auth e variáveis iguais ao HTTP; importa o gRPC do Insomnia |
-| **Mock server** | ★ *exemplo* salva uma resposta do histórico no request (aba *Exemplos*: status, headers, body e atraso editáveis, um padrão). *Ligar mock* sobe um servidor local por workspace (`127.0.0.1:4010` ou a porta escolhida) que responde cada rota, `GET {{ base_url }}/users/{{ id }}` → `GET /users/1`, com o exemplo; CORS liberado, 404 lista as rotas, para ao excluir o workspace ou fechar o app |
-| **Autenticação** | Basic, Bearer, API key (header ou query) e **OAuth 2.0** (authorization code com PKCE, client credentials, senha, device code e implicit; login no navegador do sistema, token em cache cifrado no cofre e renovado sozinho), com herança da pasta |
-| **Ambientes e variáveis** | `{{ var }}` e `{{ _.var }}` com herança Base → sub-ambiente → pasta; editor com `Ctrl+E`, troca com `Ctrl+Shift+E` |
-| **Badges de variáveis** | Variáveis aparecem como badges em todos os campos e editores, com autocomplete ao digitar `{{`; clique pra ver, editar, criar ou mover |
-| **Scripts e testes** | JavaScript antes do envio e depois da resposta (por request ou pasta), com `zeno.test`/`zeno.expect`; scripts do Insomnia e do Postman rodam sem mudança |
-| **Asserções e executor** | Checagens de status, header, JSONPath, body e tempo sem programar; rode uma pasta inteira com iterações, dados CSV/JSON e relatório JUnit, no app ou com `zeno run` no CI |
-| **Encadeamento e funções** | `{% response %}` usa o body, header ou URL de outro request, reenviando só quando o valor expira; `uuid`, `timestamp`, `faker`, `hash`, `base64`, `file`, `prompt` e `jsonpath` |
-| **Cofre de segredos** | AES-256-GCM com a chave protegida pelo chaveiro do sistema (gnome-keyring/KWallet no Linux, DPAPI no Windows, Keychain no macOS) |
-| **cURL e código** | Cole um `curl` na URL e o request é montado; copie como cURL ou gere código em 20 linguagens e 37 bibliotecas (Shell, JavaScript, Node, Python, Go, Java, C#, PHP, Ruby, Kotlin, Swift, Rust, PowerShell…), com realce de sintaxe, indentação de 2 espaços e variáveis e tags já resolvidas (`Ctrl+Shift+G`) |
-| **Importação** | Insomnia (pasta, export v4 e v5), OpenAPI 3 e Swagger 2 (arquivo ou URL) e Postman v2.1 com ambientes, com prévia e lista do que não foi convertido |
-| **Exportação** | Zip com os YAML do Zeno, Insomnia (JSON v4) e Postman (coleção v2.1 + ambientes), de um ou vários workspaces, com prévia do que não cabe no outro formato e segredos do cofre vazios ou abertos (você escolhe) |
-| **Organização** | Pastas aninhadas, arrastar pra mover/reordenar, duplicar, renomear, fixar; paleta de comandos com `Ctrl+P`; tela de workspaces (`Ctrl+Shift+O`) com busca em todos os requests, grupos, cores, favoritos, arquivar, git, cofre e GitHub (último envio e se mudou desde então) de cada um |
-| **Resposta** | JSON formatado com destaque de sintaxe, filtro JSONPath/XPath salvo por request, busca (`Ctrl+F`), clique na chave pra copiar o caminho ou a tag `{% response %}`, headers, tempos e histórico das últimas 20 respostas |
-| **Rede** | Proxy por workspace (do sistema ou personalizado, HTTP/HTTPS/SOCKS5, com exceções), CA própria somada às do sistema e certificado de cliente (mTLS) por host, em PEM ou PFX com a senha no cofre |
-| **Cookies** | Jar por workspace, inclusive em redirects, com tela pra ver e editar (`Ctrl+K`) |
-| **Plugins** | Formato do Insomnia (`templateTags`, hooks, ações) e importadores, isolados e com liga/desliga |
-| **Salvar no GitHub** | Entre com o GitHub CLI ou um token e envie os workspaces pra um repositório privado (um commit por envio); baixe em outra máquina |
-| **Git integrado** | Workspace dentro do repo do projeto, com status, diff por request, commit, pull, push e branches |
-| **Temas** | 20 temas embutidos: TOTVS (padrão), Aura Dark, Monokai, Synthwave '84, Dracula, One Dark, Nord, Tokyo Night, Catppuccin, Gruvbox, Solarized, Night Owl, GitHub, Rosé Pine e Palenight, com 5 claros. Em Preferências ou `Ctrl+P` › *Tema* |
-| **Arquivos vivos** | Editou o YAML por fora ou deu `pull`? O app recarrega na hora |
+| **Full HTTP** | All methods, params, headers, JSON/XML/text/form/multipart bodies with file upload, redirects, timeout and cancellation |
+| **GraphQL** | Query editor with schema-based autocomplete and validation (introspection against the request URL, with headers and auth), JSON variables with `{{ }}`, operation picker and formatting; imports GraphQL requests from Insomnia and Postman |
+| **WebSocket and SSE** | A `ws://`/`wss://` URL becomes a WebSocket connection: connect, send the body as a message (with variables and tags), timestamped log of sent/received messages, filter and pretty-printed JSON; `text/event-stream` responses show each event as it arrives, with a stop button and an *Events* tab in the history. Auth, cookies, proxy and mTLS work just like HTTP |
+| **gRPC** | A `grpc://host:port` URL (or `grpcs://` for TLS) becomes a gRPC call: services and methods via server reflection or a `.proto` file, JSON message with a sample generated from the schema, unary, server, client and bidi streaming with a timestamped log of each message, status and trailers; headers become metadata, auth and variables work like HTTP; imports gRPC requests from Insomnia |
+| **Mock server** | ★ *example* saves a response from the history into the request (*Examples* tab: editable status, headers, body and delay, one default). *Start mock* runs a local server per workspace (`127.0.0.1:4010` or a port of your choice) that answers each route, `GET {{ base_url }}/users/{{ id }}` → `GET /users/1`, with its example; CORS enabled, 404 lists the routes, stops when the workspace is deleted or the app closes |
+| **Authentication** | Basic, Bearer, API key (header or query) and **OAuth 2.0** (authorization code with PKCE, client credentials, password, device code and implicit; login in the system browser, token cached encrypted in the vault and refreshed automatically), inherited from the folder |
+| **Environments and variables** | `{{ var }}` and `{{ _.var }}` with Base → sub-environment → folder inheritance; edit with `Ctrl+E`, switch with `Ctrl+Shift+E` |
+| **Variable badges** | Variables show up as badges in every field and editor, with autocomplete as you type `{{`; click to view, edit, create or move |
+| **Scripts and tests** | JavaScript before sending and after the response (per request or folder), with `zeno.test`/`zeno.expect`; Insomnia and Postman scripts run unchanged |
+| **Assertions and runner** | Status, header, JSONPath, body and timing checks without code; run a whole folder with iterations, CSV/JSON data and a JUnit report, in the app or with `zeno run` in CI |
+| **Chaining and functions** | `{% response %}` uses the body, header or URL of another request, resending only when the value expires; `uuid`, `timestamp`, `faker`, `hash`, `base64`, `file`, `prompt` and `jsonpath` |
+| **Secrets vault** | AES-256-GCM with the key protected by the OS keychain (gnome-keyring/KWallet on Linux, DPAPI on Windows, Keychain on macOS) |
+| **cURL and code** | Paste a `curl` command into the URL and the request is built; copy as cURL or generate code in 20 languages and 37 libraries (Shell, JavaScript, Node, Python, Go, Java, C#, PHP, Ruby, Kotlin, Swift, Rust, PowerShell…), with syntax highlighting, 2-space indentation and variables and tags already resolved (`Ctrl+Shift+G`) |
+| **Import** | Insomnia (data folder, v4 and v5 exports), OpenAPI 3 and Swagger 2 (file or URL) and Postman v2.1 with environments, with a preview and a list of anything that wasn't converted |
+| **Export** | Zip with Zeno's YAML, Insomnia (JSON v4) and Postman (v2.1 collection + environments), for one or several workspaces, with a preview of what doesn't fit the target format and vault secrets left empty or in clear text (your choice) |
+| **Organization** | Nested folders, drag to move/reorder, duplicate, rename, pin; command palette with `Ctrl+P`; workspaces screen (`Ctrl+Shift+O`) with search across all requests, groups, colors, favorites, archive, plus git, vault and GitHub status (last push and whether it changed since) for each one |
+| **Response** | Pretty-printed JSON with syntax highlighting, JSONPath/XPath filter saved per request, search (`Ctrl+F`), click a key to copy its path or a `{% response %}` tag, headers, timings and a history of the last 20 responses |
+| **Network** | Per-workspace proxy (system or custom, HTTP/HTTPS/SOCKS5, with exclusions), custom CA added to the system ones and per-host client certificates (mTLS), in PEM or PFX with the passphrase in the vault |
+| **Cookies** | Per-workspace jar, redirects included, with a screen to view and edit them (`Ctrl+K`) |
+| **Plugins** | Insomnia format (`templateTags`, hooks, actions) and importers, sandboxed and individually toggleable |
+| **Save to GitHub** | Sign in with the GitHub CLI or a token and push your workspaces to a private repository (one commit per push); pull them on another machine |
+| **Built-in Git** | Workspace inside your project's repo, with status, per-request diff, commit, pull, push and branches |
+| **Themes** | 20 built-in themes: TOTVS (default), Aura Dark, Monokai, Synthwave '84, Dracula, One Dark, Nord, Tokyo Night, Catppuccin, Gruvbox, Solarized, Night Owl, GitHub, Rosé Pine and Palenight, 5 of them light. In Preferences or `Ctrl+P` › *Theme* |
+| **Live files** | Edited the YAML outside the app or ran `pull`? The app reloads instantly |
 
-## Instalação
+## Installation
 
-Baixe o pacote na [página de releases](https://github.com/chmenegatti/zeno/releases/latest).
+Download the package from the [releases page](https://github.com/chmenegatti/zeno/releases/latest).
 
 **Debian/Ubuntu (.deb)**
 
@@ -87,140 +91,140 @@ sudo apt install ./zeno_*_amd64.deb
 sudo dnf install ./zeno-*.x86_64.rpm
 ```
 
-**Qualquer distribuição (AppImage)**
+**Any distribution (AppImage)**
 
 ```bash
 chmod +x Zeno-*.AppImage
 ./Zeno-*.AppImage
 ```
 
-O AppImage usa o WebKitGTK do sistema; se faltar, ele mostra como instalar (`libwebkit2gtk-4.1-0` no Debian/Ubuntu, `webkit2gtk4.1` no Fedora).
+The AppImage uses the system's WebKitGTK; if it's missing, it tells you how to install it (`libwebkit2gtk-4.1-0` on Debian/Ubuntu, `webkit2gtk4.1` on Fedora).
 
-**Windows 10 e 11**
+**Windows 10 and 11**
 
-Rode o `Zeno-*-windows-setup.exe` (ou use a versão portátil `Zeno-*-windows-portable.zip`). O app ainda não é assinado: se o SmartScreen avisar *O Windows protegeu o computador*, clique em **Mais informações** e depois em **Executar assim mesmo**.
+Run `Zeno-*-windows-setup.exe` (or use the portable `Zeno-*-windows-portable.zip`). The app isn't signed yet: if SmartScreen shows *Windows protected your PC*, click **More info** and then **Run anyway**.
 
-**macOS (Intel e Apple Silicon)**
+**macOS (Intel and Apple Silicon)**
 
-Abra o `Zeno-*-macos-universal.dmg` e arraste o Zeno para **Aplicativos**. O app ainda não tem notarização da Apple: na primeira abertura o macOS bloqueia; vá em **Ajustes do Sistema › Privacidade e Segurança** e clique em **Abrir mesmo assim**.
+Open `Zeno-*-macos-universal.dmg` and drag Zeno to **Applications**. The app isn't notarized by Apple yet: macOS blocks it on first launch; go to **System Settings › Privacy & Security** and click **Open Anyway**.
 
-### A partir do código
+### From source
 
-Requer Go 1.26+, Node.js 22+ e, no Linux, `libgtk-3-dev` e `libwebkit2gtk-4.1-dev`.
+Requires Go 1.26+, Node.js 22+ and, on Linux, `libgtk-3-dev` and `libwebkit2gtk-4.1-dev`.
 
 ```bash
 git clone https://github.com/chmenegatti/zeno.git
 cd zeno
 npm install
-npm run dev        # compila a interface e o app e abre
+npm run dev        # builds the UI and the app, then opens it
 ```
 
-## Primeiros passos
+## Getting started
 
-1. **Importe** (opcional): menu do workspace → *Importar…*. Lê o Insomnia instalado, arquivos (export do Insomnia, OpenAPI/Swagger, coleção e ambientes do Postman) ou a URL de um spec. Escolha os workspaces na prévia e deixe marcada a opção de criptografar senhas e tokens.
+1. **Import** (optional): workspace menu → *Import…*. Reads your installed Insomnia, files (Insomnia export, OpenAPI/Swagger, Postman collection and environments) or a spec URL. Pick the workspaces in the preview and keep the option to encrypt passwords and tokens checked.
 
-   Do OpenAPI sai uma pasta por tag, um request por operação, `{{ base_url }}` com o primeiro servidor, parâmetros de path como `{{ id }}` e body de exemplo montado do schema.
-2. **Ou crie do zero**: *Novo workspace*, depois `Ctrl+N` para um request.
-3. **Defina variáveis**: clique no ✎ ao lado do ambiente ou em ＋ na seção *Variáveis*. Use `{{ base_url }}/recurso` na URL.
-4. **Envie** com `Ctrl+Enter`.
+   OpenAPI produces one folder per tag, one request per operation, `{{ base_url }}` set to the first server, path parameters like `{{ id }}` and a sample body built from the schema.
+2. **Or start from scratch**: *New workspace*, then `Ctrl+N` for a request.
+3. **Set variables**: click ✎ next to the environment or ＋ in the *Variables* section. Use `{{ base_url }}/resource` in the URL.
+4. **Send** with `Ctrl+Enter`.
 
-> Quer só experimentar? Importe [`examples/insomnia/github-api.insomnia.json`](examples/insomnia/github-api.insomnia.json) (*Importar… › Arquivo*, ou pela URL do arquivo *raw* no GitHub): requests pra API pública do GitHub com variáveis, dois ambientes, encadeamento com `{% response %}`, scripts com testes, resposta em HTML e imagem. A pasta *Autenticado* usa `github_token`: ponha um token no ambiente Base e marque como segredo pra ele ir pro cofre.
+> Just want to try it? Import [`examples/insomnia/github-api.insomnia.json`](examples/insomnia/github-api.insomnia.json) (*Import… › File*, or via the file's *raw* URL on GitHub): requests to the public GitHub API with variables, two environments, `{% response %}` chaining, scripts with tests, and HTML and image responses. The *Autenticado* folder uses `github_token`: put a token in the Base environment and mark it as secret so it goes into the vault.
 
-> Tem um `curl` pronto (da documentação ou do *Copy as cURL* do navegador)? Cole no campo de URL: método, headers, body, query, `-u` e Bearer viram campos do request.
+> Got a ready-made `curl` command (from docs or the browser's *Copy as cURL*)? Paste it into the URL field: method, headers, body, query, `-u` and Bearer become request fields.
 
-### Atalhos
+### Shortcuts
 
-Mesmo padrão do Insomnia. Todos podem ser trocados em **⌨ Atalhos** (`Ctrl+Shift+/`): *trocar*, *+* (outra combinação) ou *padrão*. **Importar do Insomnia** traz os atalhos que você personalizou lá.
+Same defaults as Insomnia. All of them can be remapped in **⌨ Shortcuts** (`Ctrl+Shift+/`): *change*, *+* (another combination) or *default*. **Import from Insomnia** brings over the shortcuts you customized there.
 
-| Atalho | Ação |
+| Shortcut | Action |
 |---|---|
-| `Ctrl+=` / `Ctrl+-` / `Ctrl+0` | Zoom da janela (fica salvo) |
-| `Ctrl+Shift+=` / `Ctrl+Shift+-` | Fonte dos editores |
-| `Ctrl+\` | Mostrar/esconder a lateral |
-| `Ctrl+P` | Paleta de comandos: busca difusa em requests de todos os workspaces e ações (trocar ambiente/workspace, importar, preferências…). `>` no começo = só comandos |
-| `Ctrl+Shift+F` | Filtrar a lateral; com o foco num editor, formata o JSON (mantém `{{ }}` e `{% %}`) |
-| `Ctrl+L` / `Ctrl+'` | Focar a URL / a resposta |
-| `Ctrl+,` / `Ctrl+Shift+,` | Preferências (zoom, fontes) / configurações do workspace |
-| `Ctrl+Shift+/` | Lista de atalhos |
-| `Ctrl+Enter`, `Ctrl+R`, `F5` | Enviar request |
-| `Ctrl+Shift+Enter` | Opções de envio: enviar depois de N segundos ou repetir a cada N segundos (também no ▾ ao lado do Enviar) |
-| `Ctrl+K` | Cookies do workspace |
-| `Ctrl+Shift+P` | Fixar/desafixar o request no topo da lateral |
-| `Ctrl+N` / `Ctrl+Shift+N` | Novo request / nova pasta (na pasta atual) |
-| `Ctrl+D` / `Ctrl+Shift+Backspace` | Duplicar / excluir o request |
-| `Ctrl+Shift+L` / `Ctrl+Shift+H` / `Ctrl+Shift+G` | Método HTTP / histórico de respostas / gerar código |
-| `Ctrl+E` / `Ctrl+Shift+E` | Editar ambientes / trocar ambiente |
-| `Alt+Shift+U` | Badges de variável mostram o valor em vez do nome (secretos continuam mascarados) |
-| `Ctrl+S` | Salvar agora (o salvamento já é automático) |
-| `F11`, `Ctrl+Alt+I`, `Ctrl+Q` | Tela cheia, DevTools, sair |
-| Duplo clique | Renomear item na lateral |
-| Botão direito | Menu de contexto (novo, duplicar, copiar como cURL, gerar código, excluir) |
+| `Ctrl+=` / `Ctrl+-` / `Ctrl+0` | Window zoom (persisted) |
+| `Ctrl+Shift+=` / `Ctrl+Shift+-` | Editor font size |
+| `Ctrl+\` | Show/hide the sidebar |
+| `Ctrl+P` | Command palette: fuzzy search across requests in all workspaces and actions (switch environment/workspace, import, preferences…). A leading `>` = commands only |
+| `Ctrl+Shift+F` | Filter the sidebar; with focus in an editor, formats the JSON (keeps `{{ }}` and `{% %}`) |
+| `Ctrl+L` / `Ctrl+'` | Focus the URL / the response |
+| `Ctrl+,` / `Ctrl+Shift+,` | Preferences (zoom, fonts) / workspace settings |
+| `Ctrl+Shift+/` | Shortcut list |
+| `Ctrl+Enter`, `Ctrl+R`, `F5` | Send request |
+| `Ctrl+Shift+Enter` | Send options: send after N seconds or repeat every N seconds (also in the ▾ next to Send) |
+| `Ctrl+K` | Workspace cookies |
+| `Ctrl+Shift+P` | Pin/unpin the request at the top of the sidebar |
+| `Ctrl+N` / `Ctrl+Shift+N` | New request / new folder (in the current folder) |
+| `Ctrl+D` / `Ctrl+Shift+Backspace` | Duplicate / delete the request |
+| `Ctrl+Shift+L` / `Ctrl+Shift+H` / `Ctrl+Shift+G` | HTTP method / response history / generate code |
+| `Ctrl+E` / `Ctrl+Shift+E` | Edit environments / switch environment |
+| `Alt+Shift+U` | Variable badges show the value instead of the name (secrets stay masked) |
+| `Ctrl+S` | Save now (saving is already automatic) |
+| `F11`, `Ctrl+Alt+I`, `Ctrl+Q` | Full screen, DevTools, quit |
+| Double-click | Rename an item in the sidebar |
+| Right-click | Context menu (new, duplicate, copy as cURL, generate code, delete) |
 
-## Variáveis e ambientes
+## Variables and environments
 
-Cada workspace tem um ambiente **Base** e quantos sub-ambientes quiser (Desenvolvimento, Produção…). Pastas também podem ter variáveis. Na hora de enviar, vale a definição mais específica: **pasta > sub-ambiente ativo > Base**.
+Each workspace has a **Base** environment and as many sub-environments as you like (Development, Production…). Folders can have variables too. When sending, the most specific definition wins: **folder > active sub-environment > Base**.
 
-<img src="docs/variaveis.png" alt="Popover de edição de variável" width="640" />
+<img src="docs/variaveis.png" alt="Variable editing popover" width="640" />
 
-Clique em qualquer badge para ver de onde vem o valor, mudar, mover para outro nível ou marcar como secreto. Badge laranja indica variável que não existe no ambiente ativo; clicar nela já cria.
+Click any badge to see where its value comes from, change it, move it to another level or mark it as secret. An orange badge means the variable doesn't exist in the active environment; clicking it creates it.
 
-As variáveis viram badge em todo lugar: URL, params, headers, auth, campos de formulário e também nos editores de body e de ambientes. Digitar `{{` abre a lista de variáveis do ambiente ativo, com valor (secretos mascarados) e origem; `Ctrl+Espaço` mostra variáveis e tags. `Alt+Shift+U` troca o nome pelo valor nos badges.
+Variables become badges everywhere: URL, params, headers, auth, form fields and also the body and environment editors. Typing `{{` opens the list of variables in the active environment, with value (secrets masked) and origin; `Ctrl+Space` shows variables and tags. `Alt+Shift+U` swaps names for values in the badges.
 
-### Tags de template
+### Template tags
 
-| Tag | O que faz |
+| Tag | What it does |
 |---|---|
-| `{% response 'body', 'req_id', '$.token', 'when-expired', 3600 %}` | Valor da resposta de outro request (JSONPath ou caminho XML). Gatilhos: `never`, `no-history`, `when-expired`, `always` |
-| `{% response 'header', 'req_id', 'X-Session' %}` | Header da resposta de outro request |
-| `{% response 'body', 'Auth / Login', '$.token' %}` | O request também pode ser indicado pelo nome ou pelo caminho `Pasta / Nome` |
-| `{% uuid 'v4' %}` | UUID aleatório |
-| `{% now %}` | Data e hora atual (ISO 8601) |
-| `{% timestamp 'millis'\|'unix'\|'iso' %}` | Timestamp em milissegundos, segundos ou ISO |
-| `{% faker 'randomEmail' %}` | Dado falso com os nomes do Insomnia/Postman: `randomFullName`, `randomEmail`, `randomPhoneNumber`, `randomCPF`, `randomUUID`, `randomInt`, `randomCity`… |
-| `{% hash 'sha256', 'hex', '{{ senha }}' %}` | Hash md5/sha1/sha256/sha512 em hex ou base64 |
-| `{% base64 'encode', 'normal', '{{ user }}:{{ pass }}' %}` | Codifica/decodifica base64 (normal ou URL-safe) |
-| `{% file '~/chave.pem' %}` | Conteúdo de um arquivo |
-| `{% prompt 'Código 2FA', 'Digite o código', '', 'otp', true %}` | Pergunta na hora de enviar (uma vez por envio; pode lembrar até fechar o app). Cancelar não envia |
-| `{% jsonpath '{{ perfil_json }}', '$.id' %}` | JSONPath sobre um texto JSON (ex.: variável) |
+| `{% response 'body', 'req_id', '$.token', 'when-expired', 3600 %}` | Value from another request's response (JSONPath or XML path). Triggers: `never`, `no-history`, `when-expired`, `always` |
+| `{% response 'header', 'req_id', 'X-Session' %}` | Response header from another request |
+| `{% response 'body', 'Auth / Login', '$.token' %}` | The request can also be referenced by name or by its `Folder / Name` path |
+| `{% uuid 'v4' %}` | Random UUID |
+| `{% now %}` | Current date and time (ISO 8601) |
+| `{% timestamp 'millis'\|'unix'\|'iso' %}` | Timestamp in milliseconds, seconds or ISO |
+| `{% faker 'randomEmail' %}` | Fake data using the Insomnia/Postman names: `randomFullName`, `randomEmail`, `randomPhoneNumber`, `randomCPF`, `randomUUID`, `randomInt`, `randomCity`… |
+| `{% hash 'sha256', 'hex', '{{ senha }}' %}` | md5/sha1/sha256/sha512 hash in hex or base64 |
+| `{% base64 'encode', 'normal', '{{ user }}:{{ pass }}' %}` | Base64 encode/decode (normal or URL-safe) |
+| `{% file '~/chave.pem' %}` | Contents of a file |
+| `{% prompt 'Código 2FA', 'Digite o código', '', 'otp', true %}` | Asks at send time (once per send; can remember until the app closes). Cancel means the request isn't sent |
+| `{% jsonpath '{{ perfil_json }}', '$.id' %}` | JSONPath over a JSON string (e.g. a variable) |
 
-Os argumentos aceitam `{{ variáveis }}`. Clicar no badge abre um formulário próprio de cada função, com prévia do valor.
+Arguments accept `{{ variables }}`. Clicking the badge opens a dedicated form for each function, with a value preview.
 
-A sintaxe é a mesma do Insomnia, então coleções importadas funcionam sem ajuste. Nos campos (URL, params, headers, auth, body) e no JSON dos ambientes e das variáveis da pasta, a tag aparece como badge, por exemplo `ƒ Resposta ⇒ Login · $.access_token`; clique nele pra editar request, atributo, filtro e gatilho, com prévia do valor. `Ctrl+Espaço` lista variáveis e tags (escolha *Outra tag…* pra abrir o editor); nos editores (body, ambientes) também dá pra digitar `respon…`, `uuid` ou `now` e escolher a sugestão. Badge vermelho = request referenciado não existe.
+The syntax is the same as Insomnia's, so imported collections work as-is. In fields (URL, params, headers, auth, body) and in the JSON of environments and folder variables, a tag shows up as a badge, e.g. `ƒ Resposta ⇒ Login · $.access_token`; click it to edit the request, attribute, filter and trigger, with a value preview. `Ctrl+Space` lists variables and tags (pick *Other tag…* to open the editor); in the editors (body, environments) you can also type `respon…`, `uuid` or `now` and pick the suggestion. A red badge means the referenced request doesn't exist.
 
-## Resposta
+## Response
 
-- **Filtro**: abaixo do body, `$.items[*].id`, `$..id` ou `$.data['nome completo']` para JSON; XPath (`//item/id`, `count(//item)`) para XML e HTML. O resultado aparece na hora, um filtro inválido mostra o erro sem esconder o body, e o filtro fica salvo por request.
-- **Busca**: `Ctrl+F` com o foco na resposta (ou **buscar**), com regex, maiúsculas/minúsculas e palavra inteira.
-- **Visualizadores**: imagem, PDF (com o visualizador do Chromium), HTML renderizado num iframe isolado (sem scripts), áudio e vídeo; **Visual / Texto** alterna pro texto puro. **Salvar em arquivo** grava qualquer resposta (nome sugerido pelo `Content-Disposition`, URL ou tipo).
-- **Respostas grandes**: acima de 5 MB, o body vai pra um arquivo próprio em `.responses/bodies/` e a tela mostra os primeiros 256 KB; **carregar tudo** traz o resto quando você quiser. Scripts e `{% response %}` sempre usam o body completo.
-- **Linha do tempo**: o request exatamente como saiu (linha, headers brutos com `Host`/`user-agent`, body), cada salto de redirect com o que voltou, tempos de DNS, conexão, TLS, espera e download, e o certificado TLS (emissor, validade, SHA-256). `Authorization` e `Cookie` ficam escondidos até marcar *mostrar*.
-- **Comparar**: diff de body ou de status/headers entre a resposta atual e outra do histórico.
-- **Caminho do JSON**: clique no nome de uma chave para copiar o caminho (`$.data.users[0].id`), copiar uma tag `{% response %}` pronta ou filtrar por ele.
+- **Filter**: below the body, `$.items[*].id`, `$..id` or `$.data['nome completo']` for JSON; XPath (`//item/id`, `count(//item)`) for XML and HTML. Results appear instantly, an invalid filter shows the error without hiding the body, and the filter is saved per request.
+- **Search**: `Ctrl+F` with focus on the response (or **search**), with regex, case-sensitive and whole-word options.
+- **Viewers**: image, PDF (with Chromium's viewer), HTML rendered in a sandboxed iframe (no scripts), audio and video; **Visual / Text** toggles to raw text. **Save to file** writes any response to disk (name suggested from `Content-Disposition`, the URL or the content type).
+- **Large responses**: above 5 MB, the body goes to its own file in `.responses/bodies/` and the screen shows the first 256 KB; **load all** brings in the rest whenever you want. Scripts and `{% response %}` always use the full body.
+- **Timeline**: the request exactly as it went out (request line, raw headers with `Host`/`user-agent`, body), every redirect hop with what came back, DNS, connect, TLS, wait and download timings, and the TLS certificate (issuer, validity, SHA-256). `Authorization` and `Cookie` stay hidden until you check *show*.
+- **Compare**: body or status/headers diff between the current response and another one from the history.
+- **JSON path**: click a key name to copy its path (`$.data.users[0].id`), copy a ready-made `{% response %}` tag or filter by it.
 
 ## Plugins
 
-Plugins no formato do Insomnia (`templateTags`, `requestHooks`, `responseHooks`, `requestActions`) e importadores ficam em `plugins/` na pasta de dados. Em **Preferências › Plugins…** dá pra ligar, desligar e recarregar. Plugin com erro aparece desativado, com o motivo, sem derrubar o app. Veja [docs/plugins.md](docs/plugins.md) e o [plugin de exemplo](examples/plugins/zeno-plugin-exemplo).
+Insomnia-format plugins (`templateTags`, `requestHooks`, `responseHooks`, `requestActions`) and importers live in `plugins/` inside the data folder. In **Preferences › Plugins…** you can enable, disable and reload them. A broken plugin shows up disabled, with the reason, without crashing the app. See [docs/plugins.md](docs/plugins.md) and the [example plugin](examples/plugins/zeno-plugin-exemplo).
 
-## Salvar no GitHub
+## Save to GitHub
 
-Menu do workspace › **Salvar no GitHub…** (ou `Ctrl+P` › *GitHub*):
+Workspace menu › **Save to GitHub…** (or `Ctrl+P` › *GitHub*):
 
-1. **Entre**: **Entrar com GitHub** abre o navegador, você digita o código mostrado e autoriza o app *zeno*. Também dá pra usar a sessão do GitHub CLI (`gh auth login` feito antes) ou colar um token com acesso a repositórios. O token fica cifrado no cofre, com a chave no chaveiro do sistema.
-2. **Envie**: escolha os workspaces. Eles vão pra um repositório **privado** (`zeno-collections`, criado na primeira vez; dá pra trocar o nome), cada um numa pasta, num commit só. Arquivos apagados no app saem do repositório, e envio sem mudança não cria commit.
-3. **Baixe em outra máquina**: a lista mostra o que está no repositório; *baixar* cria o workspace, *atualizar daqui* troca a versão local.
+1. **Sign in**: **Sign in with GitHub** opens the browser, you enter the code shown and authorize the *zeno* app. You can also reuse your GitHub CLI session (`gh auth login` done beforehand) or paste a token with repository access. The token is stored encrypted in the vault, with the key in the OS keychain.
+2. **Push**: choose the workspaces. They go to a **private** repository (`zeno-collections`, created the first time; the name can be changed), each in its own folder, in a single commit. Files deleted in the app are removed from the repository, and a push with no changes creates no commit.
+3. **Pull on another machine**: the list shows what's in the repository; *download* creates the workspace, *update from here* replaces the local version.
 
-Segredos do cofre vão cifrados. Em outra máquina, use o mesmo chaveiro ou informe os valores de novo. Não precisa ter `git` instalado: tudo passa pela API do GitHub.
+Vault secrets are pushed encrypted. On another machine, use the same keychain or enter the values again. No need to have `git` installed: everything goes through the GitHub API.
 
 ## Cookies
 
-Cada workspace tem um jar de cookies, como no Insomnia: o `Set-Cookie` das respostas (inclusive nos redirects, como no login que devolve 302) fica guardado e vai automaticamente nos requests seguintes, respeitando domínio, caminho, `Secure` e expiração. Cookies expirados são descartados. `Ctrl+K` (ou **Cookies** no rodapé da lateral) abre a tela para ver, editar, apagar e limpar. Na aba **Headers** de cada request dá para desligar *Enviar cookies* ou *Guardar cookies da resposta*. O jar fica em `<pasta de dados>/.cookies/`, fora dos YAML e do git.
+Each workspace has a cookie jar, just like Insomnia: `Set-Cookie` from responses (including redirects, like a login that returns 302) is stored and sent automatically on subsequent requests, honoring domain, path, `Secure` and expiration. Expired cookies are discarded. `Ctrl+K` (or **Cookies** at the bottom of the sidebar) opens a screen to view, edit, delete and clear them. In each request's **Headers** tab you can turn off *Send cookies* or *Store response cookies*. The jar lives in `<data folder>/.cookies/`, outside the YAML and git.
 
-## Scripts e testes
+## Scripts and tests
 
-Cada request (e cada pasta) tem uma aba *Scripts* com dois editores: **antes do envio** e **depois da resposta**. Os da pasta rodam antes dos do request.
+Each request (and each folder) has a *Scripts* tab with two editors: **before sending** and **after the response**. Folder scripts run before the request's.
 
 ```js
-// depois do login: guarda o token pro próximo request usar em {{ token }}
+// after login: store the token for the next request to use as {{ token }}
 const body = zeno.response.json()
 zeno.environment.set('token', body.access_token)
 
@@ -230,96 +234,96 @@ zeno.test('login ok', () => {
 })
 ```
 
-| API | O que faz |
+| API | What it does |
 |---|---|
-| `zeno.environment` / `zeno.baseEnvironment` | `get`, `set`, `unset`, `has`, `toObject` no ambiente ativo / Base. O que muda é salvo no YAML; nomes como `token` e `senha` vão cifrados pro cofre |
-| `zeno.variables` | Variáveis só deste envio (`{{ nome }}` no request) |
-| `zeno.request` | `method`, `url`, `headers.add/upsert/remove`, `url.addQueryParams`, `body.raw` (antes do envio) |
-| `zeno.response` | `code`, `status`, `headers.get`, `json()`, `text()`, `responseTime` (depois da resposta) |
-| `zeno.test(nome, fn)` / `zeno.expect` | Testes com asserções no estilo chai; o resultado aparece na aba *Testes* da resposta |
+| `zeno.environment` / `zeno.baseEnvironment` | `get`, `set`, `unset`, `has`, `toObject` on the active / Base environment. Changes are saved to the YAML; names like `token` and `senha` (password) are encrypted into the vault |
+| `zeno.variables` | Variables for this send only (`{{ name }}` in the request) |
+| `zeno.request` | `method`, `url`, `headers.add/upsert/remove`, `url.addQueryParams`, `body.raw` (before sending) |
+| `zeno.response` | `code`, `status`, `headers.get`, `json()`, `text()`, `responseTime` (after the response) |
+| `zeno.test(name, fn)` / `zeno.expect` | Chai-style assertion tests; results show up in the response's *Tests* tab |
 
-`insomnia.*` e `pm.*` são apelidos de `zeno.*`, então scripts importados do Insomnia e do Postman funcionam nos casos comuns. Os scripts rodam isolados: sem rede, arquivos, `require` ou timers, com limite de 5 s. Erro no script aparece no painel; se for no pré-request, o envio não acontece.
+`insomnia.*` and `pm.*` are aliases for `zeno.*`, so scripts imported from Insomnia and Postman work in the common cases. Scripts run sandboxed: no network, files, `require` or timers, with a 5 s limit. Script errors show up in the panel; if it's a pre-request script, the request isn't sent.
 
-### Asserções
+### Assertions
 
-Na aba *Asserções* do request dá pra checar a resposta sem escrever código: status, header, campo por JSONPath (`$.user.id`, `$.items[*].id`, `$..id`), body e tempo, com `=`, `≠`, `contém`, `<`, `>`, `existe` e regex. O valor esperado aceita `{{ variáveis }}`. O resultado aparece junto dos testes dos scripts.
+The request's *Assertions* tab lets you check the response without writing code: status, header, a JSONPath field (`$.user.id`, `$.items[*].id`, `$..id`), body and timing, with `=`, `≠`, `contains`, `<`, `>`, `exists` and regex. The expected value accepts `{{ variables }}`. Results appear alongside the script tests.
 
-### Rodar uma pasta (executor de coleção)
+### Running a folder (collection runner)
 
-Clique com o botão direito numa pasta e escolha **Rodar pasta…** (ou, no espaço vazio da lateral, **Rodar workspace…**). Os requests rodam na ordem da lateral e o que um script grava (um token, por exemplo) vale para os seguintes. Dá pra escolher o ambiente, repetir em várias iterações, esperar entre requests, parar na primeira falha e usar um CSV (com cabeçalho) ou JSON (lista de objetos) em que cada linha vira variáveis de uma iteração. O relatório mostra cada request e cada asserção, e pode ser exportado como JUnit XML.
+Right-click a folder and choose **Run folder…** (or, on the empty area of the sidebar, **Run workspace…**). Requests run in sidebar order, and whatever a script stores (a token, for example) is available to the following ones. You can pick the environment, repeat over several iterations, wait between requests, stop at the first failure and use a CSV (with a header row) or JSON (array of objects) where each row becomes the variables of one iteration. The report shows every request and assertion, and can be exported as JUnit XML.
 
-### Linha de comando (CI)
+### Command line (CI)
 
 ```sh
 zeno run "Minha API" Usuários --env Homolog --junit relatorio.xml
-zeno run ./api-workspace --data usuarios.csv --var token=$API_TOKEN   # pasta com workspace.yaml, ex.: no repositório
+zeno run ./api-workspace --data users.csv --var token=$API_TOKEN   # folder with workspace.yaml, e.g. in your repo
 ```
 
-| Opção | |
+| Option | |
 |---|---|
-| `-e, --env <nome>` | sub-ambiente |
-| `-n, --iterations <n>` / `-d, --delay <ms>` | repetições e atraso entre requests |
-| `--data <arquivo>` | CSV ou JSON; uma iteração por linha |
-| `--var nome=valor` | variável extra (vale sobre ambiente e dados); repita quantas vezes quiser |
-| `--junit <arquivo>` | relatório JUnit XML |
-| `--bail` | para no primeiro request que falhar |
-| `--data-dir <dir>` | pasta de dados do Zeno |
+| `-e, --env <nome>` | sub-environment |
+| `-n, --iterations <n>` / `-d, --delay <ms>` | iterations and delay between requests |
+| `--data <arquivo>` | CSV or JSON; one iteration per row |
+| `--var nome=valor` | extra variable (overrides environment and data); repeat as many times as needed |
+| `--junit <arquivo>` | JUnit XML report |
+| `--bail` | stop at the first failing request |
+| `--data-dir <dir>` | Zeno data folder |
 
-Sai com `0` se tudo passou, `1` se algum request ou teste falhou e `2` em erro de uso. Na CLI, o que os scripts gravam nos ambientes vale só durante a execução: os YAML não mudam. `zeno run` usa o chaveiro pra abrir os segredos cifrados; sem chaveiro (ex.: no CI), passe-os com `--var`.
+Exits with `0` if everything passed, `1` if any request or test failed and `2` on a usage error. In the CLI, what scripts write to environments only lasts for the run: the YAML files don't change. `zeno run` uses the keychain to decrypt secrets; without a keychain (e.g. in CI), pass them with `--var`.
 
-No CI, use o **`zeno-cli`**: binário só da linha de comando, sem interface, em cada release (`Zeno-*-linux-cli.tar.gz`, `Zeno-*-macos-cli.zip`; no Windows vem no `.zip` portátil) ou com `go install github.com/chmenegatti/zeno/wails/cmd/zeno-cli@latest`.
+In CI, use **`zeno-cli`**: a command-line-only binary with no UI, shipped with every release (`Zeno-*-linux-cli.tar.gz`, `Zeno-*-macos-cli.zip`; on Windows it's in the portable `.zip`) or via `go install github.com/chmenegatti/zeno/wails/cmd/zeno-cli@latest`.
 
-Exemplo de workflow do GitHub Actions em [docs/github-actions.md](docs/github-actions.md).
+A sample GitHub Actions workflow is in [docs/github-actions.md](docs/github-actions.md).
 
-## Cofre de segredos
+## Secrets vault
 
-- Valores marcados como secretos ficam no YAML como `$zeno$v1$…` (AES-256-GCM). **Esses arquivos podem ir para o git.**
-- A chave mestra (256 bits, aleatória) fica em `.vault/key`, cifrada pelo chaveiro do sistema: Secret Service (gnome-keyring, KWallet) no Linux, DPAPI no Windows e Keychain no macOS. No Linux o formato é o mesmo do `safeStorage` das versões em Electron: a chave criada antes da 1.0 continua abrindo. Sem um chaveiro de verdade, o Zeno se recusa a criar o cofre.
-- Só o processo do app (em Go) decifra, e só na hora de enviar ou quando você clica em *mostrar*. A interface exibe `••••••`.
-- Em *Configurações do workspace → Cofre de segredos*, o Zeno encontra e cifra de uma vez senhas, tokens, headers `Authorization` e valores repetidos de segredos.
-- Em outro computador, sem a chave, o Zeno avisa e pede para redefinir o valor.
+- Values marked as secret are stored in the YAML as `$zeno$v1$…` (AES-256-GCM). **These files are safe to commit.**
+- The master key (256-bit, random) lives in `.vault/key`, encrypted by the OS keychain: Secret Service (gnome-keyring, KWallet) on Linux, DPAPI on Windows and Keychain on macOS. On Linux the format matches the `safeStorage` of the Electron versions: a key created before 1.0 still opens. Without a real keychain, Zeno refuses to create the vault.
+- Only the app process (in Go) decrypts, and only at send time or when you click *show*. The UI displays `••••••`.
+- In *Workspace settings → Secrets vault*, Zeno finds and encrypts passwords, tokens, `Authorization` headers and repeated secret values in one go.
+- On another computer without the key, Zeno warns you and asks you to set the value again.
 
-Detalhes e limitações em [SECURITY.md](SECURITY.md).
+Details and limitations in [SECURITY.md](SECURITY.md).
 
-## Git e trabalho em equipe
+## Git and teamwork
 
-Um workspace pode morar dentro do repositório do seu projeto, junto do código:
+A workspace can live inside your project's repository, next to the code:
 
-1. *Configurações do workspace → Local e git → Mover para pasta…* e escolha uma pasta do repo (ex.: `meu-projeto/api/`). Se a pasta já tiver outros arquivos, o Zeno cria uma subpasta com o nome do workspace.
-2. O botão de branch ao lado do nome do workspace abre o painel Git: arquivos alterados com o nome do request, diff, commit, pull, push e troca ou criação de branch.
-3. Quem clona o repo usa *Abrir workspace de uma pasta…* no menu de workspaces.
+1. *Workspace settings → Location and git → Move to folder…* and pick a folder in the repo (e.g. `meu-projeto/api/`). If the folder already has other files, Zeno creates a subfolder named after the workspace.
+2. The branch button next to the workspace name opens the Git panel: changed files with the request name, diff, commit, pull, push and branch switching or creation.
+3. Whoever clones the repo uses *Open workspace from folder…* in the workspaces menu.
 
-Detalhes:
+Details:
 
-- Cada request é um arquivo, então duas pessoas editando requests diferentes fazem merge sem conflito. O pull usa `--rebase --autostash`; se mesmo assim houver conflito, o painel avisa e oferece desfazer.
-- O commit leva só a pasta do workspace, nunca o resto do repositório.
-- Respostas, estado da tela e a chave do cofre ficam na pasta de dados, fora do repo. Se houver segredo em texto puro, o painel bloqueia o commit e oferece criptografar antes.
-- Quem não tem a chave do cofre vê os segredos como indisponíveis e define o próprio valor.
-- Usa o `git` instalado, com a sua configuração, chaves SSH e credential helpers.
-- Remover um workspace vinculado só o tira do Zeno; os arquivos continuam no repo.
+- Each request is a file, so two people editing different requests merge without conflicts. Pull uses `--rebase --autostash`; if there's still a conflict, the panel tells you and offers to undo.
+- Commits only include the workspace folder, never the rest of the repository.
+- Responses, UI state and the vault key stay in the data folder, outside the repo. If there's a plaintext secret, the panel blocks the commit and offers to encrypt it first.
+- Anyone without the vault key sees secrets as unavailable and sets their own value.
+- Uses your installed `git`, with your config, SSH keys and credential helpers.
+- Removing a linked workspace only removes it from Zeno; the files stay in the repo.
 
-## Onde ficam os dados
+## Where data lives
 
-Por padrão em `~/.local/share/zeno/`, dentro da pasta do usuário também no Windows e no macOS (ou na pasta indicada por `ZENO_DATA_DIR`). É a mesma pasta e o mesmo formato das versões em Electron: atualizar não muda nada nos seus dados.
+By default in `~/.local/share/zeno/`, under the user's home folder on Windows and macOS too (or in the folder set by `ZENO_DATA_DIR`). It's the same folder and format as the Electron versions: upgrading doesn't touch your data.
 
 ```text
 <workspace>/workspace.yaml
-<workspace>/_env/<ambiente>.yaml        # Base (parentId: null) e sub-ambientes
-<workspace>/<pasta>/folder.yaml         # headers, auth e variáveis herdadas
-<workspace>/<pasta>/<request>.yaml
-.vault/key                              # chave do cofre, protegida pelo chaveiro
-.responses/<requestId>.json             # últimas 20 respostas (não versionar)
-state.json                              # workspace, request e ambiente ativos
-links.json                              # workspaces que moram em outras pastas (ex.: num repo)
+<workspace>/_env/<environment>.yaml     # Base (parentId: null) and sub-environments
+<workspace>/<folder>/folder.yaml        # inherited headers, auth and variables
+<workspace>/<folder>/<request>.yaml
+.vault/key                              # vault key, protected by the OS keychain
+.responses/<requestId>.json             # last 20 responses (don't commit)
+state.json                              # active workspace, request and environment
+links.json                              # workspaces living in other folders (e.g. a repo)
 ```
 
-Exemplo de request:
+Sample request:
 
 ```yaml
-id: req_produtos
-name: Listar produtos
+id: req_products
+name: List products
 method: GET
-url: "{{ base_url }}/produtos"
+url: "{{ base_url }}/products"
 params:
   - { name: limit, value: "{{ page_size }}", enabled: true }
 headers:
@@ -332,28 +336,28 @@ sortKey: 1
 
 ## Roadmap
 
-Os próximos passos estão nas [issues abertas](https://github.com/chmenegatti/zeno/issues), entre eles:
+Next steps are tracked in the [open issues](https://github.com/chmenegatti/zeno/issues), including:
 
-- assinatura dos pacotes de Windows e macOS
+- code signing for the Windows and macOS packages
 
-Quer ajudar em algum? Comente na issue antes de começar.
+Want to help with one? Comment on the issue before you start.
 
-## Desenvolvimento
+## Development
 
-Precisa de **Go** (1.26+), **Node.js** 22+ e, no Linux, `libgtk-3-dev` e `libwebkit2gtk-4.1-dev`.
+Requires **Go** (1.26+), **Node.js** 22+ and, on Linux, `libgtk-3-dev` and `libwebkit2gtk-4.1-dev`.
 
-| Comando | O que faz |
+| Command | What it does |
 |---|---|
-| `npm run dev` | Compila a interface e abre o app (`make run` em `wails/`) |
-| `npm test` / `npm run typecheck` | Testes da interface (Vitest) e checagem de tipos |
-| `cd wails && make test` | Testes do Go (sem interface) |
-| `cd wails && make e2e` | Ponta a ponta no app de verdade (precisa de tela; no CI com `xvfb-run`) |
-| `cd wails && make build` | Binário do app em `wails/build/zeno` |
-| `cd wails && make cli` | `zeno-cli` estático, sem interface |
-| `cd wails && make deb rpm appimage` | Pacotes Linux |
-| `npm run release` | Nova versão: changelog, tag e commit de release (os pacotes dos três sistemas saem pelo workflow *Release*) |
+| `npm run dev` | Builds the UI and opens the app (`make run` in `wails/`) |
+| `npm test` / `npm run typecheck` | UI tests (Vitest) and type checking |
+| `cd wails && make test` | Go tests (no UI) |
+| `cd wails && make e2e` | End-to-end tests against the real app (needs a display; in CI via `xvfb-run`) |
+| `cd wails && make build` | App binary at `wails/build/zeno` |
+| `cd wails && make cli` | Static `zeno-cli`, no UI |
+| `cd wails && make deb rpm appimage` | Linux packages |
+| `npm run release` | New version: changelog, tag and release commit (packages for all three OSes are built by the *Release* workflow) |
 
-Stack: **Go + [Wails](https://wails.io)** (janela no WebKitGTK, WebView2 ou WKWebView), React, TypeScript, Vite, Tailwind CSS, CodeMirror 6, Zustand e [goja](https://github.com/dop251/goja) para scripts e plugins.
+Stack: **Go + [Wails](https://wails.io)** (window on WebKitGTK, WebView2 or WKWebView), React, TypeScript, Vite, Tailwind CSS, CodeMirror 6, Zustand and [goja](https://github.com/dop251/goja) for scripts and plugins.
 
 ```text
 wails/            app em Go: main.go, canais da interface (handlers.go) e wails/internal/*
@@ -368,20 +372,20 @@ src/shared/       tipos e lógica pura da interface (variáveis, tags, cURL, tem
 test/             testes Vitest
 ```
 
-Para verificar a interface sem mexer na janela:
+To check the UI without touching the window:
 
 ```bash
 ZENO_DATA_DIR=/tmp/zeno-teste ZENO_SCRIPT='console.log(document.title)' ./wails/build/zeno
 ```
 
-`ZENO_SCRIPT` roda JavaScript na página (o `console.log` sai no terminal) e o app fecha no fim; `ZENO_TRACE=1` mostra o tempo de cada canal. Mais detalhes em [CONTRIBUTING.md](CONTRIBUTING.md).
+`ZENO_SCRIPT` runs JavaScript in the page (`console.log` goes to the terminal) and the app exits at the end; `ZENO_TRACE=1` shows the timing of each channel. More details in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Contribuindo
+## Contributing
 
-Contribuições são muito bem-vindas: correções, recursos, documentação e traduções. Leia o [guia de contribuição](CONTRIBUTING.md) e o [código de conduta](CODE_OF_CONDUCT.md).
+Contributions are very welcome: fixes, features, documentation and translations. Read the [contributing guide](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
 
-## Licença
+## License
 
 [MIT](LICENSE) © Cesar Menegatti
 
-O Zeno é um projeto independente, inspirado no fluxo de trabalho do [Insomnia](https://insomnia.rest) e do [Yaak](https://yaak.app), sem afiliação com eles. A paleta de cores segue a identidade visual da [TOTVS](https://marca.totvs.com).
+Zeno is an independent project, inspired by the workflow of [Insomnia](https://insomnia.rest) and [Yaak](https://yaak.app), and is not affiliated with them. The color palette follows [TOTVS](https://marca.totvs.com)'s visual identity.

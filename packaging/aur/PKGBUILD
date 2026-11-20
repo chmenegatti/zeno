@@ -1,0 +1,22 @@
+# Maintainer: Cesar Menegatti (https://github.com/chmenegatti)
+pkgname=zeno-api-client-bin
+pkgver=1.1.0
+pkgrel=1
+pkgdesc="Tab-less, local-first API client: REST, GraphQL, gRPC, WebSocket, YAML collections and encrypted secrets"
+arch=('x86_64')
+url="https://www.cesarmenegatti.com/zeno/"
+license=('MIT')
+depends=('gtk3' 'webkit2gtk-4.1')
+provides=('zeno-api-client')
+conflicts=('zeno')
+source=("https://github.com/chmenegatti/zeno/releases/download/v${pkgver}/zeno_${pkgver}_amd64.deb"
+        "LICENSE-${pkgver}::https://raw.githubusercontent.com/chmenegatti/zeno/v${pkgver}/LICENSE")
+sha256sums=('da1d8abac3490373b7ebecbfd8e6d711fe3f1c3f6f2391909fcb551d04663e5e'
+            '94cec958ecd178e0c4127e7d197d6a5748f9ed6c82338091b34902ed31ec33ce')
+
+package() {
+  bsdtar -xf data.tar.* -C "$pkgdir"
+  install -d "$pkgdir/usr/bin"
+  ln -s /opt/Zeno/zeno "$pkgdir/usr/bin/zeno"
+  install -Dm644 "LICENSE-${pkgver}" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
