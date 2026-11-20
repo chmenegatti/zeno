@@ -79,3 +79,15 @@ func Prefix(data []byte) string {
 func errUnsupported(p string) error {
 	return fmt.Errorf("chave do cofre num formato que esta versão ainda não lê (%q)", p)
 }
+
+// None: sem chaveiro (cofre indisponível). ZENO_NO_KEYRING=1 no app usa isto: testes que não podem
+// tocar no chaveiro de quem roda
+type none struct{}
+
+func (none) Available() (bool, string, bool) { return false, "nenhum", true }
+func (none) Protect(string) ([]byte, error)  { return nil, errors.New("sem chaveiro (ZENO_NO_KEYRING)") }
+func (none) Unprotect([]byte) (string, error) {
+	return "", errors.New("sem chaveiro (ZENO_NO_KEYRING)")
+}
+
+func None() Protector { return none{} }

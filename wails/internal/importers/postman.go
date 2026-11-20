@@ -134,6 +134,16 @@ func ConvertPostman(collection any, envs []any) Result {
 			return doc.New("type", "basic", "username", getv("basic", "username"), "password", getv("basic", "password"))
 		case "bearer":
 			return doc.New("type", "bearer", "token", getv("bearer", "token"))
+		case "oauth2":
+			g := func(k string) string { return getv("oauth2", k) }
+			grant := map[string]string{"authorization_code": "authorization_code", "authorization_code_with_pkce": "authorization_code",
+				"client_credentials": "client_credentials", "password_credentials": "password", "implicit": "implicit"}[g("grant_type")]
+			clientAuth := ""
+			if g("client_authentication") == "body" {
+				clientAuth = "body"
+			}
+			return oauth2Auth(grant, g("authUrl"), g("accessTokenUrl"), g("clientId"), g("clientSecret"), g("scope"), g("audience"),
+				g("redirect_uri"), g("grant_type") == "authorization_code_with_pkce", g("username"), g("password"), clientAuth, g("headerPrefix"))
 		case "apikey":
 			to := "header"
 			if getv("apikey", "in") == "query" {

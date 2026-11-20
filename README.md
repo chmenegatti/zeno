@@ -47,7 +47,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 | | |
 |---|---|
 | **HTTP completo** | Todos os métodos, params, headers, body JSON/XML/texto/form/multipart com arquivo, redirects, timeout e cancelamento |
-| **Autenticação** | Basic, Bearer, API key (header ou query) e herança da pasta |
+| **Autenticação** | Basic, Bearer, API key (header ou query) e **OAuth 2.0** (authorization code com PKCE, client credentials, senha, device code e implicit; login no navegador do sistema, token em cache cifrado no cofre e renovado sozinho), com herança da pasta |
 | **Ambientes e variáveis** | `{{ var }}` e `{{ _.var }}` com herança Base → sub-ambiente → pasta; editor com `Ctrl+E`, troca com `Ctrl+Shift+E` |
 | **Badges de variáveis** | Variáveis aparecem como badges em todos os campos e editores, com autocomplete ao digitar `{{`; clique pra ver, editar, criar ou mover |
 | **Scripts e testes** | JavaScript antes do envio e depois da resposta (por request ou pasta), com `zeno.test`/`zeno.expect`; scripts do Insomnia e do Postman rodam sem mudança |

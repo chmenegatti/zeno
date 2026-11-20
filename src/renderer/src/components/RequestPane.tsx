@@ -18,6 +18,7 @@ import { parseCurl } from '@shared/curl'
 import { beautifyJson } from '@shared/format'
 import { Select } from './Select'
 import { kl } from '../keys'
+import { newOAuth2, OAuthFields, OAuthTokenPanel } from './OAuth'
 
 type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'assertions' | 'notes'
 
@@ -36,7 +37,8 @@ const AUTH_LABEL: Record<AuthType, string> = {
   none: 'Sem auth',
   basic: 'Basic',
   bearer: 'Bearer token',
-  apikey: 'API key'
+  apikey: 'API key',
+  oauth2: 'OAuth 2.0'
 }
 
 export function RequestPane() {
@@ -131,7 +133,7 @@ export function RequestPane() {
             { id: 'params', label: <>Params<Count n={req.params.length} /></> },
             { id: 'headers', label: <>Headers<Count n={req.headers.length} /></> },
             { id: 'body', label: <>Body{req.body.mime && <span className="ml-1 text-[10.5px] text-faint">{BODY_TYPES.find((b) => b.mime === req.body.mime)?.label ?? req.body.mime}</span>}</> },
-            { id: 'auth', label: <>Auth<span className="ml-1 text-[10.5px] text-faint">{req.auth.type === 'inherit' ? '↑' : req.auth.type === 'none' ? '' : AUTH_LABEL[req.auth.type]}</span></> },
+            { id: 'auth', label: <>Auth<span className="ml-1 text-[10.5px] text-faint">{req.auth.type === 'inherit' ? '↑' : req.auth.type === 'none' ? '' : req.auth.type === 'oauth2' ? 'OAuth2' : AUTH_LABEL[req.auth.type]}</span></> },
             { id: 'scripts', label: <>Scripts{hasScripts(req.scripts) ? <span className="ml-1 text-[10.5px] text-tpurple">●</span> : ancestors.some((a) => hasScripts(a.scripts)) ? <span className="ml-1 text-[10.5px] text-faint">↑</span> : null}</> },
             { id: 'assertions', label: <>Asserções<Count n={req.assertions?.filter((a) => a.enabled).length ?? 0} /></> },
             { id: 'notes', label: 'Notas' }
@@ -168,7 +170,7 @@ export function RequestPane() {
           </div>
         )}
         {section === 'body' && <BodyEditor body={req.body} onChange={(body) => update({ body })} />}
-        {section === 'auth' && <AuthEditor auth={req.auth} inherited={effectiveAuth({ ...req, auth: { type: 'inherit' } }, ancestors)} onChange={(auth) => update({ auth })} />}
+        {section === 'auth' && <AuthEditor auth={req.auth} inherited={effectiveAuth({ ...req, auth: { type: 'inherit' } }, ancestors)} onChange={(auth) => update({ auth })} oauthCtx={{ wsId: cur.ws.id, req, envId }} />}
         {section === 'scripts' && <ScriptsEditor scripts={req.scripts} onChange={(scripts) => update({ scripts })} />}
         {section === 'assertions' && <AssertionsEditor list={req.assertions ?? []} onChange={(assertions) => update({ assertions: assertions.length ? assertions : undefined })} />}
         {section === 'notes' && (
@@ -247,12 +249,13 @@ function BodyEditor({ body, onChange }: { body: Body; onChange: (b: Body) => voi
   )
 }
 
-export function AuthEditor({ auth, inherited, onChange, allowInherit = true }: { auth: Auth; inherited?: Auth; onChange: (a: Auth) => void; allowInherit?: boolean }) {
+export function AuthEditor({ auth, inherited, onChange, allowInherit = true, oauthCtx }: { auth: Auth; inherited?: Auth; onChange: (a: Auth) => void; allowInherit?: boolean; oauthCtx?: { wsId: string; req: RequestDoc; envId: string | null } }) {
   const setType = (type: AuthType) => {
     if (type === auth.type) return
     if (type === 'basic') onChange({ type, username: '', password: '' })
     else if (type === 'bearer') onChange({ type, token: '' })
     else if (type === 'apikey') onChange({ type, key: '', value: '', addTo: 'header' })
+    else if (type === 'oauth2') onChange(newOAuth2())
     else onChange({ type })
   }
   const row = (label: string, value: string, set: (v: string) => void, secret = false) => (
@@ -275,6 +278,13 @@ export function AuthEditor({ auth, inherited, onChange, allowInherit = true }: {
         ))}
       </Select>
       {auth.type === 'inherit' && <p className="text-faint">Usando da pasta: <span className="text-dim">{inherited ? AUTH_LABEL[inherited.type] : 'sem auth'}</span></p>}
+      {auth.type === 'inherit' && inherited?.type === 'oauth2' && oauthCtx && <OAuthTokenPanel {...oauthCtx} />}
+      {auth.type === 'oauth2' && (
+        <>
+          <OAuthFields auth={auth} onChange={onChange} row={row} secretRow={secretRow} />
+          {oauthCtx ? <OAuthTokenPanel {...oauthCtx} /> : <p className="pl-[102px] text-[11.5px] text-faint">O token é obtido no primeiro envio de um request desta pasta (ou pelo botão na aba Auth do request).</p>}
+        </>
+      )}
       {auth.type === 'basic' && (
         <>
           {row('Usuário', auth.username, (username) => onChange({ ...auth, username }))}

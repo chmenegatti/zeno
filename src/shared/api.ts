@@ -1,5 +1,5 @@
 import type { InsomniaKey } from './hotkeys'
-import type { CookieInfo, GitHubAccount, PluginInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, SendInput, Workspace, WorkspaceDoc } from './types'
+import type { CookieInfo, GitHubAccount, PluginInfo, RunOptions, RunReport, RunStep, AppState, GitStatus, ScriptReport, VaultStatus, Environment, FolderDoc, ImportPreview, RequestDoc, ResponseRecord, SendInput, OAuthTokenStatus, Workspace, WorkspaceDoc } from './types'
 
 export interface Created {
   workspaces: Workspace[]
@@ -60,6 +60,15 @@ export interface ZenoApi {
   codeInput(wsId: string, req: RequestDoc, envId: string | null, resolveVars: boolean): Promise<SendInput>
   copyText(text: string): Promise<void>
   /** valor que a tag {% %} daria agora (send=true envia o request de origem antes) */
+  /** OAuth 2.0 (#9): token da auth efetiva do request (própria ou herdada) */
+  oauthStatus(wsId: string, req: RequestDoc, envId: string | null): Promise<OAuthTokenStatus | null>
+  /** obtém/renova agora (pode abrir o navegador) */
+  oauthToken(wsId: string, req: RequestDoc, envId: string | null): Promise<OAuthTokenStatus | null>
+  oauthClear(wsId: string, req: RequestDoc, envId: string | null): Promise<void>
+  /** cancela a espera pela autorização no navegador */
+  oauthCancel(): Promise<void>
+  onOAuthWait(cb: (w: { message: string; url: string; code: string }) => void): () => void
+  onOAuthDone(cb: () => void): () => void
   tagPreview(raw: string, send: boolean): Promise<{ value?: string; error?: string; at?: number }>
   responses(requestId: string): Promise<ResponseRecord[]>
   clearResponses(requestId: string): Promise<void>

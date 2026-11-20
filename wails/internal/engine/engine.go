@@ -4,8 +4,10 @@
 package engine
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/chmenegatti/zeno/wails/internal/oauth2"
 	"strings"
 	"sync"
 	"time"
@@ -35,6 +37,8 @@ type Hooks struct {
 
 // Engine: envio com o store, cookies e cofre do app
 type Engine struct {
+	// OAuth: tokens da auth oauth2 (#9); nil = auth oauth2 vira erro claro
+	OAuth   *oauth2.Manager
 	Store   *store.Store
 	Cookies *cookies.Cookies
 	Vault   *vault.Vault
@@ -335,6 +339,20 @@ func (e *Engine) ExecuteWith(ws, req *Doc, envID string, depth int, extraVars *D
 			warnings = append(warnings, `segredo cifrado "`+k+`" não abriu (sem chaveiro?); passe o valor com --var`)
 		}
 	}
+	// OAuth 2.0: token do cache, renovado ou obtido (login no navegador se preciso) antes do envio
+	if p.OAuth2 != nil {
+		tok, err := e.oauthToken(p.OAuth2, false)
+		if err != nil {
+			rec := doc.New("id", httpc.ResponseID(time.Now()), "requestId", req.Get("id"), "at", time.Now().UnixMilli(),
+				"method", p.Method, "url", p.URL, "status", 0, "statusText", "", "headers", []any{},
+				"body", "", "bodyEncoding", "utf8", "size", 0, "timing", doc.New("headersMs", 0, "totalMs", 0),
+				"error", "Não enviado: "+err.Error())
+			return sendResult(rec, e.Store.AddResponse(rec), p.Missing, warnings, nil), nil
+		}
+		p.Headers = append(p.Headers, [2]string{"Authorization", strings.TrimSpace(p.OAuth2.Prefix + " " + tok.Access)})
+		// o token não fica em claro na linha do tempo gravada
+		secrets[tok.Access] = true
+	}
 	// requestHooks dos plugins: podem mudar método, URL, headers e body (texto) antes do envio
 	if e.Plugins != nil {
 		hr := plugins.HookRequest{Method: p.Method, URL: p.URL, Headers: p.Headers}
@@ -580,6 +598,12 @@ func (e *Engine) PrepareOpen(ws *Doc, reqID, envID string, override *Doc) (vars.
 		})
 		if err == nil {
 			p = vars.Prepare(openWS, openReq, openAnc, envID, values)
+		}
+	}
+	// OAuth 2.0: só o token que já está em cache e válido (gerar código não abre login)
+	if p.OAuth2 != nil && e.OAuth != nil {
+		if t := e.OAuth.Status(OAuthConfig(p.OAuth2)); t.Valid() {
+			p.Headers = append(p.Headers, [2]string{"Authorization", strings.TrimSpace(p.OAuth2.Prefix + " " + t.Access)})
 		}
 	}
 	return p, node.Str("name"), nil
@@ -829,4 +853,32 @@ func (e *Engine) CodeInput(ws, req *Doc, envID string, resolveVars bool) (*Doc, 
 	bare := ws.Clone()
 	bare.Set("environments", []any{})
 	return vars.Prepare(bare, r.(*Doc), open, envID, nil).Input(req.Str("id")), nil
+}
+
+// OAuthConfig: configuração do pacote oauth2 a partir da auth resolvida
+func OAuthConfig(o *vars.OAuth2) oauth2.Config {
+	return oauth2.Config{Owner: o.Owner, Grant: o.Grant, AuthURL: o.AuthURL, TokenURL: o.TokenURL, ClientID: o.ClientID, ClientSecret: o.ClientSecret,
+		Scope: o.Scope, Audience: o.Audience, RedirectURI: o.RedirectURI, PKCE: o.PKCE, Username: o.Username, Password: o.Password, ClientAuth: o.ClientAuth}
+}
+
+func (e *Engine) oauthToken(o *vars.OAuth2, force bool) (*oauth2.Token, error) {
+	if e.OAuth == nil {
+		return nil, errors.New("OAuth 2.0 indisponível aqui")
+	}
+	return e.OAuth.Token(context.Background(), OAuthConfig(o), force)
+}
+
+// OAuthPrepared: auth oauth2 efetiva do request (segredos abertos, variáveis resolvidas), pra tela
+// de auth obter/limpar/mostrar o token
+func (e *Engine) OAuthPrepared(ws, req *Doc, envID string) (*vars.OAuth2, error) {
+	_, anc := doc.Find(ws, req.Str("id"))
+	openWS, openReq, openAnc, _, err := e.openForSend(ws, req, anc)
+	if err != nil {
+		return nil, err
+	}
+	p := vars.Prepare(openWS, openReq, openAnc, envID, nil)
+	if p.OAuth2 == nil {
+		return nil, errors.New("este request não usa OAuth 2.0")
+	}
+	return p.OAuth2, nil
 }

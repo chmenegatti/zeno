@@ -15,6 +15,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/engine"
 	"github.com/chmenegatti/zeno/wails/internal/keyring"
+	"github.com/chmenegatti/zeno/wails/internal/oauth2"
 	"github.com/chmenegatti/zeno/wails/internal/plugins"
 	"github.com/chmenegatti/zeno/wails/internal/runner"
 	"github.com/chmenegatti/zeno/wails/internal/store"
@@ -365,10 +366,12 @@ func Run(argv []string, protector keyring.Protector, out Out, tty bool) (code in
 	}
 	// variáveis gravadas por scripts valem só durante a execução: a CLI não altera os YAML
 	eng := &engine.Engine{
-		Store:       st,
-		Vault:       vault.New(dataDir, protector),
-		Cookies:     cookies.New(""),
-		Plugins:     cliPlugins(dataDir),
+		Store:   st,
+		Vault:   vault.New(dataDir, protector),
+		Cookies: cookies.New(""),
+		Plugins: cliPlugins(dataDir),
+		// OAuth 2.0: cache do app vale aqui; sem navegador, só client credentials e password
+		OAuth:       &oauth2.Manager{Dir: dataDir, Vault: vault.New(dataDir, protector)},
 		NoPersist:   true,
 		SoftSecrets: true,
 	}

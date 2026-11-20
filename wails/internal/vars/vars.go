@@ -182,7 +182,9 @@ type Prepared struct {
 	InsecureTLS bool
 	TimeoutMs   float64
 	// Net: proxy, CA própria e certificados de cliente do workspace (#18)
-	Net         Net
+	Net Net
+	// OAuth2: auth oauth2 efetiva (do request ou herdada); o motor busca o token e põe o header (#9)
+	OAuth2      *OAuth2
 	Missing     []string
 	Unsupported []string
 }
@@ -199,6 +201,13 @@ type Net struct {
 // ou PFX/P12 com Passphrase. Host: "api.x.com", "api.x.com:8443" ou "*.x.com".
 type ClientCert struct {
 	Host, Cert, Key, PFX, Passphrase string
+}
+
+// OAuth2: campos da auth oauth2 já resolvidos; Owner = id do request ou pasta onde ela está
+type OAuth2 struct {
+	Owner, Grant, AuthURL, TokenURL, ClientID, ClientSecret, Scope, Audience, RedirectURI string
+	Username, Password, ClientAuth, Prefix                                                string
+	PKCE                                                                                  bool
 }
 
 // Part: campo de multipart (File = caminho do arquivo no disco)
@@ -249,9 +258,12 @@ func Prepare(ws, req *Doc, anc []*Doc, envID string, tagValues map[string]string
 		}
 		return false
 	}
+	var oauthAuth *OAuth2
 	auth := req.Map("auth")
+	owner := req.Str("id")
 	for i := len(anc) - 1; auth.Str("type") == "inherit" && i >= 0; i-- {
 		auth = anc[i].Map("auth")
+		owner = anc[i].Str("id")
 	}
 	switch auth.Str("type") {
 	case "basic":
@@ -265,6 +277,21 @@ func Prepare(ws, req *Doc, anc []*Doc, envID string, tagValues map[string]string
 				pre = "Bearer"
 			}
 			headers = append(headers, [2]string{"Authorization", strings.TrimSpace(pre + " " + R(auth.Str("token")))})
+		}
+	case "oauth2":
+		o := &OAuth2{Owner: owner, Grant: auth.Str("grantType"), PKCE: auth.Get("pkce") == true, ClientAuth: auth.Str("clientAuth")}
+		for _, f := range []struct {
+			dst *string
+			key string
+		}{{&o.AuthURL, "authUrl"}, {&o.TokenURL, "tokenUrl"}, {&o.ClientID, "clientId"}, {&o.ClientSecret, "clientSecret"}, {&o.Scope, "scope"},
+			{&o.Audience, "audience"}, {&o.RedirectURI, "redirectUri"}, {&o.Username, "username"}, {&o.Password, "password"}, {&o.Prefix, "prefix"}} {
+			*f.dst = strings.TrimSpace(R(auth.Str(f.key)))
+		}
+		if o.Prefix == "" {
+			o.Prefix = "Bearer"
+		}
+		if !has("authorization") {
+			oauthAuth = o
 		}
 	case "apikey":
 		if auth.Str("key") != "" {
@@ -320,6 +347,7 @@ func Prepare(ws, req *Doc, anc []*Doc, envID string, tagValues map[string]string
 		}
 	}
 	p.Headers = headers
+	p.OAuth2 = oauthAuth
 	settings := ws.Map("settings")
 	p.InsecureTLS = settings.Get("insecureTLS") == true
 	p.TimeoutMs = settings.Num("timeoutMs", 30000)

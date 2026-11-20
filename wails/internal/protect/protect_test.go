@@ -1,7 +1,9 @@
 package protect
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
@@ -53,5 +55,25 @@ func TestSetGetAt(t *testing.T) {
 	SetAt(o, Path{"headers", 0, "value"}, "y")
 	if GetAt(o, Path{"headers", 0, "value"}) != "y" || GetAt(o, Path{"data", "a", "b"}) != int64(1) {
 		t.Error("setAt/getAt")
+	}
+}
+
+// OAuth 2.0 (#9): client secret e senha literais aparecem pra proteger; com variável não
+func TestScanOAuth2(t *testing.T) {
+	ws := doc.New("environments", []any{}, "children", []any{
+		doc.New("kind", "request", "id", "req_o", "name", "O", "headers", []any{},
+			"auth", doc.New("type", "oauth2", "grantType", "password", "clientSecret", "s3gr3do", "password", "{{ senha }}")),
+	})
+	res := Scan(ws, nil)
+	var got []string
+	for _, s := range res.Spots {
+		parts := make([]string, len(s.Path))
+		for i, x := range s.Path {
+			parts[i] = fmt.Sprint(x)
+		}
+		got = append(got, strings.Join(parts, "."))
+	}
+	if strings.Join(got, ",") != "auth.clientSecret" {
+		t.Errorf("spots: %v", got)
 	}
 }

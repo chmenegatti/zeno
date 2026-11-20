@@ -89,6 +89,13 @@
     ;({ body } = await send(k))
     ok('API key na query', body?.query?.api_key === 'K1')
   })
+  await safe('OAuth 2.0', async () => {
+    const r = await mk('oauth', { url: '{{ base }}/echo', auth: { type: 'oauth2', grantType: 'client_credentials', tokenUrl: '{{ base }}/token', clientId: 'cliente', clientSecret: 'segredo' } })
+    const { body } = await send(r)
+    ok('OAuth 2.0 client credentials', body?.headers?.authorization === 'Bearer oauth-e2e', body?.headers?.authorization)
+    const st = await z.oauthStatus(wsId, r, null)
+    ok('token em cache', st && st.valid, JSON.stringify(st))
+  })
   await safe('redirect e cookies', async () => {
     const r = await mk('redirect', { url: '{{ base }}/redirect' })
     const { body, rec } = await send(r)

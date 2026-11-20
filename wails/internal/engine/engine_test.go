@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/chmenegatti/zeno/wails/internal/oauth2"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -301,5 +303,54 @@ func TestRedeDoWorkspace(t *testing.T) {
 	}
 	if len(p.Net.ClientCerts) != 1 || p.Net.ClientCerts[0].Passphrase != "senha-pfx" || p.Net.ClientCerts[0].Host != "*.interno" {
 		t.Errorf("certificado: %+v", p.Net.ClientCerts)
+	}
+}
+
+// OAuth 2.0 (#9): token no header, do cache na segunda vez, mascarado no histórico; erro não envia
+func TestOAuth2NoEnvio(t *testing.T) {
+	issued := 0
+	as := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		u, p, _ := r.BasicAuth()
+		if u != "cli" || p != "seg" {
+			w.WriteHeader(401)
+			w.Write([]byte(`{"error":"invalid_client"}`))
+			return
+		}
+		issued++
+		fmt.Fprintf(w, `{"access_token":"token-oauth-%d","token_type":"Bearer","expires_in":3600}`, issued)
+	}))
+	defer as.Close()
+	var gotAuth string
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		w.Write([]byte("ok"))
+	}))
+	defer api.Close()
+	e, ws := setup(t, api.URL)
+	e.OAuth = &oauth2.Manager{Dir: e.Store.Dir, Vault: e.Vault}
+	login, _ := doc.Find(ws, "req_login")
+	req := login.Clone()
+	req.Set("auth", doc.New("type", "oauth2", "grantType", "client_credentials", "tokenUrl", as.URL, "clientId", "cli", "clientSecret", "seg"))
+	for i := 0; i < 2; i++ {
+		r, err := e.Execute(ws, req, "", 0)
+		if err != nil || r.Map("response").Get("status") != 200 {
+			t.Fatalf("envio %d: %v %v", i, err, r.Map("response").Get("error"))
+		}
+	}
+	if gotAuth != "Bearer token-oauth-1" || issued != 1 {
+		t.Errorf("header %q, tokens emitidos %d", gotAuth, issued)
+	}
+	e.Store.Flush()
+	raw, _ := os.ReadFile(e.Store.ResponsesFile("req_login"))
+	if strings.Contains(string(raw), "token-oauth-1") {
+		t.Error("token em claro no histórico")
+	}
+	// credencial errada: não envia, explica
+	req.Set("auth", doc.New("type", "oauth2", "grantType", "client_credentials", "tokenUrl", as.URL, "clientId", "cli", "clientSecret", "errado"))
+	gotAuth = ""
+	r, _ := e.Execute(ws, req, "", 0)
+	if gotAuth != "" || !strings.Contains(r.Map("response").Str("error"), "OAuth 2.0") {
+		t.Errorf("erro: enviado=%q %v", gotAuth, r.Map("response").Get("error"))
 	}
 }
