@@ -44,16 +44,19 @@ type CookieHooks struct {
 
 var (
 	inflightMu sync.Mutex
-	inflight   = map[string]context.CancelCauseFunc{}
+	inflight   = map[string]*flight{}
 	errCancel  = errors.New("cancelado")
 )
+
+// envio em andamento (ponteiro único: o fim de um envio antigo não apaga o registro do novo)
+type flight struct{ cancel context.CancelCauseFunc }
 
 // Cancel interrompe o envio em andamento do request
 func Cancel(id string) {
 	inflightMu.Lock()
 	defer inflightMu.Unlock()
-	if c, ok := inflight[id]; ok {
-		c(errCancel)
+	if f, ok := inflight[id]; ok {
+		f.cancel(errCancel)
 	}
 }
 
@@ -199,11 +202,12 @@ func tlsVersion(v uint16) string {
 func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 	start := time.Now()
 	ctx, cancel := context.WithCancelCause(context.Background())
+	me := &flight{cancel}
 	inflightMu.Lock()
 	if prev, ok := inflight[reqID]; ok {
-		prev(errCancel)
+		prev.cancel(errCancel)
 	}
-	inflight[reqID] = cancel
+	inflight[reqID] = me
 	inflightMu.Unlock()
 	var timer *time.Timer
 	if p.TimeoutMs > 0 {
@@ -217,7 +221,9 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 		}
 		cancel(nil)
 		inflightMu.Lock()
-		delete(inflight, reqID)
+		if inflight[reqID] == me {
+			delete(inflight, reqID)
+		}
 		inflightMu.Unlock()
 	}()
 

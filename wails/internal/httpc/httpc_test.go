@@ -221,6 +221,29 @@ func TestTimeoutECancelar(t *testing.T) {
 	}
 }
 
+// enviar de novo cancela o anterior; o fim do antigo não tira o registro do novo
+func TestEnvioNovoCancelaAntigoEContinuaCancelavel(t *testing.T) {
+	srv := server(t)
+	first := make(chan *doc.Doc)
+	go func() { first <- Send("y", prep("GET", srv.URL+"/lento"), CookieHooks{}) }()
+	time.Sleep(100 * time.Millisecond)
+	second := make(chan *doc.Doc)
+	go func() { second <- Send("y", prep("GET", srv.URL+"/lento"), CookieHooks{}) }()
+	if r := <-first; r.Str("error") != "cancelado" {
+		t.Fatalf("antigo: %q", r.Str("error"))
+	}
+	time.Sleep(100 * time.Millisecond)
+	Cancel("y")
+	select {
+	case r := <-second:
+		if r.Str("error") != "cancelado" {
+			t.Errorf("novo: %q", r.Str("error"))
+		}
+	case <-time.After(2 * time.Second):
+		t.Error("o envio novo não pôde ser cancelado")
+	}
+}
+
 func TestFormNaOrdemEIdUnico(t *testing.T) {
 	got := FormEncode([][2]string{{"a", "1"}, {"b", "x y"}, {"a", "3~é&"}})
 	if got != "a=1&b=x+y&a=3%7E%C3%A9%26" {
