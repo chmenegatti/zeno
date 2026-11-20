@@ -102,9 +102,13 @@ O AppImage usa o WebKitGTK do sistema; se faltar, ele mostra como instalar (`lib
 
 Rode o `Zeno-*-windows-setup.exe` (ou use a versão portátil `Zeno-*-windows-portable.zip`). O app ainda não é assinado: se o SmartScreen avisar *O Windows protegeu o computador*, clique em **Mais informações** e depois em **Executar assim mesmo**.
 
+Com o [Scoop](https://scoop.sh): `scoop bucket add zeno https://github.com/chmenegatti/scoop-bucket` e `scoop install zeno` (versão portátil, com o `zeno-cli` no PATH).
+
 **macOS (Intel e Apple Silicon)**
 
 Abra o `Zeno-*-macos-universal.dmg` e arraste o Zeno para **Aplicativos**. O app ainda não tem notarização da Apple: na primeira abertura o macOS bloqueia; vá em **Ajustes do Sistema › Privacidade e Segurança** e clique em **Abrir mesmo assim**.
+
+Com o [Homebrew](https://brew.sh): `brew install --cask chmenegatti/tap/zeno`.
 
 ### A partir do código
 
