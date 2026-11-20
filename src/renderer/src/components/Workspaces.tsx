@@ -177,7 +177,8 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
     setApp({ wsMeta: next })
   }
   const copyCmd = (w: Workspace): void => {
-    void navigator.clipboard.writeText(w.location?.linked ? `zeno run "${w.location.dir}"` : `zeno run "${w.name}"`)
+    // vinculado: pela pasta; senão pelo id (nome pode repetir e a CLI pegaria o primeiro)
+    void navigator.clipboard.writeText(w.location?.linked ? `zeno run "${w.location.dir}"` : `zeno run ${w.id}  # ${w.name}`)
     notify('Comando copiado')
   }
 
