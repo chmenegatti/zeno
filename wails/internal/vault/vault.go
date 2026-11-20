@@ -78,6 +78,10 @@ func (v *Vault) Status() *doc.Doc {
 func (v *Vault) loadKey() ([]byte, error) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	return v.loadKeyLocked()
+}
+
+func (v *Vault) loadKeyLocked() ([]byte, error) {
 	if v.key != nil {
 		return v.key, nil
 	}
@@ -97,10 +101,15 @@ func (v *Vault) loadKey() ([]byte, error) {
 	return key, nil
 }
 
-// cria a chave se não existir
+// cria a chave se não existir (tudo sob o lock: duas primeiras cifragens juntas não criam duas chaves)
 func (v *Vault) ensureKey() ([]byte, error) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.key != nil {
+		return v.key, nil
+	}
 	if _, err := os.Stat(v.keyFile); err == nil {
-		return v.loadKey()
+		return v.loadKeyLocked()
 	}
 	ok, backend, weak := v.prot.Available()
 	if !ok {
@@ -109,8 +118,6 @@ func (v *Vault) ensureKey() ([]byte, error) {
 	if weak {
 		return nil, vErr("chaveiro %q não protege de verdade; instale/abra o gnome-keyring ou kwallet", backend)
 	}
-	v.mu.Lock()
-	defer v.mu.Unlock()
 	key := make([]byte, 32)
 	_, _ = rand.Read(key)
 	data, err := v.prot.Protect(base64.StdEncoding.EncodeToString(key))

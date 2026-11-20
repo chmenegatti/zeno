@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
@@ -74,6 +75,30 @@ func TestOutraChaveEAdulteracao(t *testing.T) {
 	}
 	if _, err := v.Decrypt(bad); err == nil {
 		t.Error("adulteração passou")
+	}
+}
+
+// primeiras cifragens ao mesmo tempo: uma chave só, todos os tokens abrem
+func TestPrimeiraCifragemConcorrente(t *testing.T) {
+	dir := t.TempDir()
+	v := New(dir, fake{})
+	toks := make(chan string, 20)
+	var wg sync.WaitGroup
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			tok, _ := v.Encrypt("x")
+			toks <- tok
+		}()
+	}
+	wg.Wait()
+	close(toks)
+	fresh := New(dir, fake{})
+	for tok := range toks {
+		if p, err := fresh.Decrypt(tok); err != nil || p != "x" {
+			t.Fatalf("token não abre com a chave do disco: %v", err)
+		}
 	}
 }
 

@@ -5,8 +5,6 @@ package main
 
 import (
 	"regexp"
-	"sort"
-	"strings"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/protect"
@@ -94,59 +92,6 @@ func (a *App) protectWorkspace(wsID string, known []string) (int, error) {
 	return len(spots), nil
 }
 
-// segredos abertos (valores) pra esconder na linha do tempo gravada
-func collectSecrets(raw, open any, out map[string]bool) {
-	if vault.IsEncrypted(raw) {
-		if s, ok := open.(string); ok && len(s) >= 3 {
-			out[s] = true
-		}
-		return
-	}
-	switch r := raw.(type) {
-	case []any:
-		if o, ok := open.([]any); ok {
-			for i := range r {
-				if i < len(o) {
-					collectSecrets(r[i], o[i], out)
-				}
-			}
-		}
-	case *doc.Doc:
-		if o, ok := open.(*doc.Doc); ok {
-			for _, k := range r.Keys() {
-				collectSecrets(r.Get(k), o.Get(k), out)
-			}
-		}
-	}
-}
-
-// troca segredos do cofre por ••• no cabeçalho e no body enviados (o que vai pro histórico em disco)
-func redactTimeline(rec *doc.Doc, secrets map[string]bool) {
-	tl := rec.Map("timeline")
-	if tl == nil || len(secrets) == 0 {
-		return
-	}
-	list := make([]string, 0, len(secrets))
-	for s := range secrets {
-		list = append(list, s)
-	}
-	sort.Slice(list, func(i, j int) bool { return len(list[i]) > len(list[j]) })
-	hide := func(t string) string {
-		for _, s := range list {
-			t = strings.ReplaceAll(t, s, "•••••• (cofre)")
-		}
-		return t
-	}
-	if tl.Has("requestBody") {
-		tl.Set("requestBody", hide(tl.Str("requestBody")))
-	}
-	for _, h := range tl.List("hops") {
-		if hd, ok := h.(*doc.Doc); ok && hd.Has("requestHead") {
-			hd.Set("requestHead", hide(hd.Str("requestHead")))
-		}
-	}
-}
-
 // abre os segredos de ambientes, pastas e request só pro envio; devolve as cópias abertas e os valores
 func (a *App) openForSend(ws, req *doc.Doc, anc []*doc.Doc) (*doc.Doc, *doc.Doc, []*doc.Doc, map[string]bool, error) {
 	secrets := map[string]bool{}
@@ -154,20 +99,20 @@ func (a *App) openForSend(ws, req *doc.Doc, anc []*doc.Doc) (*doc.Doc, *doc.Doc,
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	collectSecrets(ws.Get("environments"), envs, secrets)
+	vault.CollectSecrets(ws.Get("environments"), envs, secrets)
 	openWS := doc.New("id", ws.Get("id"), "settings", ws.Get("settings"), "environments", envs, "children", ws.Get("children"))
 	r, err := a.vault.DecryptDeep(req, nil)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	collectSecrets(req, r, secrets)
+	vault.CollectSecrets(req, r, secrets)
 	openAnc := make([]*doc.Doc, len(anc))
 	for i, f := range anc {
 		o, err := a.vault.DecryptDeep(f, nil)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}
-		collectSecrets(f, o, secrets)
+		vault.CollectSecrets(f, o, secrets)
 		openAnc[i] = o.(*doc.Doc)
 	}
 	return openWS, r.(*doc.Doc), openAnc, secrets, nil

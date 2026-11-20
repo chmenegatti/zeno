@@ -19,6 +19,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/httpc"
 	"github.com/chmenegatti/zeno/wails/internal/protect"
 	"github.com/chmenegatti/zeno/wails/internal/vars"
+	"github.com/chmenegatti/zeno/wails/internal/vault"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -231,7 +232,7 @@ func (a *App) register() {
 			hooks.Store = func(u string, set []string) { a.cookies.Store(wsID, u, set) }
 		}
 		rec := httpc.Send(req.Str("id"), p, hooks)
-		redactTimeline(rec, secrets)
+		vault.RedactTimeline(rec, secrets)
 		history := st.AddResponse(rec)
 		// o body vai uma vez só, no histórico: a interface só lê id e erro de "response"
 		// (JSON de 2,7 MB: 6,6 MB pela ponte com o body duplicado, 222 ms; metade sem ele)
