@@ -90,7 +90,7 @@ jobs:
         run: go test ./internal/...
       - name: Interface e ícone
         run: |
-          (cd .. && npx electron-vite build)
+          (cd .. && npx vite build)
           rm -rf frontend/dist && mkdir -p frontend build && cp -r ../out/renderer frontend/dist
           cp ../build/icons/512x512.png frontend/icon.png
           cp ../build/icons/512x512.png build/appicon.png
@@ -145,7 +145,7 @@ jobs:
           ZENO_KEYCHAIN_TEST: '1'
       - name: Interface e ícone
         run: |
-          (cd .. && npx electron-vite build)
+          (cd .. && npx vite build)
           rm -rf frontend/dist && mkdir -p frontend build && cp -r ../out/renderer frontend/dist
           cp ../build/icons/512x512.png frontend/icon.png
           cp ../build/icons/512x512.png build/appicon.png

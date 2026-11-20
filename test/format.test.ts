@@ -16,13 +16,3 @@ describe('beautifyJson', () => {
     expect(() => beautifyJson('{a:1')).toThrow()
   })
 })
-
-import { insomniaDir } from '../src/main/import-insomnia'
-describe('insomniaDir', () => {
-  it('por sistema', () => {
-    expect(insomniaDir('linux', { HOME: '/h' })).toBe('/h/.config/Insomnia')
-    expect(insomniaDir('linux', { HOME: '/h', XDG_CONFIG_HOME: '/x' })).toBe('/x/Insomnia')
-    expect(insomniaDir('darwin', { HOME: '/h' })).toBe('/h/Library/Application Support/Insomnia')
-    expect(insomniaDir('win32', { APPDATA: '/ad' })).toBe('/ad/Insomnia')
-  })
-})

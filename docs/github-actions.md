@@ -8,9 +8,9 @@ Deixe o workspace numa pasta do projeto (com o `workspace.yaml`), por exemplo `a
 
 Segredos cifrados do cofre (`$zeno$v1$…`) não abrem no CI, porque a chave fica no chaveiro da sua máquina. Passe esses valores com `--var`, a partir dos *secrets* do repositório, sempre por uma variável de ambiente do passo (`env:`) e entre aspas (`--var "token=$API_TOKEN"`): colocar `${{ secrets.… }}` direto no `run:` deixa o valor virar código do shell.
 
-## Com o binário em Go (`zeno-cli`)
+## Com o `zeno-cli`
 
-Binário estático, sem interface nem WebKit: só precisa do Go pra compilar.
+Binário estático, sem interface nem WebKit. Instale com o Go (abaixo) ou baixe pronto da [release](https://github.com/chmenegatti/zeno/releases/latest) (`Zeno-*-linux-cli.tar.gz`).
 
 ```yaml
 name: API
@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: stable
-      - run: go install github.com/chmenegatti/zeno/wails/cmd/zeno-cli@main
+      - run: go install github.com/chmenegatti/zeno/wails/cmd/zeno-cli@latest
       # sobe a API do projeto antes, se for testar local (docker compose up -d, npm start &…)
       - run: zeno-cli run ./api Smoke --env CI --var "token=$API_TOKEN" --junit zeno-junit.xml
         env:
@@ -44,24 +44,3 @@ jobs:
 - Cores: ligadas só em terminal; `NO_COLOR=1` desliga.
 
 O relatório JUnit pode ir pra qualquer action que leia JUnit (ex.: `mikepenz/action-junit-report`) pra aparecer no resumo do job.
-
-## Com o app Electron (Node)
-
-Enquanto a versão em Go não sai num release, dá pra usar a CLI do app atual com Node:
-
-```yaml
-      - uses: actions/checkout@v7
-      - uses: actions/checkout@v7
-        with:
-          repository: chmenegatti/zeno
-          path: zeno
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-      - run: cd zeno && npm ci && npx electron-vite build
-      - run: node zeno/out/main/cli.js run ./api Smoke --var "token=$API_TOKEN" --junit zeno-junit.xml
-        env:
-          API_TOKEN: ${{ secrets.API_TOKEN }}
-```
-
-As opções e os códigos de saída são os mesmos.

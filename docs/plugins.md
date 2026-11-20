@@ -127,9 +127,8 @@ module.exports.importers = [
 
 ## Isolamento e limites
 
-- **Contexto próprio:** cada plugin roda num contexto `vm` separado do app.
-- **`require` limitado:** liberado só para `crypto`, `url`, `buffer`, `util`, `querystring`, `string_decoder`, `punycode`, `events`, `assert`, `zlib` e arquivos dentro da própria pasta do plugin (`require('./lib/x')`).
-- **Versão Go (em migração, #53):** os plugins rodam num interpretador JavaScript próprio (goja), não no Node. Funcionam `crypto` (`createHash`, `createHmac`, `randomBytes`, `randomUUID`, `timingSafeEqual`), `url`, `buffer`, `util`, `querystring`, `events` e `assert`, além de `setTimeout`, promises, `Buffer`, `URL`, `TextEncoder`/`TextDecoder`, `atob`/`btoa` e `structuredClone`. Ainda não há `string_decoder`, `punycode` e `zlib`: o plugin que pedir um deles mostra a mensagem na tela de plugins.
+- **Contexto próprio:** cada plugin roda num interpretador JavaScript separado ([goja](https://github.com/dop251/goja)), não no Node.
+- **`require` limitado:** `crypto` (`createHash`, `createHmac`, `randomBytes`, `randomUUID`, `timingSafeEqual`), `url`, `buffer`, `util`, `querystring`, `events`, `assert` e arquivos dentro da própria pasta do plugin (`require('./lib/x')`). Também há `setTimeout`, promises, `Buffer`, `URL`, `TextEncoder`/`TextDecoder`, `atob`/`btoa` e `structuredClone`. Ainda não há `string_decoder`, `punycode` e `zlib` (até a 0.7, na versão Electron, havia): o plugin que pedir um deles mostra a mensagem na tela de plugins.
 - **Sem acesso direto:** `fs`, rede, processos e `node_modules` de fora não estão disponíveis.
 - **Tempo:**
   - carregar: até 2 s;

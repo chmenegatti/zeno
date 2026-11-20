@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// testdata/in*.json e js*.yaml: gerados pela biblioteca `yaml` do Electron (testdata/gen.mjs)
+// testdata/in*.json e js*.yaml: gerados pela biblioteca `yaml` usada no Electron (testdata/gen.mjs: npx -p yaml node testdata/gen.mjs)
 func TestEncodeIgualAoElectron(t *testing.T) {
 	ins, _ := filepath.Glob("testdata/in*.json")
 	if len(ins) == 0 {

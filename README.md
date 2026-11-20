@@ -9,7 +9,7 @@
 [![Release](https://img.shields.io/github/v/release/chmenegatti/zeno?color=00dbff&label=release)](https://github.com/chmenegatti/zeno/releases/latest)
 [![CI](https://github.com/chmenegatti/zeno/actions/workflows/ci.yml/badge.svg)](https://github.com/chmenegatti/zeno/actions/workflows/ci.yml)
 [![Licença MIT](https://img.shields.io/github/license/chmenegatti/zeno?color=a44dff)](LICENSE)
-![Plataforma](https://img.shields.io/badge/plataforma-Linux-002233)
+![Plataformas](https://img.shields.io/badge/Linux%20·%20Windows%20·%20macOS-002233)
 [![Contribuições bem-vindas](https://img.shields.io/badge/PRs-bem--vindos-00ffd4)](CONTRIBUTING.md)
 [![Site](https://img.shields.io/badge/site-cesarmenegatti.com%2Fzeno-a44dff)](https://www.cesarmenegatti.com/zeno/)
 
@@ -28,6 +28,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 - **Segredos não vazam.** Senhas e tokens ficam criptografados no próprio YAML, com a chave guardada no chaveiro do sistema.
 - **Migração sem dor.** Importa as coleções do Insomnia direto da pasta dele, incluindo ambientes e encadeamento de tokens.
 - **Local primeiro.** Sem conta, sem telemetria, sem sincronização obrigatória.
+- **Leve.** Feito em Go, com a janela no navegador do próprio sistema: pacote de 6 a 17 MB e cerca de 220 MB de memória com o app parado.
 - **Do seu jeito.** 20 temas, atalhos iguais aos do Insomnia (e editáveis), paleta de comandos e plugins no formato do Insomnia.
 
 <table>
@@ -52,7 +53,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 | **Scripts e testes** | JavaScript antes do envio e depois da resposta (por request ou pasta), com `zeno.test`/`zeno.expect`; scripts do Insomnia e do Postman rodam sem mudança |
 | **Asserções e executor** | Checagens de status, header, JSONPath, body e tempo sem programar; rode uma pasta inteira com iterações, dados CSV/JSON e relatório JUnit, no app ou com `zeno run` no CI |
 | **Encadeamento e funções** | `{% response %}` usa o body, header ou URL de outro request, reenviando só quando o valor expira; `uuid`, `timestamp`, `faker`, `hash`, `base64`, `file`, `prompt` e `jsonpath` |
-| **Cofre de segredos** | AES-256-GCM com a chave protegida pelo chaveiro do sistema (gnome-keyring, KWallet) |
+| **Cofre de segredos** | AES-256-GCM com a chave protegida pelo chaveiro do sistema (gnome-keyring/KWallet no Linux, DPAPI no Windows, Keychain no macOS) |
 | **cURL e código** | Cole um `curl` na URL e o request é montado; copie como cURL ou gere código em 20 linguagens e 37 bibliotecas (Shell, JavaScript, Node, Python, Go, Java, C#, PHP, Ruby, Kotlin, Swift, Rust, PowerShell…), com realce de sintaxe, indentação de 2 espaços e variáveis e tags já resolvidas (`Ctrl+Shift+G`) |
 | **Importação** | Insomnia (pasta, export v4 e v5), OpenAPI 3 e Swagger 2 (arquivo ou URL) e Postman v2.1 com ambientes, com prévia e lista do que não foi convertido |
 | **Organização** | Pastas aninhadas, arrastar pra mover/reordenar, duplicar, renomear, fixar; paleta de comandos com `Ctrl+P`; tela de workspaces (`Ctrl+Shift+O`) com busca em todos os requests, grupos, cores, favoritos, arquivar, git e cofre de cada um |
@@ -97,17 +98,15 @@ Rode o `Zeno-*-windows-setup.exe` (ou use a versão portátil `Zeno-*-windows-po
 
 Abra o `Zeno-*-macos-universal.dmg` e arraste o Zeno para **Aplicativos**. O app ainda não tem notarização da Apple: na primeira abertura o macOS bloqueia; vá em **Ajustes do Sistema › Privacidade e Segurança** e clique em **Abrir mesmo assim**.
 
-> Windows, macOS e o `.rpm` chegam com a versão em Go (próxima release); até lá, há pacotes só para Linux.
-
 ### A partir do código
 
-Requer Node.js 22 ou mais novo.
+Requer Go 1.26+, Node.js 22+ e, no Linux, `libgtk-3-dev` e `libwebkit2gtk-4.1-dev`.
 
 ```bash
 git clone https://github.com/chmenegatti/zeno.git
 cd zeno
 npm install
-npm run dev
+npm run dev        # compila a interface e o app e abre
 ```
 
 ## Primeiros passos
@@ -260,15 +259,17 @@ zeno run ./api-workspace --data usuarios.csv --var token=$API_TOKEN   # pasta co
 | `--bail` | para no primeiro request que falhar |
 | `--data-dir <dir>` | pasta de dados do Zeno |
 
-Sai com `0` se tudo passou, `1` se algum request ou teste falhou e `2` em erro de uso. Na CLI, o que os scripts gravam nos ambientes vale só durante a execução: os YAML não mudam. No app instalado, `zeno run` usa o chaveiro pra abrir os segredos cifrados; sem chaveiro (ex.: no CI, com `npm run build && node out/main/cli.js run …`), passe-os com `--var`.
+Sai com `0` se tudo passou, `1` se algum request ou teste falhou e `2` em erro de uso. Na CLI, o que os scripts gravam nos ambientes vale só durante a execução: os YAML não mudam. `zeno run` usa o chaveiro pra abrir os segredos cifrados; sem chaveiro (ex.: no CI), passe-os com `--var`.
+
+No CI, use o **`zeno-cli`**: binário só da linha de comando, sem interface, em cada release (`Zeno-*-linux-cli.tar.gz`, `Zeno-*-macos-cli.zip`; no Windows vem no `.zip` portátil) ou com `go install github.com/chmenegatti/zeno/wails/cmd/zeno-cli@latest`.
 
 Exemplo de workflow do GitHub Actions em [docs/github-actions.md](docs/github-actions.md).
 
 ## Cofre de segredos
 
 - Valores marcados como secretos ficam no YAML como `$zeno$v1$…` (AES-256-GCM). **Esses arquivos podem ir para o git.**
-- A chave mestra (256 bits, aleatória) fica em `.vault/key`, cifrada pelo chaveiro do sistema via `safeStorage` do Electron. Sem um chaveiro de verdade, o Zeno se recusa a criar o cofre.
-- Só o processo principal decifra, e só na hora de enviar ou quando você clica em *mostrar*. A interface exibe `••••••`.
+- A chave mestra (256 bits, aleatória) fica em `.vault/key`, cifrada pelo chaveiro do sistema: Secret Service (gnome-keyring, KWallet) no Linux, DPAPI no Windows e Keychain no macOS. No Linux o formato é o mesmo do `safeStorage` das versões em Electron: a chave criada antes da 1.0 continua abrindo. Sem um chaveiro de verdade, o Zeno se recusa a criar o cofre.
+- Só o processo do app (em Go) decifra, e só na hora de enviar ou quando você clica em *mostrar*. A interface exibe `••••••`.
 - Em *Configurações do workspace → Cofre de segredos*, o Zeno encontra e cifra de uma vez senhas, tokens, headers `Authorization` e valores repetidos de segredos.
 - Em outro computador, sem a chave, o Zeno avisa e pede para redefinir o valor.
 
@@ -293,7 +294,7 @@ Detalhes:
 
 ## Onde ficam os dados
 
-Por padrão em `~/.local/share/zeno/` (ou na pasta indicada por `ZENO_DATA_DIR`):
+Por padrão em `~/.local/share/zeno/`, dentro da pasta do usuário também no Windows e no macOS (ou na pasta indicada por `ZENO_DATA_DIR`). É a mesma pasta e o mesmo formato das versões em Electron: atualizar não muda nada nos seus dados.
 
 ```text
 <workspace>/workspace.yaml
@@ -330,38 +331,47 @@ Os próximos passos estão nas [issues abertas](https://github.com/chmenegatti/z
 - GraphQL, gRPC, WebSocket e SSE
 - OAuth 2.0, proxy e mTLS
 - mock server
-- pacotes para macOS e Windows
+- assinatura dos pacotes de Windows e macOS
 
 Quer ajudar em algum? Comente na issue antes de começar.
 
 ## Desenvolvimento
 
+Precisa de **Go** (1.26+), **Node.js** 22+ e, no Linux, `libgtk-3-dev` e `libwebkit2gtk-4.1-dev`.
+
 | Comando | O que faz |
 |---|---|
-| `npm run dev` | App em modo desenvolvimento com recarga |
-| `npm test` | Testes (Vitest) |
-| `npm run typecheck` | Checagem de tipos do main e do renderer |
-| `npm run build` | Build de produção em `out/` |
-| `npm run dist` | Gera `.deb` e AppImage em `dist/` |
-| `npm run release` | Nova versão: changelog, tag e commit de release |
+| `npm run dev` | Compila a interface e abre o app (`make run` em `wails/`) |
+| `npm test` / `npm run typecheck` | Testes da interface (Vitest) e checagem de tipos |
+| `cd wails && make test` | Testes do Go (sem interface) |
+| `cd wails && make e2e` | Ponta a ponta no app de verdade (precisa de tela; no CI com `xvfb-run`) |
+| `cd wails && make build` | Binário do app em `wails/build/zeno` |
+| `cd wails && make cli` | `zeno-cli` estático, sem interface |
+| `cd wails && make deb rpm appimage` | Pacotes Linux |
+| `npm run release` | Nova versão: changelog, tag e commit de release (os pacotes dos três sistemas saem pelo workflow *Release*) |
 
-Stack: Electron, React, TypeScript, Vite (electron-vite), Tailwind CSS, CodeMirror 6, Zustand e undici.
+Stack: **Go + [Wails](https://wails.io)** (janela no WebKitGTK, WebView2 ou WKWebView), React, TypeScript, Vite, Tailwind CSS, CodeMirror 6, Zustand e [goja](https://github.com/dop251/goja) para scripts e plugins.
 
 ```text
-src/main/       processo principal: armazenamento YAML, HTTP, cofre, git, import, tags
-src/preload/    ponte segura entre main e interface (contextBridge)
-src/renderer/   interface React
-src/shared/     tipos e lógica pura usada pelos dois lados (variáveis, templates)
-test/           testes Vitest
+wails/            app em Go: main.go, canais da interface (handlers.go) e wails/internal/*
+  internal/store    YAML dos workspaces, histórico, estado
+  internal/httpc    envio HTTP (redirects, TLS, timeline)
+  internal/engine   envio completo: variáveis, tags, scripts, plugins, asserções
+  internal/vault    cofre (keyring: Secret Service, DPAPI, Keychain)
+  internal/…        importers, gitws, github, runner, cli, plugins, scripts, cookies…
+  e2e/              teste ponta a ponta no app
+src/renderer/     interface React (compilada com o Vite e embutida no binário)
+src/shared/       tipos e lógica pura da interface (variáveis, tags, cURL, temas)
+test/             testes Vitest
 ```
 
-Para verificar a interface sem abrir a janela manualmente:
+Para verificar a interface sem mexer na janela:
 
 ```bash
-ZENO_DATA_DIR=/tmp/zeno-teste ZENO_SCREENSHOT=/tmp/tela.png npx electron . --no-sandbox
+ZENO_DATA_DIR=/tmp/zeno-teste ZENO_SCRIPT='console.log(document.title)' ./wails/build/zeno
 ```
 
-`ZENO_SCRIPT` executa JavaScript na página antes da captura. Mais detalhes em [CONTRIBUTING.md](CONTRIBUTING.md).
+`ZENO_SCRIPT` roda JavaScript na página (o `console.log` sai no terminal) e o app fecha no fim; `ZENO_TRACE=1` mostra o tempo de cada canal. Mais detalhes em [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Contribuindo
 

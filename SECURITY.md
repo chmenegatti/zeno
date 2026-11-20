@@ -19,9 +19,9 @@ Você recebe uma resposta em até 7 dias. Depois da correção publicada, o rela
 O que o cofre protege:
 
 - Valores marcados como secretos ficam nos arquivos YAML cifrados com **AES-256-GCM** (IV aleatório de 96 bits por valor, tag de autenticação de 128 bits). Adulteração é detectada.
-- A chave mestra tem 256 bits aleatórios e fica em `<dados>/.vault/key` (permissão `600`), cifrada pelo chaveiro do sistema via [`safeStorage`](https://www.electronjs.org/docs/latest/api/safe-storage) do Electron: libsecret/gnome-keyring ou KWallet no Linux, Keychain no macOS, DPAPI no Windows.
+- A chave mestra tem 256 bits aleatórios e fica em `<dados>/.vault/key` (permissão `600` no Linux e no macOS), cifrada pelo chaveiro do sistema: **Secret Service** (gnome-keyring ou KWallet) no Linux, no mesmo formato do `safeStorage` das versões em Electron; **DPAPI** do usuário no Windows; e, no macOS, uma senha aleatória no **Keychain** (item *Zeno Safe Storage*, criado pelo próprio app, que fica na lista de acesso do item).
 - No Linux, se o único backend disponível for `basic_text` (senha fixa embutida), o Zeno recusa criar o cofre.
-- Só o processo principal decifra. A interface recebe o valor cifrado e mostra `••••••`, exceto quando o usuário clica em *mostrar*.
+- Só o processo do app (em Go) decifra. A interface recebe o valor cifrado e mostra `••••••`, exceto quando o usuário clica em *mostrar*.
 
 O que o cofre **não** protege:
 

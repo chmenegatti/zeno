@@ -1,6 +1,6 @@
 // Package importers: Insomnia (NeDB, export JSON v4, export YAML v5), Postman (coleção v2.x e
 // ambientes) e OpenAPI 3.x / Swagger 2.0 viram workspaces do Zeno. Port de src/main/import-*.ts; a
-// saída é conferida contra a do Electron (testdata/golden, gerado por testdata/gen.ts), inclusive a
+// saída é conferida contra a do Electron (testdata/golden, gerado pelos importadores do Electron até a 0.7), inclusive a
 // ordem dos campos, que define o YAML gravado.
 package importers
 

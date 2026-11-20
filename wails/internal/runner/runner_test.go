@@ -302,7 +302,7 @@ func TestOrdem(t *testing.T) {
 	}
 }
 
-// JUnit idêntico ao do Electron (testdata/junit.xml gerado por testdata/gen.ts)
+// JUnit idêntico ao do Electron (testdata/junit.xml gerado pelo toJUnit do Electron até a 0.7)
 func TestJUnitIgualElectron(t *testing.T) {
 	in, err := os.ReadFile("testdata/report.json")
 	if err != nil {
