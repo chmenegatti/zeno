@@ -17,11 +17,14 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/filename"
 	"github.com/chmenegatti/zeno/wails/internal/httpc"
+	"github.com/chmenegatti/zeno/wails/internal/protect"
 	"github.com/chmenegatti/zeno/wails/internal/vars"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type Doc = doc.Doc
+
+var errNoWorkspace = errors.New("workspace não encontrado")
 
 // {workspaces, id} como o Created do Electron
 func created(wss []*Doc, id string, err error) (any, error) {
@@ -210,10 +213,15 @@ func (a *App) register() {
 		envID, _ := Get[string](args, 2)
 		ws := st.Workspace(wsID)
 		if ws == nil {
-			return nil, errors.New("workspace não encontrado")
+			return nil, errNoWorkspace
 		}
 		_, anc := doc.Find(ws, req.Str("id"))
-		p := vars.Prepare(ws, req, anc, envID)
+		// segredos do cofre abertos só aqui, só pro envio
+		openWS, openReq, openAnc, secrets, err := a.openForSend(ws, req, anc)
+		if err != nil {
+			return nil, err
+		}
+		p := vars.Prepare(openWS, openReq, openAnc, envID)
 		// cookie jar do workspace, respeitando "mandar/guardar cookies" do request
 		var hooks httpc.CookieHooks
 		if req.Get("sendCookies") != false {
@@ -223,6 +231,7 @@ func (a *App) register() {
 			hooks.Store = func(u string, set []string) { a.cookies.Store(wsID, u, set) }
 		}
 		rec := httpc.Send(req.Str("id"), p, hooks)
+		redactTimeline(rec, secrets)
 		history := st.AddResponse(rec)
 		// o body vai uma vez só, no histórico: a interface só lê id e erro de "response"
 		// (JSON de 2,7 MB: 6,6 MB pela ponte com o body duplicado, 222 ms; metade sem ele)
@@ -291,6 +300,38 @@ func (a *App) register() {
 	a.handle("clearResponses", func(args Args) (any, error) {
 		id, _ := Get[string](args, 0)
 		return nil, st.ClearResponses(id)
+	})
+
+	// ---------- cofre ----------
+	a.handle("vaultStatus", func(Args) (any, error) { return a.vault.Status(), nil })
+	a.handle("vaultEncrypt", func(args Args) (any, error) {
+		plain, _ := Get[string](args, 0)
+		return a.vault.Encrypt(plain)
+	})
+	a.handle("vaultReveal", func(args Args) (any, error) {
+		tok, _ := Get[string](args, 0)
+		return a.vault.Decrypt(tok)
+	})
+	a.handle("vaultScan", func(args Args) (any, error) {
+		wsID, _ := Get[string](args, 0)
+		ws := st.Workspace(wsID)
+		if ws == nil {
+			return doc.New("plain", []string{}, "warnings", []string{}), nil
+		}
+		r := protect.Scan(ws, a.knownSecrets())
+		labels := make([]string, len(r.Spots))
+		for i, s := range r.Spots {
+			labels[i] = s.Label
+		}
+		return doc.New("plain", labels, "warnings", r.Warnings), nil
+	})
+	a.handle("vaultProtect", func(args Args) (any, error) {
+		wsID, _ := Get[string](args, 0)
+		n, err := a.protectWorkspace(wsID, nil)
+		if err != nil {
+			return nil, err
+		}
+		return doc.New("count", n, "workspaces", st.Load()), nil
 	})
 
 	// ---------- cookies ----------
@@ -365,7 +406,6 @@ func (a *App) register() {
 	for _, c := range []string{"codeTargets", "pluginsList", "pluginsReload"} {
 		a.handle(c, empty([]any{}))
 	}
-	a.handle("vaultStatus", empty(doc.New("available", false, "backend", "versão Go (fase 2)", "weak", true, "hasKey", false)))
 	a.handle("githubStatus", empty(doc.New("account", nil, "deviceAvailable", false)))
 	a.handle("tagPreview", empty(doc.New("error", "tags {% %} ainda não disponíveis na versão Go")))
 }

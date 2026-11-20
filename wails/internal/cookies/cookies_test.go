@@ -162,3 +162,24 @@ func TestRegrasDeDominioECaminho(t *testing.T) {
 		t.Errorf("substituir: %q", h)
 	}
 }
+
+// prefixos __Secure- e __Host- (tough-cookie recusa os inválidos)
+func TestPrefixos(t *testing.T) {
+	c := New("")
+	n := c.Store("w", "https://a.exemplo.com/", []string{
+		"__Host-sid=x; Domain=exemplo.com; Path=/; Secure", // __Host- com Domain: recusado
+		"__Host-ok=1; Path=/; Secure",
+		"__Host-semPath=1; Secure", // __Host- sem Path=/: recusado
+		"__Secure-a=1",             // sem Secure: recusado
+		"__Secure-b=2; Secure",
+	})
+	if n != 2 {
+		t.Errorf("aceitos: %d", n)
+	}
+	if h := c.Header("w", "https://a.exemplo.com/"); h != "__Host-ok=1; __Secure-b=2" {
+		t.Errorf("header: %q", h)
+	}
+	if c.Store("w", "http://a.exemplo.com/", []string{"__Secure-c=3; Secure"}) != 0 {
+		t.Error("__Secure- de origem http deveria ser recusado")
+	}
+}
