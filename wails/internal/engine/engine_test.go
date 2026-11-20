@@ -13,6 +13,7 @@ import (
 
 	"github.com/chmenegatti/zeno/wails/internal/cookies"
 	"github.com/chmenegatti/zeno/wails/internal/doc"
+	"github.com/chmenegatti/zeno/wails/internal/plugins"
 	"github.com/chmenegatti/zeno/wails/internal/store"
 	"github.com/chmenegatti/zeno/wails/internal/tags"
 	"github.com/chmenegatti/zeno/wails/internal/vault"
@@ -210,5 +211,31 @@ func TestPreScriptComErroNaoEnvia(t *testing.T) {
 	r, _ := e.Execute(ws, req, "", 0)
 	if *logins != 0 || r.Map("response").Str("error") != "Não enviado: o script pré-request (Login): quebrou" {
 		t.Errorf("%d %q", *logins, r.Map("response").Str("error"))
+	}
+}
+
+func TestPluginsNoEnvio(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(r.Header.Get("X-Hook") + "|" + r.Header.Get("X-Tag")))
+	}))
+	defer srv.Close()
+	e, ws := setup(t, srv.URL)
+	pdir := filepath.Join(e.Store.Dir, "plugins", "teste")
+	write(t, filepath.Join(pdir, "package.json"), `{"name":"teste","main":"index.js"}`)
+	write(t, filepath.Join(pdir, "index.js"), `module.exports.templateTags = [{ name: 'grita', run: (c, s) => String(s).toUpperCase() }]
+module.exports.requestHooks = [(c) => c.request.setHeader('X-Hook', c.request.getEnvironmentVariable('base') ? 'com-env' : 'sem')]
+module.exports.responseHooks = [(c) => { if (c.response.getStatusCode() !== 200) throw new Error('não 200') }]`)
+	e.Plugins = plugins.New(filepath.Join(e.Store.Dir, "plugins"), nil)
+	e.Plugins.Load()
+	login, _ := doc.Find(ws, "req_login")
+	req := login.Clone()
+	req.Set("url", "{{ base }}/x")
+	req.Set("headers", []any{doc.New("name", "X-Tag", "value", "{% grita 'oi' %}", "enabled", true)})
+	r, err := e.Execute(ws, req, "", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b := e.Store.GetResponses("req_login")[0].(*doc.Doc).Str("body"); b != "com-env|OI" {
+		t.Errorf("body: %q avisos %v", b, r.Get("warnings"))
 	}
 }

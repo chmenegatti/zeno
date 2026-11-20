@@ -131,6 +131,8 @@ type Context struct {
 	Render func(string) string
 	// Ask: pergunta ao usuário; ok=false = cancelou
 	Ask func(Prompt) (string, bool)
+	// Plugin: tag de plugin ({% minha_funcao %}); ok=false = nenhum plugin tem
+	Plugin func(name string, args []string) (string, bool, error)
 	// NoSend: nunca reenvia (gerar código)
 	NoSend bool
 	// Now: relógio (testes)
@@ -411,6 +413,11 @@ func resolveOne(name string, args []string, c *Context) (string, error) {
 			return "", fmt.Errorf("request %s ainda não tem resposta (envie ele antes)", reqID)
 		}
 		return Extract(res, field, filter)
+	}
+	if c.Plugin != nil {
+		if v, ok, err := c.Plugin(name, args); ok {
+			return v, err
+		}
 	}
 	return "", fmt.Errorf("tag %q não suportada", name)
 }

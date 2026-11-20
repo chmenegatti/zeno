@@ -17,6 +17,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/filename"
 	"github.com/chmenegatti/zeno/wails/internal/httpc"
+	"github.com/chmenegatti/zeno/wails/internal/plugins"
 	"github.com/chmenegatti/zeno/wails/internal/protect"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -315,6 +316,71 @@ func (a *App) register() {
 		return doc.New("count", n, "workspaces", st.Load()), nil
 	})
 
+	// ---------- plugins ----------
+	a.handle("pluginsList", func(Args) (any, error) { return a.plugins.List(), nil })
+	a.handle("pluginsReload", func(Args) (any, error) { return a.plugins.Load(), nil })
+	a.handle("pluginsSetEnabled", func(args Args) (any, error) {
+		id, _ := Get[string](args, 0)
+		on, _ := Get[bool](args, 1)
+		state := st.GetState()
+		off := []any{}
+		for _, x := range state.List("disabledPlugins") {
+			if doc.AsStr(x) != id {
+				off = append(off, x)
+			}
+		}
+		if !on {
+			off = append(off, id)
+		}
+		if len(off) > 0 {
+			state.Set("disabledPlugins", off)
+		} else {
+			state.Del("disabledPlugins")
+		}
+		raw, _ := doc.Marshal(state)
+		if err := st.SetState(raw); err != nil {
+			return nil, err
+		}
+		return a.plugins.List(), nil
+	})
+	a.handle("pluginsOpenDir", func(Args) (any, error) {
+		dir := filepath.Join(st.Dir, "plugins")
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return nil, err
+		}
+		runtime.BrowserOpenURL(a.ctx, "file://"+filepath.ToSlash(dir))
+		return dir, nil
+	})
+	// ação de plugin no menu do request: recebe o request já com variáveis resolvidas
+	a.handle("pluginAction", func(args Args) (any, error) {
+		id, _ := Get[string](args, 0)
+		index, _ := Get[int](args, 1)
+		wsID, _ := Get[string](args, 2)
+		reqID, _ := Get[string](args, 3)
+		envID, _ := Get[string](args, 4)
+		ws := st.Workspace(wsID)
+		if ws == nil {
+			return nil, errNoWorkspace
+		}
+		p, name, err := a.engine.PrepareOpen(ws, reqID, envID, nil)
+		if err != nil {
+			return nil, err
+		}
+		hr := plugins.HookRequest{Method: p.Method, URL: p.URL, Headers: p.Headers}
+		if p.BodyKind == "text" {
+			t := p.Text
+			hr.Body = &t
+		}
+		msgs, clip, err := a.plugins.RunAction(id, index, plugins.ActionRequest{Name: name, HookRequest: hr})
+		if err != nil {
+			return nil, err
+		}
+		if clip != nil {
+			_ = runtime.ClipboardSetText(a.ctx, *clip)
+		}
+		return msgs, nil
+	})
+
 	// ---------- cookies ----------
 	a.handle("cookiesList", func(args Args) (any, error) {
 		wsID, _ := Get[string](args, 0)
@@ -384,7 +450,7 @@ func (a *App) register() {
 
 	// ---------- ainda não portados: valores vazios pra interface abrir ----------
 	empty := func(v any) handler { return func(Args) (any, error) { return v, nil } }
-	for _, c := range []string{"codeTargets", "pluginsList", "pluginsReload"} {
+	for _, c := range []string{"codeTargets"} {
 		a.handle(c, empty([]any{}))
 	}
 	a.handle("githubStatus", empty(doc.New("account", nil, "deviceAvailable", false)))

@@ -1,6 +1,6 @@
 // Package engine: envio completo (port da parte de envio de src/main/engine.ts): segredos do cofre abertos
 // só pro envio, scripts pré e pós-request, tags {% %} com dependências, cookies, asserções e histórico.
-// Plugins entram no #68.
+// Plugins: tags, requestHooks e responseHooks.
 package engine
 
 import (
@@ -13,6 +13,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/cookies"
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/httpc"
+	"github.com/chmenegatti/zeno/wails/internal/plugins"
 	"github.com/chmenegatti/zeno/wails/internal/protect"
 	"github.com/chmenegatti/zeno/wails/internal/scripts"
 	"github.com/chmenegatti/zeno/wails/internal/store"
@@ -36,7 +37,22 @@ type Engine struct {
 	Store   *store.Store
 	Cookies *cookies.Cookies
 	Vault   *vault.Vault
+	Plugins *plugins.Plugins
 	Hooks   Hooks
+}
+
+// tag de plugin pro resolvedor de tags (nil sem plugins)
+func (e *Engine) pluginTag(varsDoc *Doc) func(string, []string) (string, bool, error) {
+	if e.Plugins == nil {
+		return nil
+	}
+	return func(name string, args []string) (string, bool, error) {
+		if !e.Plugins.HasTag(name) {
+			return "", false, nil
+		}
+		v, err := e.Plugins.RunTag(name, args, func(t string) string { return vars.Render(t, varsDoc) }, varsDoc)
+		return v, true, err
+	}
 }
 
 func (e *Engine) emit(name string, data ...any) {
@@ -168,6 +184,7 @@ func (e *Engine) Execute(ws, req *Doc, envID string, depth int) (*Doc, error) {
 				Latest:         e.Latest,
 				ResolveRequest: e.resolveRef(ws),
 				Render:         func(t string) string { return vars.Render(t, varsDoc) },
+				Plugin:         e.pluginTag(varsDoc),
 				Ask: func(pr tags.Prompt) (string, bool) {
 					key := pr.Key
 					if key == "" {
@@ -224,6 +241,20 @@ func (e *Engine) Execute(ws, req *Doc, envID string, depth int) (*Doc, error) {
 	for _, t := range p.Unsupported {
 		warnings = append(warnings, "tag não resolvida: "+t)
 	}
+	// requestHooks dos plugins: podem mudar método, URL, headers e body (texto) antes do envio
+	if e.Plugins != nil {
+		hr := plugins.HookRequest{Method: p.Method, URL: p.URL, Headers: p.Headers}
+		if p.BodyKind == "text" {
+			t := p.Text
+			hr.Body = &t
+		}
+		h, ws := e.Plugins.BeforeSend(hr, vars.BuildVars(openWS, envID, openAnc))
+		warnings = append(warnings, ws...)
+		p.Method, p.URL, p.Headers = h.Method, h.URL, h.Headers
+		if h.Body != nil && (p.BodyKind == "text" || (p.BodyKind == "none" && *h.Body != "")) {
+			p.BodyKind, p.Text = "text", *h.Body
+		}
+	}
 	// cookie jar do workspace, respeitando "mandar/guardar cookies" do request
 	wsID := ws.Str("id")
 	var hooks httpc.CookieHooks
@@ -235,6 +266,15 @@ func (e *Engine) Execute(ws, req *Doc, envID string, depth int) (*Doc, error) {
 	}
 	rec := httpc.Send(req.Str("id"), p, hooks)
 	vault.RedactTimeline(rec, secrets)
+	if e.Plugins != nil && rec.Str("error") == "" {
+		body := ""
+		if rec.Str("bodyEncoding") == "utf8" {
+			body = rec.Str("body")
+		}
+		hs, _ := rec.Get("headers").([][2]string)
+		st, _ := rec.Get("status").(int)
+		warnings = append(warnings, e.Plugins.AfterResponse(plugins.HookResponse{Status: st, Headers: hs, Body: body})...)
+	}
 
 	if st != nil && len(post) > 0 && rec.Str("error") == "" {
 		body := ""
@@ -323,7 +363,16 @@ func (e *Engine) TagPreview(raw string, send bool) *Doc {
 		}
 		return doc.New("value", v)
 	case name != "response":
-		return doc.New("error", fmt.Sprintf("tag %q não suportada (nenhum plugin ativo tem)", name))
+		// tag de plugin: prévia com as variáveis do ambiente ativo
+		if e.Plugins == nil || !e.Plugins.HasTag(name) {
+			return doc.New("error", fmt.Sprintf("tag %q não suportada (nenhum plugin ativo tem)", name))
+		}
+		vs, _, _ := e.previewVars()
+		v, err := e.Plugins.RunTag(name, args, func(t string) string { return vars.Render(t, vs) }, vs)
+		if err != nil {
+			return doc.New("error", err.Error())
+		}
+		return doc.New("value", v)
 	}
 	get := func(i int) string {
 		if i < len(args) {
@@ -420,6 +469,7 @@ func (e *Engine) PrepareOpen(ws *Doc, reqID, envID string, override *Doc) (vars.
 			NoSend:         true,
 			ResolveRequest: e.resolveRef(ws),
 			Render:         func(t string) string { return vars.Render(t, varsDoc) },
+			Plugin:         e.pluginTag(varsDoc),
 		})
 		if err == nil {
 			p = vars.Prepare(openWS, openReq, openAnc, envID, values)
