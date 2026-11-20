@@ -1,7 +1,30 @@
 // Tema claro/escuro, links de download da última versão e animação de entrada.
+// Textos seguem o idioma da página (<html lang>): pt → português, senão inglês.
 
 ;(function () {
   var root = document.documentElement
+  var pt = /^pt/i.test(root.lang || '')
+  var T = pt
+    ? {
+        available: ' disponível',
+        dlWin: 'Baixar para Windows',
+        portable: 'Portátil (.zip)',
+        subWin: ' · Windows 10 e 11 (64 bits) · também para Linux e macOS',
+        dlMac: 'Baixar para macOS',
+        subMac: ' · Intel e Apple Silicon · também para Linux e Windows',
+        subLinux: ' · Ubuntu, Debian e derivados',
+        anyDistro: ' · qualquer distro com AppImage'
+      }
+    : {
+        available: ' available',
+        dlWin: 'Download for Windows',
+        portable: 'Portable (.zip)',
+        subWin: ' · Windows 10 and 11 (64-bit) · also for Linux and macOS',
+        dlMac: 'Download for macOS',
+        subMac: ' · Intel and Apple Silicon · also for Linux and Windows',
+        subLinux: ' · Ubuntu, Debian and derivatives',
+        anyDistro: ' · any distro with AppImage'
+      }
   var btn = document.getElementById('theme')
   btn.addEventListener('click', function () {
     var next = root.dataset.theme === 'dark' ? 'light' : 'dark'
@@ -23,7 +46,7 @@
     })
     .then(function (rel) {
       if (!rel || !rel.tag_name) return
-      document.getElementById('release-text').textContent = 'Zeno ' + rel.tag_name + ' disponível'
+      document.getElementById('release-text').textContent = 'Zeno ' + rel.tag_name + T.available
       var assets = rel.assets || []
       var find = function (re) {
         return assets.find(function (a) { return re.test(a.name) })
@@ -67,23 +90,23 @@
         main.innerHTML = main.querySelector('svg').outerHTML + ' ' + text + ' <small>' + ext + '</small>'
       }
       if (os === 'win' && win) {
-        label('Baixar para Windows', '.exe')
+        label(T.dlWin, '.exe')
         main.href = win.browser_download_url
         document.getElementById('dl-deb2').href = win.browser_download_url
         var zip = find(/windows-portable\.zip$/)
         if (zip) {
-          alt.textContent = 'Portátil (.zip)'
+          alt.textContent = T.portable
           alt.href = zip.browser_download_url
         } else alt.hidden = true
-        sub.textContent = rel.tag_name + ' · Windows 10 e 11 (64 bits) · também para Linux e macOS'
+        sub.textContent = rel.tag_name + T.subWin
       } else if (os === 'mac' && mac) {
-        label('Baixar para macOS', '.dmg')
+        label(T.dlMac, '.dmg')
         main.href = mac.browser_download_url
         document.getElementById('dl-deb2').href = mac.browser_download_url
         alt.hidden = true
-        sub.textContent = rel.tag_name + ' · Intel e Apple Silicon · também para Linux e Windows'
+        sub.textContent = rel.tag_name + T.subMac
       } else {
-        sub.textContent = rel.tag_name + ' · Ubuntu, Debian e derivados' + (rpm ? ' · Fedora (.rpm)' : '') + ' · qualquer distro com AppImage'
+        sub.textContent = rel.tag_name + T.subLinux + (rpm ? ' · Fedora (.rpm)' : '') + T.anyDistro
       }
     })
     .catch(function () {})

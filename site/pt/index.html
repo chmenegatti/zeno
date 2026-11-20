@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Zeno · cliente de API sem abas</title>
+  <meta name="description" content="Zeno: cliente de API desktop focado. Uma tela, sem abas, coleções em YAML, segredos criptografados, import do Insomnia, plugins e 20 temas." />
+  <meta property="og:title" content="Zeno · cliente de API sem abas" />
+  <meta property="og:description" content="Uma tela, sem abas, coleções em YAML e segredos criptografados. Importa do Insomnia, Postman e OpenAPI." />
+  <meta property="og:image" content="https://www.cesarmenegatti.com/zeno/img/social.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.cesarmenegatti.com/zeno/pt/" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Zeno · cliente de API sem abas" />
+  <meta name="twitter:description" content="Uma tela, sem abas, coleções em YAML e segredos criptografados. Importa do Insomnia, Postman e OpenAPI." />
+  <meta name="twitter:image" content="https://www.cesarmenegatti.com/zeno/img/social.png" />
+  <link rel="canonical" href="https://www.cesarmenegatti.com/zeno/pt/" />
+  <link rel="alternate" hreflang="en" href="https://www.cesarmenegatti.com/zeno/" />
+  <link rel="alternate" hreflang="pt-BR" href="https://www.cesarmenegatti.com/zeno/pt/" />
+  <link rel="alternate" hreflang="x-default" href="https://www.cesarmenegatti.com/zeno/" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Zeno",
+    "description": "Cliente de API desktop, local primeiro e sem abas: REST, GraphQL, gRPC, WebSocket e SSE, coleções em YAML, segredos criptografados e import do Insomnia e Postman.",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Linux, Windows, macOS",
+    "softwareVersion": "1.1.0",
+    "inLanguage": "pt-BR",
+    "url": "https://www.cesarmenegatti.com/zeno/pt/",
+    "downloadUrl": "https://github.com/chmenegatti/zeno/releases/latest",
+    "image": "https://www.cesarmenegatti.com/zeno/img/hero-dark.webp",
+    "license": "https://github.com/chmenegatti/zeno/blob/main/LICENSE",
+    "sameAs": "https://github.com/chmenegatti/zeno",
+    "author": { "@type": "Person", "name": "Cesar Menegatti" },
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+  <meta name="theme-color" content="#00121c" />
+  <link rel="icon" href="../img/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../style.css" />
+  <script>
+    // tema antes de pintar: escolha salva ou a do sistema
+    ;(function () {
+      try {
+        var t = localStorage.getItem('zeno-site-theme')
+        if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+        document.documentElement.dataset.theme = t
+      } catch (e) {}
+    })()
+  </script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-in">
+      <a class="brand" href="#topo"><img src="../img/logo.svg" alt="" width="30" height="30" /> Zeno</a>
+      <nav class="links">
+        <a href="#recursos">Recursos</a>
+        <a href="#temas">Temas</a>
+        <a href="#plugins">Plugins</a>
+        <a href="#instalar">Instalar</a>
+        <a href="https://github.com/chmenegatti/zeno/blob/main/README.pt-BR.md">Docs</a>
+      </nav>
+      <div class="nav-end">
+        <a class="icon-btn lang" href="../" hreflang="en" lang="en" title="English version" aria-label="English version">EN</a>
+        <a class="icon-btn" href="https://github.com/chmenegatti/zeno" aria-label="GitHub" title="GitHub">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.29-1.69-1.29-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.39-5.27 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+        </a>
+        <button class="icon-btn" id="theme" aria-label="Alternar tema claro/escuro" title="Tema claro/escuro">
+          <svg class="sun" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 1.5v2.5M12 20v2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M1.5 12H4M20 12h2.5M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M21 14.5A8.5 8.5 0 0 1 9.5 3a8.5 8.5 0 1 0 11.5 11.5Z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="topo">
+    <!-- ================= hero ================= -->
+    <section class="hero">
+      <div class="glow" aria-hidden="true"></div>
+      <div class="wrap hero-in">
+        <a class="pill" id="release-pill" href="https://github.com/chmenegatti/zeno/releases/latest">
+          <span class="dot"></span> <span id="release-text">Nova versão disponível</span> <span class="arrow">→</span>
+        </a>
+        <h1>O cliente de API<br /><span class="grad">que sai do seu caminho</span></h1>
+        <p class="lead">
+          Uma tela, sem abas. Coleções em arquivos YAML que você versiona no git, segredos criptografados com o chaveiro do sistema
+          e import direto do Insomnia. Feito em Go, leve, para Linux, Windows e macOS. Código aberto, local primeiro, sem conta.
+        </p>
+        <div class="cta">
+          <a class="btn primary" id="dl-deb" href="https://github.com/chmenegatti/zeno/releases/latest">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 16 6 10h4V3h4v7h4l-6 6Zm-8 3h16v2H4v-2Z"/></svg>
+            Baixar para Linux <small>.deb</small>
+          </a>
+          <a class="btn" id="dl-appimage" href="https://github.com/chmenegatti/zeno/releases/latest">AppImage</a>
+          <a class="btn ghost" href="https://github.com/chmenegatti/zeno">Ver no GitHub</a>
+        </div>
+        <p class="sub" id="dl-sub">Ubuntu, Debian e derivados · qualquer distro com AppImage</p>
+        <div class="shot hero-shot">
+          <img class="only-dark" src="../img/hero-dark.webp" alt="Zeno no tema TOTVS: coleções à esquerda, request no meio e resposta JSON à direita" width="1400" height="843" />
+          <img class="only-light" src="../img/hero-light.webp" alt="Zeno no tema GitHub Light" width="1400" height="843" loading="lazy" />
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= faixa ================= -->
+    <section class="strip">
+      <div class="wrap strip-in">
+        <span>Importa <b>Insomnia</b></span><i></i>
+        <span><b>Postman</b> v2.1</span><i></i>
+        <span><b>OpenAPI</b> 3 e Swagger 2</span><i></i>
+        <span>Cole um <b>curl</b></span><i></i>
+        <span>Roda no <b>CI</b> com <code>zeno run</code></span>
+      </div>
+    </section>
+
+    <!-- ================= recursos ================= -->
+    <section id="recursos" class="section">
+      <div class="wrap">
+        <div class="head">
+          <span class="kicker">Recursos</span>
+          <h2>Tudo o que você usava, sem o que atrapalhava</h2>
+          <p>Feito pra quem passa o dia testando APIs: rápido no teclado, fácil de versionar e sem surpresas.</p>
+        </div>
+        <div class="grid">
+          <article class="card" style="--c: var(--blue)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></svg></div><h3>Uma tela, sem abas</h3><p>Lateral, request e resposta. Clicar troca o conteúdo; nada se empilha. Paleta de comandos com <kbd>Ctrl</kbd>+<kbd>P</kbd>.</p></article>
+          <article class="card" style="--c: var(--green)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H7a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2 2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1M16 3h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2 2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-1"/></svg></div><h3>Coleções em YAML</h3><p>Cada request é um arquivo legível na sua pasta. Revise em PR, edite no editor favorito, o app recarrega sozinho.</p></article>
+          <article class="card" style="--c: var(--purple)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></div><h3>Encadeamento</h3><p><code>{% response %}</code> pega token, header ou campo de outro request e só reenvia quando o valor expira.</p></article>
+          <article class="card" style="--c: var(--pink)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>Cofre de segredos</h3><p>Senhas e tokens cifrados com AES-256-GCM, chave no chaveiro do sistema (gnome-keyring/KWallet, DPAPI, Keychain). O YAML pode ir pro git.</p></article>
+          <article class="card" style="--c: var(--orange)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h3>Scripts e asserções</h3><p>JavaScript antes e depois do envio, compatível com Insomnia e Postman, e checagens sem código.</p></article>
+          <article class="card" style="--c: var(--lime)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 17 6-6-6-6M12 19h8"/></svg></div><h3>Executor e CLI</h3><p>Rode pastas inteiras com dados CSV/JSON e relatório JUnit, no app ou com <code>zeno run</code> no CI.</p></article>
+          <article class="card" style="--c: var(--blue)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></div><h3>Linha do tempo</h3><p>O request exatamente como saiu, cada redirect, DNS, TLS, espera e o certificado do servidor.</p></article>
+          <article class="card" style="--c: var(--green)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></div><h3>Gerar código</h3><p>20 linguagens e 37 bibliotecas, coloridas como numa IDE, com variáveis e tags já resolvidas. Do cURL ao Rust.</p></article>
+          <article class="card" style="--c: var(--purple)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-6 3-11 6"/></svg></div><h3>Git integrado</h3><p>Workspace no repo do projeto: status por request, diff, commit, pull, push e branches.</p></article>
+          <article class="card" style="--c: var(--pink)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h4l3-8 4 16 3-8h2"/></svg></div><h3>Além do REST</h3><p>GraphQL com autocomplete pelo schema, WebSocket, Server-Sent Events ao vivo e gRPC com reflection ou <code>.proto</code>.</p></article>
+          <article class="card" style="--c: var(--orange)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>OAuth 2.0 e rede da empresa</h3><p>Todos os fluxos, login no navegador e token renovado sozinho. Proxy, CA própria e certificado de cliente (mTLS).</p></article>
+          <article class="card" style="--c: var(--lime)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg></div><h3>Mock server</h3><p>Salve uma resposta como exemplo e ligue um servidor local que responde cada rota do workspace com ela.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= vitrines ================= -->
+    <section class="section alt">
+      <div class="wrap feature">
+        <div class="txt">
+          <span class="kicker">Variáveis e tags</span>
+          <h2>Ambientes que você enxerga</h2>
+          <p>Variáveis viram badges em todos os campos e editores. Digite <code>{{</code> e escolha da lista, com valor e origem. Clique num badge pra ver de onde vem, editar ou mover de nível.</p>
+          <ul class="checks">
+            <li>Base → sub-ambiente → pasta, com o ambiente ativo sempre à vista</li>
+            <li>Funções: <code>uuid</code>, <code>timestamp</code>, <code>faker</code>, <code>hash</code>, <code>base64</code>, <code>prompt</code>…</li>
+            <li>Mesma sintaxe do Insomnia: coleções importadas funcionam sem ajuste</li>
+          </ul>
+        </div>
+        <div class="shot"><img src="../img/autocomplete.webp" alt="Autocomplete de variáveis na URL" loading="lazy" width="1400" height="843" /></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap feature rev">
+        <div class="txt">
+          <span class="kicker">Encadeamento</span>
+          <h2>Um request alimenta o outro</h2>
+          <p>Use o token do login em toda a pasta. A tag <code>{% response %}</code> tem editor visual com prévia do valor e decide quando reenviar: nunca, sem histórico, quando expirar ou sempre.</p>
+          <ul class="checks">
+            <li>JSONPath, caminho XML, header ou URL final</li>
+            <li>Referência por id ou pelo nome do request</li>
+            <li>Clique numa chave da resposta pra copiar a tag pronta</li>
+          </ul>
+        </div>
+        <div class="shot"><img src="../img/restag.webp" alt="Editor da tag de resposta com prévia" loading="lazy" width="1400" height="843" /></div>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="wrap feature">
+        <div class="txt">
+          <span class="kicker">gRPC</span>
+          <h2>gRPC sem gerar código</h2>
+          <p>Coloque <code>grpc://</code> ou <code>grpcs://</code> na URL, clique em Descobrir e escolha o método. A mensagem é JSON, com exemplo gerado a partir do schema; headers viram metadata e a auth é a mesma do HTTP.</p>
+          <ul class="checks">
+            <li>Server reflection ou um arquivo <code>.proto</code></li>
+            <li>Unary, server, client e bidi streaming, cada mensagem com horário</li>
+            <li>Status, headers e trailers da chamada</li>
+          </ul>
+        </div>
+        <div class="shot"><img src="../img/grpc.webp" alt="Chamada gRPC com o log da resposta" loading="lazy" width="1400" height="843" /></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap feature rev">
+        <div class="txt">
+          <span class="kicker">GraphQL, WebSocket e SSE</span>
+          <h2>Consultas e streams no mesmo lugar</h2>
+          <p>O editor de GraphQL busca o schema da sua API e completa campos e argumentos. URLs <code>ws://</code> abrem uma conexão WebSocket com log de mensagens, e respostas <code>text/event-stream</code> mostram cada evento conforme chega.</p>
+          <ul class="checks">
+            <li>Variáveis em JSON com <code>{{ variáveis }}</code> do ambiente</li>
+            <li>Mensagens do WebSocket com variáveis e tags resolvidas</li>
+            <li>GraphQL importado do Insomnia e do Postman; WebSocket e gRPC do Insomnia</li>
+          </ul>
+        </div>
+        <div class="shot"><img src="../img/graphql.webp" alt="Editor de GraphQL com schema e resposta" loading="lazy" width="1400" height="843" /></div>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="wrap feature">
+        <div class="txt">
+          <span class="kicker">Resposta</span>
+          <h2>Entenda a resposta em segundos</h2>
+          <p>JSON formatado e filtrado com JSONPath ou XPath, busca com <kbd>Ctrl</kbd>+<kbd>F</kbd>, imagens, PDF e HTML renderizados, e respostas de 50 MB sem travar.</p>
+          <ul class="checks">
+            <li>Linha do tempo com redirects, tempos e TLS</li>
+            <li>Comparar com uma resposta anterior do histórico</li>
+            <li>Salvar o body em arquivo</li>
+          </ul>
+        </div>
+        <div class="shot"><img src="../img/timeline.webp" alt="Linha do tempo com dois saltos de redirect" loading="lazy" width="1400" height="843" /></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap feature rev">
+        <div class="txt">
+          <span class="kicker">Gerar código</span>
+          <h2>Do request para o seu código</h2>
+          <p>O mesmo gerador do Insomnia, com 20 linguagens e 37 bibliotecas: cURL, HTTPie, fetch, axios, Python requests, Go, Java, C#, PHP, Ruby, Kotlin, Swift, Rust, PowerShell… Com realce de sintaxe de cada linguagem e indentação de 2 espaços.</p>
+          <ul class="checks">
+            <li>Variáveis, segredos e tags já resolvidos</li>
+            <li>Ou mantenha <code>{{ variáveis }}</code> como referência</li>
+            <li>Cole um <code>curl</code> na URL e o request se monta sozinho</li>
+          </ul>
+        </div>
+        <div class="shot"><img src="../img/code.webp" alt="Gerar código em Python com requests" loading="lazy" width="1400" height="843" /></div>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="wrap feature">
+        <div class="txt">
+          <span class="kicker">Teclado</span>
+          <h2>Mãos no teclado</h2>
+          <p>Paleta de comandos com busca difusa em todos os workspaces, atalhos iguais aos do Insomnia (e editáveis) e importação dos seus atalhos personalizados.</p>
+          <ul class="checks">
+            <li><kbd>Ctrl</kbd>+<kbd>P</kbd> busca requests e ações</li>
+            <li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> envia, <kbd>Ctrl</kbd>+<kbd>E</kbd> ambientes, <kbd>Ctrl</kbd>+<kbd>K</kbd> cookies</li>
+            <li>Zoom, fontes e lateral com um atalho</li>
+          </ul>
+        </div>
+        <div class="shot"><img src="../img/palette.webp" alt="Paleta de comandos buscando requests" loading="lazy" width="1400" height="843" /></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap feature rev">
+        <div class="txt">
+          <span class="kicker">Nuvem, do seu jeito</span>
+          <h2>Suas coleções no seu GitHub</h2>
+          <p>Clique em <b>Entrar com GitHub</b>, autorize no navegador e envie os workspaces pra um repositório privado seu. Baixe em outra máquina com um clique. Sem servidor do Zeno no meio.</p>
+          <ul class="checks">
+            <li>Um commit por envio, uma pasta por workspace</li>
+            <li>Token cifrado no cofre; segredos continuam cifrados no repo</li>
+            <li>Não precisa de git instalado: tudo pela API do GitHub</li>
+            <li>Exporte pro Insomnia, Postman ou um zip dos YAML quando precisar</li>
+          </ul>
+        </div>
+        <div class="shot"><img src="../img/github.webp" alt="Salvar coleções no GitHub" loading="lazy" width="1400" height="843" /></div>
+      </div>
+    </section>
+
+    <!-- ================= temas ================= -->
+    <section id="temas" class="section alt">
+      <div class="wrap">
+        <div class="head">
+          <span class="kicker">Temas</span>
+          <h2>20 temas, escuros e claros</h2>
+          <p>TOTVS, Aura Dark, Monokai, Synthwave '84, Dracula, One Dark, Nord, Tokyo Night, Catppuccin, Gruvbox, Solarized, Night Owl, GitHub, Rosé Pine, Palenight e mais. Troque na hora, com prévia.</p>
+        </div>
+        <div class="themes">
+          <figure><img src="../img/dracula.webp" alt="Tema Dracula" loading="lazy" width="1400" height="843" /><figcaption>Dracula</figcaption></figure>
+          <figure><img src="../img/synthwave.webp" alt="Tema Synthwave '84" loading="lazy" width="1400" height="843" /><figcaption>Synthwave '84</figcaption></figure>
+          <figure><img src="../img/nord.webp" alt="Tema Nord" loading="lazy" width="1400" height="843" /><figcaption>Nord</figcaption></figure>
+          <figure><img src="../img/latte.webp" alt="Tema Catppuccin Latte" loading="lazy" width="1400" height="843" /><figcaption>Catppuccin Latte</figcaption></figure>
+        </div>
+        <div class="shot wide"><img src="../img/themes.webp" alt="Escolha de tema nas preferências" loading="lazy" width="1400" height="843" /></div>
+      </div>
+    </section>
+
+    <!-- ================= plugins ================= -->
+    <section id="plugins" class="section">
+      <div class="wrap feature">
+        <div class="txt">
+          <span class="kicker">Plugins</span>
+          <h2>Estenda com plugins do Insomnia</h2>
+          <p>Mesmo formato: <code>templateTags</code>, <code>requestHooks</code>, <code>responseHooks</code> e <code>requestActions</code>, além de importadores. Cada plugin roda isolado, com tempo máximo; se quebrar, aparece desativado e o app segue.</p>
+<pre class="code"><code><span class="k">module</span>.exports.templateTags = [{
+  name: <span class="s">'minha_funcao'</span>,
+  displayName: <span class="s">'Minha função'</span>,
+  args: [{ displayName: <span class="s">'Nome'</span>, type: <span class="s">'string'</span> }],
+  <span class="k">run</span>(context, nome) {
+    <span class="k">return</span> <span class="s">`Olá, ${nome}!`</span>
+  }
+}]</code></pre>
+          <p><a class="more" href="https://github.com/chmenegatti/zeno/blob/main/docs/plugins.md">Guia de plugins →</a></p>
+        </div>
+        <div class="shot"><img src="../img/plugins.webp" alt="Tela de plugins" loading="lazy" width="1400" height="843" /></div>
+      </div>
+    </section>
+
+    <!-- ================= CLI ================= -->
+    <section class="section alt">
+      <div class="wrap feature rev">
+        <div class="txt">
+          <span class="kicker">Linha de comando</span>
+          <h2>A mesma coleção no seu CI</h2>
+          <p><code>zeno run</code> executa uma pasta ou o workspace inteiro, com ambiente, dados por iteração, variáveis extras e relatório JUnit. Sai com código ≠ 0 quando algo falha.</p>
+        </div>
+<pre class="code term"><code><span class="p">$</span> zeno run <span class="s">"Loja Online"</span> Produtos --env Produção --junit relatorio.xml
+<span class="ok">✓</span> GET    Listar produtos  200  109 ms
+    <span class="ok">✓</span> status &lt; 300
+    <span class="ok">✓</span> tempo (ms) &lt; 500
+<span class="ok">✓</span> POST   Criar produto  201  72 ms
+    <span class="ok">✓</span> status &lt; 300
+    <span class="ok">✓</span> tempo (ms) &lt; 500
+<span class="bad">✗</span> DELETE Remover produto  404  45 ms
+    <span class="bad">✗</span> status &lt; 300 <span class="p">— valor: 404</span>
+
+<span class="p">Produtos: 3 request(s), 2 ok, 1 com falha · 6 teste(s), 1 falharam · 226 ms</span></code></pre>
+      </div>
+    </section>
+
+    <!-- ================= instalar ================= -->
+    <section id="instalar" class="section">
+      <div class="wrap">
+        <div class="head">
+          <span class="kicker">Instalar</span>
+          <h2>Pronto em um minuto</h2>
+          <p>Baixe o pacote da última versão. Na primeira abertura, importe do Insomnia ou crie um workspace.</p>
+        </div>
+        <div class="install">
+          <div class="box">
+            <h3>Debian / Ubuntu</h3>
+<pre class="code"><code><span class="p">$</span> sudo apt install ./<span id="deb-name">zeno_amd64.deb</span></code></pre>
+          </div>
+          <div class="box" data-os="rpm" hidden>
+            <h3>Fedora (.rpm)</h3>
+<pre class="code"><code><span class="p">$</span> sudo dnf install ./<span id="rpm-name">zeno.x86_64.rpm</span></code></pre>
+          </div>
+          <div class="box" data-os="win" hidden>
+            <h3>Windows</h3>
+            <p>Rode o <b id="win-name">instalador</b>. O app ainda não é assinado: se o SmartScreen avisar, clique em <b>Mais informações</b> e depois em <b>Executar assim mesmo</b>. Há também uma versão portátil em <code>.zip</code>.</p>
+          </div>
+          <div class="box" data-os="mac" hidden>
+            <h3>macOS (Intel e Apple Silicon)</h3>
+            <p>Abra o <b id="mac-name">.dmg</b> e arraste o Zeno para Aplicativos. Na primeira abertura o macOS bloqueia (app sem notarização): em <b>Ajustes do Sistema › Privacidade e Segurança</b>, clique em <b>Abrir mesmo assim</b>.</p>
+          </div>
+          <div class="box">
+            <h3>AppImage (qualquer distro)</h3>
+<pre class="code"><code><span class="p">$</span> chmod +x <span id="ai-name">Zeno.AppImage</span>
+<span class="p">$</span> ./<span id="ai-name2">Zeno.AppImage</span></code></pre>
+          </div>
+          <div class="box">
+            <h3>A partir do código</h3>
+<pre class="code"><code><span class="p">$</span> git clone https://github.com/chmenegatti/zeno
+<span class="p">$</span> cd zeno &amp;&amp; npm install
+<span class="p">$</span> npm run dev   <span class="c"># Go 1.26+ e Node 22+</span></code></pre>
+          </div>
+        </div>
+        <div class="cta center">
+          <a class="btn primary" id="dl-deb2" href="https://github.com/chmenegatti/zeno/releases/latest">Baixar a última versão</a>
+          <a class="btn ghost" href="https://github.com/chmenegatti/zeno/blob/main/CHANGELOG.md">O que mudou</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <div class="brand small"><img src="../img/logo.svg" alt="" width="22" height="22" /> Zeno</div>
+      <nav>
+        <a href="https://github.com/chmenegatti/zeno">GitHub</a>
+        <a href="https://github.com/chmenegatti/zeno/releases">Releases</a>
+        <a href="https://github.com/chmenegatti/zeno/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/chmenegatti/zeno/blob/main/docs/plugins.md">Plugins</a>
+        <a href="https://github.com/chmenegatti/zeno/blob/main/CONTRIBUTING.md">Contribuir</a>
+      </nav>
+      <p>Código aberto sob a licença MIT.</p>
+    </div>
+  </footer>
+
+  <script src="../app.js"></script>
+</body>
+</html>
