@@ -4,6 +4,7 @@ import { api, useStore } from '../state'
 import { EDITOR_FONT, recording, setUi, UI_FONT, ZOOM_STEPS } from '../hotkeys'
 import { Modal } from './ui'
 import { DEFAULT_THEME, THEMES, type Theme } from '@shared/themes'
+import { Select } from './Select'
 
 const GROUPS: HotkeyGroup[] = ['Interface', 'Request', 'Ambientes']
 
@@ -26,11 +27,11 @@ export function PrefsModal({ onClose }: { onClose: () => void }) {
         <ThemePicker current={p.theme} />
         <label className="flex items-center gap-3">
           <span className="w-[170px] text-dim">Zoom</span>
-          <select className="field flex-1" value={String(zoom)} onChange={(e) => setUi({ zoom: Number(e.target.value) })}>
+          <Select className="field flex-1" value={String(zoom)} onChange={(v) => setUi({ zoom: Number(v) })}>
             {[...new Set([...ZOOM_STEPS, zoom])].sort((a, b) => a - b).map((z) => (
               <option key={z} value={String(z)}>{Math.round(z * 100)}%</option>
             ))}
-          </select>
+          </Select>
           <span className="w-[130px] text-faint">Ctrl+= / - / 0</span>
         </label>
         <label className="flex items-center gap-3">

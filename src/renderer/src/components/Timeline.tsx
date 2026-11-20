@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { diffLines } from '@shared/diff'
 import type { ResponseRecord } from '@shared/types'
 import { formatBytes } from './ui'
+import { Select } from './Select'
 
 // credenciais conhecidas e qualquer header com nome de segredo (token, key, secret, senha, sessão…)
 const SECRET_HEAD = /^((?:proxy-)?authorization|cookie|set-cookie|[\w-]*(?:token|key|secret|pass|senha|session|sessao|cred|auth)[\w-]*):\s*(.*)$/i
@@ -156,14 +157,14 @@ export function CompareView({ res, history }: { res: ResponseRecord; history: Re
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b border-line/60 px-3 py-1.5 text-[11.5px]">
         <span className="text-dim">comparar</span>
-        <select className="field py-0.5 text-[11.5px]" value={other.id} onChange={(e) => setOtherId(e.target.value)}>
+        <Select className="field py-0.5 text-[11.5px]" value={other.id} onChange={(v) => setOtherId(v)}>
           {others.map((h) => <option key={h.id} value={h.id}>{label(h)}</option>)}
-        </select>
+        </Select>
         <span className="text-dim">→ {label(res)}</span>
-        <select className="field py-0.5 text-[11.5px]" value={what} onChange={(e) => setWhat(e.target.value as 'body' | 'headers')}>
+        <Select className="field py-0.5 text-[11.5px]" value={what} onChange={(v) => setWhat(v as 'body' | 'headers')}>
           <option value="body">body</option>
           <option value="headers">status e headers</option>
-        </select>
+        </Select>
         <div className="flex-1" />
         {binary ? (
           <span className={binSame === true ? 'text-tgreen' : binSame === false ? 'text-torange' : 'text-faint'}>

@@ -66,10 +66,13 @@ function editorFont(delta: number): void {
 function focusTarget(name: string, open = false): void {
   const el = document.querySelector<HTMLElement>(`[data-hk="${name}"]`)
   if (!el) return
-  const target = el.matches('input,select,textarea,[tabindex],.cm-content') ? el : el.querySelector<HTMLElement>('input,select,textarea,.cm-content,[tabindex]')
+  const sel = 'input,select,textarea,[role="combobox"],[tabindex],.cm-content'
+  const target = el.matches(sel) ? el : el.querySelector<HTMLElement>(sel)
   target?.focus()
   if (target instanceof HTMLInputElement) target.select()
   if (open && target instanceof HTMLSelectElement) target.showPicker?.()
+  // lista própria (Select): abre como o clique
+  if (open && target?.getAttribute('role') === 'combobox' && target.getAttribute('aria-expanded') !== 'true') target.click()
 }
 
 function current() {
@@ -196,7 +199,7 @@ function onKey(e: KeyboardEvent): void {
     (hk.global || (!s.modal && !s.tagEdit)) &&
     !(hk.notInEditor && inEditor) &&
     !(hk.onlyInEditor && !inEditor) &&
-    !(hk.notInText && !!t?.matches('input,textarea,select,[contenteditable="true"]'))
+    !(hk.notInText && !!t?.matches('input,textarea,select,[role="combobox"],[contenteditable="true"]'))
   const keys = { key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey, altGraph: e.getModifierState?.('AltGraph') }
   const hk = findHotkeys(keys, ui().hotkeys).find(allowed)
   if (!hk) return

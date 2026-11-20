@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -192,7 +193,9 @@ func TestScriptsEAmbientes(t *testing.T) {
 	}
 	// ambiente gravado: token (nome de segredo) cifrado no YAML; contador em texto
 	yaml, _ := os.ReadFile(filepath.Join(e.Store.Dir, "w/_env/base.yaml"))
-	if !strings.Contains(string(yaml), "auth_token: $zeno$v1$") || !strings.Contains(string(yaml), "contador: 1") || strings.Contains(string(yaml), "T1") {
+	// (o texto cifrado é aleatório e pode conter "T1": procura o valor em claro fora dos tokens)
+	plain := regexp.MustCompile(`\$zeno\$\S+`).ReplaceAllString(string(yaml), "")
+	if !strings.Contains(string(yaml), "auth_token: $zeno$v1$") || !strings.Contains(string(yaml), "contador: 1") || strings.Contains(plain, "T1") {
 		t.Errorf("ambiente gravado:\n%s", yaml)
 	}
 	// e o valor abre de volta

@@ -16,6 +16,7 @@ import { maskSecrets } from '@shared/secret'
 import { askSchedule, stopSend } from '../sendSchedule'
 import { parseCurl } from '@shared/curl'
 import { beautifyJson } from '@shared/format'
+import { Select } from './Select'
 
 type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'assertions' | 'notes'
 
@@ -193,12 +194,12 @@ function BodyEditor({ body, onChange }: { body: Body; onChange: (b: Body) => voi
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 px-3 py-2">
-        <select className="field py-1" value={body.mime ?? ''} onChange={(e) => setMime(e.target.value || null)}>
+        <Select className="field py-1" value={body.mime ?? ''} onChange={(v) => setMime(v || null)}>
           {BODY_TYPES.map((b) => (
             <option key={b.label} value={b.mime ?? ''}>{b.label}</option>
           ))}
           {body.mime && !BODY_TYPES.some((b) => b.mime === body.mime) && <option value={body.mime}>{body.mime}</option>}
-        </select>
+        </Select>
         {body.mime === 'application/json' && <button className="btn btn-ghost py-1" onClick={format}>Formatar</button>}
       </div>
       {body.mime === null && <p className="px-3 text-faint">Este request não envia body.</p>}
@@ -267,11 +268,11 @@ export function AuthEditor({ auth, inherited, onChange, allowInherit = true }: {
   )
   return (
     <div className="flex flex-col gap-2.5 p-3">
-      <select className="field w-[200px] py-1" value={auth.type} onChange={(e) => setType(e.target.value as AuthType)}>
+      <Select className="field w-[200px] py-1" value={auth.type} onChange={(v) => setType(v as AuthType)}>
         {(Object.keys(AUTH_LABEL) as AuthType[]).filter((t) => allowInherit || t !== 'inherit').map((t) => (
           <option key={t} value={t}>{AUTH_LABEL[t]}</option>
         ))}
-      </select>
+      </Select>
       {auth.type === 'inherit' && <p className="text-faint">Usando da pasta: <span className="text-dim">{inherited ? AUTH_LABEL[inherited.type] : 'sem auth'}</span></p>}
       {auth.type === 'basic' && (
         <>
@@ -291,10 +292,10 @@ export function AuthEditor({ auth, inherited, onChange, allowInherit = true }: {
           {secretRow('Valor', auth.value, (value) => onChange({ ...auth, value }))}
           <label className="flex items-center gap-3">
             <span className="w-[90px] text-dim">Enviar em</span>
-            <select className="field py-1" value={auth.addTo} onChange={(e) => onChange({ ...auth, addTo: e.target.value as 'header' | 'query' })}>
+            <Select className="field py-1" value={auth.addTo} onChange={(v) => onChange({ ...auth, addTo: v as 'header' | 'query' })}>
               <option value="header">Header</option>
               <option value="query">Query string</option>
-            </select>
+            </Select>
           </label>
         </>
       )}

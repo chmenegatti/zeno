@@ -5,6 +5,7 @@ import { ResponseView } from './ResponseBody'
 import { CompareView, TimelineView } from './Timeline'
 import { Count, formatBytes, Segmented } from './ui'
 import { ScriptResults } from './Scripts'
+import { Select } from './Select'
 
 type Section = 'body' | 'headers' | 'tests' | 'timeline' | 'compare'
 
@@ -48,11 +49,11 @@ export function ResponsePane({ width }: { width: number }) {
             {id && sending[id] && <span className="animate-pulse text-accent">enviando…</span>}
             <div className="flex-1" />
             {history.length > 1 && (
-              <select
+              <Select
                 data-hk="history"
                 className="field max-w-[180px] py-0.5 text-[11.5px]"
                 value={res.id}
-                onChange={(e) => useStore.setState((s) => ({ selectedResponse: { ...s.selectedResponse, [id!]: e.target.value } }))}
+                onChange={(v) => useStore.setState((s) => ({ selectedResponse: { ...s.selectedResponse, [id!]: v } }))}
                 title="Histórico"
               >
                 {history.map((h) => (
@@ -60,7 +61,7 @@ export function ResponsePane({ width }: { width: number }) {
                     {new Date(h.at).toLocaleTimeString('pt-BR')} · {h.error ? 'erro' : h.status}
                   </option>
                 ))}
-              </select>
+              </Select>
             )}
             <button
               className="btn btn-ghost px-1.5 py-0.5 text-[11.5px]"

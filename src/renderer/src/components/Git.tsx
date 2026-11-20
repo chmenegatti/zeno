@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { GitFile, GitStatus, Workspace } from '@shared/types'
 import { api, useStore } from '../state'
 import { Modal } from './ui'
+import { Select } from './Select'
 
 const STATUS_STYLE: Record<GitFile['status'], [string, string]> = {
   M: ['M', 'text-tblue'],
@@ -116,16 +117,16 @@ export function GitModal({ ws, onClose }: { ws: Workspace; onClose: () => void }
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <BranchIcon />
-            <select
+            <Select
               className="field py-1"
               value={st.branch ?? ''}
               disabled={!!busy}
-              onChange={(e) => op('switch', () => api.gitSwitch(ws.id, e.target.value, false))}
+              onChange={(v) => op('switch', () => api.gitSwitch(ws.id, v, false))}
             >
               {!st.branch && <option value="">(sem branch)</option>}
               {st.branches.map((b) => <option key={b} value={b}>{b}</option>)}
               {st.branch && !st.branches.includes(st.branch) && <option value={st.branch}>{st.branch}</option>}
-            </select>
+            </Select>
             <button
               className="btn btn-ghost"
               disabled={!!busy}

@@ -9,6 +9,7 @@ import { MethodBadge, Modal } from './ui'
 import { FAKER } from '@shared/faker'
 import { editorVars, useVarSources, VarBadge, varOptions } from './Vars'
 import type { TagSupport } from './CodeEditor'
+import { Select } from './Select'
 
 // ---------- rótulo ----------
 
@@ -373,9 +374,9 @@ function PluginTagForm({ info, args, onChange }: { info: PluginTagInfo; args: st
             <>
               <span className="text-[11px] text-faint">{a.displayName}</span>
               {a.type === 'enum' ? (
-                <select className="field py-1" value={get(i)} onChange={(e) => set(i, e.target.value)}>
+                <Select className="field py-1" value={get(i)} onChange={(v) => set(i, v)}>
                   {(a.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.displayName}</option>)}
-                </select>
+                </Select>
               ) : (
                 <input className="field py-1 font-mono text-[12px]" type={a.type === 'number' ? 'number' : 'text'} placeholder={a.placeholder} value={get(i)} onChange={(e) => set(i, e.target.value)} spellCheck={false} />
               )}
@@ -398,13 +399,13 @@ function FnForm({ tag, onChange }: { tag: Extract<TagDef, { name: 'fn' }>; onCha
         <label key={a.label} className="flex flex-col gap-1">
           <span className="text-[11px] text-faint">{a.label}</span>
           {a.kind === 'select' ? (
-            <select className="field py-1" value={tag.args[i]} onChange={(e) => set(i, e.target.value)}>
+            <Select className="field py-1" value={tag.args[i]} onChange={(v) => set(i, v)}>
               {(tag.tag === 'faker' ? Object.entries(FAKER).map(([id, f]) => ({ id, label: `${f.label} (${id})` })) : a.options ?? []).map((o) => (
                 <option key={o.id} value={o.id}>{o.label}</option>
               ))}
               {/* valor importado que não está na lista */}
               {tag.tag === 'faker' && !FAKER[tag.args[i]] && <option value={tag.args[i]}>{tag.args[i]} (desconhecido)</option>}
-            </select>
+            </Select>
           ) : a.kind === 'textarea' ? (
             <textarea className="field h-20 resize-y font-mono text-[12px]" placeholder={a.placeholder} value={tag.args[i]} onChange={(e) => set(i, e.target.value)} spellCheck={false} />
           ) : (
@@ -476,12 +477,12 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
       >
         <label className="flex flex-col gap-1">
           <span className="text-[11px] text-faint">Função</span>
-          <select
+          <Select
             className="field py-1"
             value={ptag ? `plugin:${ptag.name}` : kindOf(tag)}
             disabled={tag.name === 'other' && !ptag}
-            onChange={(e) => {
-              const n = e.target.value
+            onChange={(v) => {
+              const n = v
               if (n.startsWith('plugin:')) {
                 const info = pluginTag(n.slice(7))
                 return setPtag({ name: n.slice(7), args: (info?.tag.args ?? []).map(argDefault) })
@@ -497,7 +498,7 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
             {KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
             {plugins.filter((p) => p.enabled).flatMap((p) => p.templateTags.map((t) => <option key={`${p.id}:${t.name}`} value={`plugin:${t.name}`}>{t.displayName} (plugin {p.displayName})</option>))}
             {tag.name === 'other' && !ptag && <option value="other">{tag.tag} (não suportada)</option>}
-          </select>
+          </Select>
         </label>
 
         {!ptag && tag.name === 'fn' && <FnForm tag={tag} onChange={(args) => setTag({ ...tag, args })} />}
@@ -507,9 +508,9 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
           <>
             <label className="flex flex-col gap-1">
               <span className="text-[11px] text-faint">Atributo</span>
-              <select className="field py-1" value={r.field} onChange={(e) => set({ field: e.target.value as ResponseTag['field'] })}>
+              <Select className="field py-1" value={r.field} onChange={(v) => set({ field: v as ResponseTag['field'] })}>
                 {FIELDS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
-              </select>
+              </Select>
             </label>
 
             <div className="flex flex-col gap-1">
@@ -552,9 +553,9 @@ export function TagModal({ initial, onOk, onClose }: { initial: string; onOk: (r
             <div className="flex items-start gap-3">
               <label className="flex min-w-0 flex-1 flex-col gap-1">
                 <span className="text-[11px] text-faint">Reenviar o request</span>
-                <select className="field py-1" value={r.trigger} onChange={(e) => set({ trigger: e.target.value as ResponseTag['trigger'] })}>
+                <Select className="field py-1" value={r.trigger} onChange={(v) => set({ trigger: v as ResponseTag['trigger'] })}>
                   {TRIGGERS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-                </select>
+                </Select>
                 <span className="text-[11px] text-faint">{TRIGGERS.find((t) => t.id === r.trigger)?.hint}</span>
               </label>
               {r.trigger === 'when-expired' && (
