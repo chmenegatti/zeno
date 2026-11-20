@@ -337,10 +337,8 @@ func (p *plugin) collect(exp *goja.Object) error {
 				continue
 			}
 			p.actions = append(p.actions, o.Get("action"))
+			// sem rótulo: vazio aqui, a interface mostra "Ação" no idioma atual
 			label := clip(str(o, "label"), 200)
-			if label == "" {
-				label = i18n.T("Ação")
-			}
 			p.info.RequestActions = append(p.info.RequestActions, Action{Label: label, Icon: clip(str(o, "icon"), 8)})
 		}
 		for _, im := range arr("importers") {

@@ -77,9 +77,10 @@ func NewApp() *App {
 		}
 		return false
 	})
-	a.plugins.Load()
-	// idioma das mensagens geradas no Go: o mesmo da interface (padrão inglês)
+	// idioma das mensagens geradas no Go: o mesmo da interface (padrão inglês); antes de carregar os
+	// plugins, que traduzem mensagens na carga
 	i18n.Set(st.GetState().Map("ui").Str("lang"))
+	a.plugins.Load()
 	// OAuth 2.0 (#9): login no navegador do sistema, aviso na interface enquanto espera
 	oauth := &oauth2.Manager{Dir: st.Dir, Vault: a.vault, Interactive: true, Hooks: oauth2.Hooks{
 		Open: func(u string) { runtime.BrowserOpenURL(a.ctx, u) },
