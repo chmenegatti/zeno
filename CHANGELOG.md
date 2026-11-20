@@ -2,6 +2,33 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [1.0.0](https://github.com/chmenegatti/zeno/compare/v0.7.1...v1.0.0) (2026-11-20)
+
+O Zeno foi reescrito em **Go** ([Wails](https://wails.io)): a janela usa o navegador do próprio sistema (WebKitGTK no Linux, WebView2 no Windows, WKWebView no macOS) no lugar do Electron. A interface é a mesma.
+
+**Seus dados continuam iguais.** Mesma pasta (`~/.local/share/zeno`), mesmos YAML, mesmo cofre (a chave criada pelas versões em Electron abre na versão Go), histórico, cookies e estado. No Debian/Ubuntu, o `.deb` novo atualiza por cima do antigo.
+
+### Novidades
+
+* **Windows e macOS**: instalador e versão portátil pro Windows 10/11 (cofre com DPAPI) e `.dmg` universal pro macOS, Intel e Apple Silicon (cofre no Keychain); `.rpm` pro Fedora ([#109](https://github.com/chmenegatti/zeno/pull/109)) ([#110](https://github.com/chmenegatti/zeno/pull/110)) ([#111](https://github.com/chmenegatti/zeno/pull/111)) ([#112](https://github.com/chmenegatti/zeno/pull/112)) ([#113](https://github.com/chmenegatti/zeno/pull/113))
+* **Mais leve**: pacote de 6 a 17 MB (era 97 MB), cerca de 220 MB de memória com o app parado (eram ~350 MB), abre e envia mais rápido; respostas grandes e histórico longo sem engasgar ([#108](https://github.com/chmenegatti/zeno/pull/108))
+* **Tela de workspaces** (`Ctrl+Shift+O`): cartões ou lista, busca em todos os requests, grupos, cores, favoritos, arquivar, ordem arrastando, git e cofre de cada workspace, duplicar workspace ([#117](https://github.com/chmenegatti/zeno/pull/117))
+* **`zeno-cli`**: a CLI (`zeno run`) também como binário único, sem interface, pra CI em Linux, Windows e macOS; exemplo de GitHub Actions em `docs/github-actions.md` ([#105](https://github.com/chmenegatti/zeno/pull/105))
+* **Listas de seleção no tema** em todos os sistemas, com teclado e acessibilidade; caixas de seleção e campos numéricos no tema; no macOS, menu Editar e atalhos com ⌘ ([#106](https://github.com/chmenegatti/zeno/pull/106)) ([#107](https://github.com/chmenegatti/zeno/pull/107))
+* **Collection de exemplo** da API do GitHub em `examples/insomnia/` pra experimentar ([#115](https://github.com/chmenegatti/zeno/pull/115))
+
+### Correções
+
+* importar do Insomnia avisava "template tag não suportada" pra qualquer `{% %}`; agora só pras tags que o Zeno não tem, dizendo quais ([#115](https://github.com/chmenegatti/zeno/pull/115))
+* asserção de header e `{% response 'header' %}` sobre a resposta recém-enviada ([#104](https://github.com/chmenegatti/zeno/pull/104))
+
+### Mudanças que quebram compatibilidade
+
+* O app é o binário Go; o Electron saiu do projeto ([#118](https://github.com/chmenegatti/zeno/pull/118)).
+* O AppImage usa o WebKitGTK 4.1 do sistema (`libwebkit2gtk-4.1-0` no Debian/Ubuntu, `webkit2gtk4.1` no Fedora); se faltar, ele diz como instalar.
+* Plugins rodam num interpretador JavaScript próprio (goja): `require('string_decoder')`, `punycode` e `zlib` ainda não existem.
+* Build a partir do código: Go 1.26+ e Node.js 22+ (`npm run dev`).
+
 ## [0.7.1](https://github.com/chmenegatti/zeno/compare/v0.7.0...v0.7.1) (2026-11-19)
 
 ### Novidades
