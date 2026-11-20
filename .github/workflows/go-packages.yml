@@ -132,7 +132,10 @@ jobs:
       - run: npm ci
         working-directory: .
       - name: Testes Go no macOS (com o Keychain)
-        run: go test ./internal/...
+        run: |
+          go test ./internal/...
+          go test -v -count=1 -run TestKeychain ./internal/keyring/ | tee keychain.log
+          grep -q -- '--- PASS: TestKeychain' keychain.log
         env:
           ZENO_KEYCHAIN_TEST: '1'
       - name: Interface e ícone
