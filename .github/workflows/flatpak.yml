@@ -35,6 +35,13 @@ jobs:
       - name: Linter do Flathub (manifesto)
         run: flatpak-builder-lint --exceptions --user-exceptions packaging/flatpak/lint-exceptions.json manifest packaging/flatpak/com.cesarmenegatti.Zeno.yml
 
+      # atualizar os runtimes que já vêm na imagem falha no overlayfs do Docker ("Invalid cross-device link",
+      # flatpak/flatpak-github-actions#267): remove e deixa o flatpak-builder instalar do zero
+      - name: Runtimes da imagem
+        run: |
+          flatpak list --all --columns=application,branch,installation || true
+          flatpak uninstall -y --noninteractive --all || true
+
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           manifest-path: packaging/flatpak/com.cesarmenegatti.Zeno.yml
