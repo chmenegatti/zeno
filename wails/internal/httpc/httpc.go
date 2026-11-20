@@ -4,6 +4,7 @@ package httpc
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
@@ -15,7 +16,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptrace"
-	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -54,12 +54,47 @@ func isText(ct string, body []byte) bool {
 	return false
 }
 
+// ResponseID: res_<ms em base 36><6 aleatórios>, como o Electron (dois envios no mesmo ms não colidem)
+func ResponseID(t time.Time) string {
+	const digits = "0123456789abcdefghijklmnopqrstuvwxyz"
+	b := make([]byte, 6)
+	_, _ = rand.Read(b)
+	for i := range b {
+		b[i] = digits[int(b[i])%36]
+	}
+	return "res_" + strconv.FormatInt(t.UnixMilli(), 36) + string(b)
+}
+
+// FormEncode: pares na ordem da tela, como URLSearchParams (espaço vira +, só *-._ e alfanuméricos ficam)
+func FormEncode(pairs [][2]string) string {
+	enc := func(s string) string {
+		var b strings.Builder
+		for i := 0; i < len(s); i++ {
+			c := s[i]
+			switch {
+			case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9', c == '*', c == '-', c == '.', c == '_':
+				b.WriteByte(c)
+			case c == ' ':
+				b.WriteByte('+')
+			default:
+				fmt.Fprintf(&b, "%%%02X", c)
+			}
+		}
+		return b.String()
+	}
+	parts := make([]string, len(pairs))
+	for i, kv := range pairs {
+		parts[i] = enc(kv[0]) + "=" + enc(kv[1])
+	}
+	return strings.Join(parts, "&")
+}
+
 // Send executa o request preparado e devolve o ResponseRecord (mesmo formato do Electron)
 func Send(reqID string, p vars.Prepared) *doc.Doc {
 	start := time.Now()
 	// mesma ordem de campos do ResponseRecord do Electron
 	rec := doc.New(
-		"id", "res_"+strconv.FormatInt(start.UnixMilli(), 36),
+		"id", ResponseID(start),
 		"requestId", reqID,
 		"at", start.UnixMilli(),
 		"method", p.Method,
@@ -84,11 +119,7 @@ func Send(reqID string, p vars.Prepared) *doc.Doc {
 	case "text":
 		reqBody = p.Text
 	case "form":
-		v := url.Values{}
-		for _, f := range p.Form {
-			v.Add(f[0], f[1])
-		}
-		reqBody = v.Encode()
+		reqBody = FormEncode(p.Form)
 	}
 	// como o Electron: GET e HEAD não levam body, mesmo que o request tenha um guardado
 	if p.Method == "GET" || p.Method == "HEAD" {
