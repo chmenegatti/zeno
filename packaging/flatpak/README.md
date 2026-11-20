@@ -11,6 +11,7 @@ Pacote do Zeno para o [Flathub](https://flathub.org), app id `com.cesarmenegatti
 | `node-sources.json` | pacotes npm do `package-lock.json` (cache offline do npm) — **gerado** |
 | `update-sources.sh`, `go-sources.py` | regeneram os arquivos acima |
 | `screenshots/` | PNGs referenciados no metainfo (pelo `main`) |
+| `lint-exceptions.json` | exceção do linter que o CI assume concedida (ver Permissões) |
 
 O Flathub compila sem rede: o app vem do git na tag do release e todas as dependências são fontes declaradas
 no manifesto. O build roda `npm ci --offline` e depois `make -C wails build` (Vite + `go build -mod=vendor`
@@ -23,6 +24,8 @@ que mexe aqui, roda o `flatpak-builder-lint` e deixa o `zeno.flatpak` como artef
 - `--socket=wayland`, `--socket=fallback-x11`, `--share=ipc`, `--device=dri`: janela GTK/WebKit.
 - `--share=network`: é um cliente de API (inclui o mock server em `127.0.0.1` e o login OAuth).
 - `--talk-name=org.freedesktop.secrets`: a chave do cofre fica no chaveiro do sistema (Secret Service).
+- `--socket=ssh-auth`: push/pull por SSH na integração git usa as chaves do ssh-agent. O `git` vai no pacote
+  (módulo próprio no manifesto: o runtime GNOME não tem git; o `ssh` vem do runtime).
 - `--filesystem=home`: o seletor de pastas/arquivos do Wails v2 é o `GtkFileChooserDialog`, que não passa
   pelo portal; sem acesso à pasta pessoal não dá pra ligar workspaces a pastas do usuário, importar/exportar,
   escolher certificados, `.proto` ou usar `{% file %}`. O linter do Flathub trata isso como erro
@@ -40,9 +43,9 @@ Abrir links usa o portal (xdg-open do runtime). Os dados ficam em `~/.var/app/co
    pip install --user "git+https://github.com/flatpak/flatpak-builder-tools.git#subdirectory=node"
    packaging/flatpak/update-sources.sh
    ```
-2. No manifesto, trocar `tag` e `commit` do source `git` (`git rev-parse vX.Y.Z^{commit}`).
+2. No manifesto, trocar `tag` e `commit` do source `git` do módulo `zeno` (`git rev-parse vX.Y.Z^{commit}`).
 3. No metainfo, adicionar o `<release version="X.Y.Z" date="AAAA-MM-DD">` no topo da lista.
-4. Copiar os arquivos (menos `screenshots/` e os scripts) pro repositório `flathub/com.cesarmenegatti.Zeno`
+4. Copiar os arquivos (menos `screenshots/`, scripts e `lint-exceptions.json`) pro repositório `flathub/com.cesarmenegatti.Zeno`
    e abrir PR lá; o buildbot do Flathub compila e publica depois do merge.
 
 ## Enviar pro Flathub (primeira vez)
@@ -61,13 +64,16 @@ packaging/flatpak/com.cesarmenegatti.Zeno.metainfo.xml`.
 3. PR pra `flathub/flathub` com base **`new-pr`** (não `master`), título `Add com.cesarmenegatti.Zeno`, e
    preencher o checklist do template.
 4. Comentar `bot, build` no PR pra um build de teste; responder a revisão.
-5. Verificação do app id: depois de publicado, em flathub.org › Developer portal, verificar o domínio
-   `cesarmenegatti.com` (arquivo em `https://cesarmenegatti.com/.well-known/org.flathub.VerifiedApps.txt`).
+   No texto do PR, pedir a exceção `finish-args-home-filesystem-access` com a justificativa (seletor de
+   arquivos sem portal no Wails v2; workspaces são pastas/repos git em qualquer lugar da pasta pessoal).
+5. App id em domínio próprio: o Flathub confere que `cesarmenegatti.com` é do autor. Depois de publicado,
+   em flathub.org › Developer settings, verificar o app: servir o token em
+   `https://cesarmenegatti.com/.well-known/org.flathub.VerifiedApps.txt`.
 
 ## Limitações conhecidas
 
-- A integração git chama o `git` do sistema; dentro do sandbox vale o do runtime (ver o passo
-  "git e ssh no runtime" do workflow). O login pelo `gh auth token` não funciona (o `gh` não está no sandbox):
-  cole um token do GitHub.
+- O git do pacote não enxerga a configuração de credenciais que dependa de programas do sistema
+  (credential helpers como `gh`, `git-credential-libsecret` do host). O login por `gh auth token` também não
+  funciona (o `gh` não está no sandbox): cole um token do GitHub.
 - O import automático do Insomnia procura em `$XDG_CONFIG_HOME/Insomnia`, que no Flatpak é a pasta do sandbox;
   importe pelo arquivo exportado (`.json`/`.yaml`).

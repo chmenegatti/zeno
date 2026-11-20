@@ -18,8 +18,34 @@ finish-args:
   - --filesystem=home
   # chave mestra do cofre no chaveiro do sistema (Secret Service: gnome-keyring, KWallet)
   - --talk-name=org.freedesktop.secrets
+  # integração git: push/pull por SSH com as chaves do ssh-agent
+  - --socket=ssh-auth
 
 modules:
+  # a integração git do Zeno chama o `git`, que não vem no org.gnome.Platform (o ssh vem)
+  - name: git
+    buildsystem: simple
+    build-commands:
+      - make -j${FLATPAK_BUILDER_N_JOBS} prefix=/app NO_TCLTK=1 NO_PERL=1 NO_PYTHON=1 NO_GETTEXT=1
+        INSTALL_SYMLINKS=1 install
+    cleanup:
+      - /share/gitweb
+      - /share/git-gui
+      - /share/gitk
+      - /share/perl5
+      - /bin/scalar
+      - /bin/git-cvsserver
+      - /bin/git-shell
+    sources:
+      - type: archive
+        url: https://www.kernel.org/pub/software/scm/git/git-2.56.1.tar.xz
+        sha256: f0b0bf89264b9bd2e1c640363e7529643989da76281600473c50745cd34a607f
+        x-checker-data:
+          type: anitya
+          project-id: 5350
+          stable-only: true
+          url-template: https://www.kernel.org/pub/software/scm/git/git-$version.tar.xz
+
   - name: zeno
     buildsystem: simple
     build-options:

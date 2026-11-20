@@ -51,12 +51,13 @@ jobs:
           upload-artifact: true
           artifact-name: zeno-flatpak
 
-      - name: git e ssh no runtime (integração git do Zeno)
+      - name: Conferir o pacote
         run: |
-          for b in git ssh; do
-            f=$FLATPAK_SYSTEM_DIR/runtime/org.gnome.Platform/x86_64/51/active/files/bin/$b
-            if [ -x "$f" ]; then echo "$b: $f"; else echo "$b: ausente no org.gnome.Platform"; fi
-          done
+          ls -la flatpak_app/files/bin
+          # integração git: git vem no pacote, ssh vem do runtime
+          test -x flatpak_app/files/bin/git
+          test -x "$FLATPAK_SYSTEM_DIR/runtime/org.gnome.Platform/x86_64/51/active/files/bin/ssh"
+          cat flatpak_app/metadata
 
       - name: Linter do Flathub (repositório)
         # sem o espelho de screenshots do Flathub, o lint do repo sempre acusa
