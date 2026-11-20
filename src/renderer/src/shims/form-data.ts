@@ -22,8 +22,12 @@ for (const [type, mime] of Object.entries(db)) {
   }
 }
 
-/** path.posix.basename / extname (o Electron roda no Linux) */
-const basename = (p: string): string => p.replace(/\/+$/, '').split('/').pop() ?? ''
+/** path.basename como no Node da plataforma: no Windows também separa em \ (arquivo do seletor) */
+const isWindows = typeof navigator !== 'undefined' && /^win/i.test(navigator.platform ?? '')
+export const basename = (p: string, win = isWindows): string => {
+  const sep = win ? /[\\/]+/ : /\/+/
+  return p.replace(win ? /[\\/]+$/ : /\/+$/, '').split(sep).pop() ?? ''
+}
 function lookup(p: string): string | false {
   const base = basename('x.' + p)
   const i = base.lastIndexOf('.')

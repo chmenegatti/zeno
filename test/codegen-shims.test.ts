@@ -38,3 +38,13 @@ describe('gerar código no renderer: form-data do navegador', () => {
     }
   })
 })
+
+describe('basename do multipart', () => {
+  it('no Windows separa em \\ também; no Linux não', async () => {
+    const { basename } = await import('../src/renderer/src/shims/form-data')
+    expect(basename('C:\\Users\\ana\\foto.png', true)).toBe('foto.png')
+    expect(basename('C:/Users/ana/foto.png', true)).toBe('foto.png')
+    expect(basename('C:\\Users\\ana\\foto.png', false)).toBe('C:\\Users\\ana\\foto.png')
+    expect(basename('/home/ana/foto.png', false)).toBe('foto.png')
+  })
+})
