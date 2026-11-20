@@ -106,3 +106,14 @@ func TestIdaEVoltaNoStore(t *testing.T) {
 		}
 	}
 }
+
+// tags do Zeno não geram aviso; as outras dizem qual (mesmo texto do Electron)
+func TestUnknownTags(t *testing.T) {
+	if got := unknownTags([]string{"https://x/{% uuid 'v4' %}/{% response 'body', 'req_1', '', 'never' %}", "{% timestamp 'unix' %}"}); len(got) != 0 {
+		t.Errorf("conhecidas: %v", got)
+	}
+	got := unknownTags([]string{"https://x/{% minha_tag 'a' %}/{% outra %}", "{% minha_tag 'b' %}"})
+	if strings.Join(got, ", ") != "{% minha_tag %}, {% outra %}" {
+		t.Errorf("desconhecidas: %v", got)
+	}
+}

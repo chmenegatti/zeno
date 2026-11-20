@@ -121,7 +121,6 @@
     }
   ],
   "warnings": [
-    "Loja / Itens / Tag: auth \"oauth2\" não suportada (ficou sem auth)",
-    "Loja / Itens / Tag: usa template tag {% %} (não suportada)"
+    "Loja / Itens / Tag: auth \"oauth2\" não suportada (ficou sem auth)"
   ]
 }

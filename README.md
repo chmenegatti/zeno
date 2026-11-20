@@ -119,6 +119,8 @@ npm run dev
 3. **Defina variáveis**: clique no ✎ ao lado do ambiente ou em ＋ na seção *Variáveis*. Use `{{ base_url }}/recurso` na URL.
 4. **Envie** com `Ctrl+Enter`.
 
+> Quer só experimentar? Importe [`examples/insomnia/github-api.insomnia.json`](examples/insomnia/github-api.insomnia.json) (*Importar… › Arquivo*, ou pela URL do arquivo *raw* no GitHub): requests pra API pública do GitHub com variáveis, dois ambientes, encadeamento com `{% response %}`, scripts com testes, resposta em HTML e imagem. A pasta *Autenticado* usa `github_token`: ponha um token no ambiente Base e marque como segredo pra ele ir pro cofre.
+
 > Tem um `curl` pronto (da documentação ou do *Copy as cURL* do navegador)? Cole no campo de URL: método, headers, body, query, `-u` e Bearer viram campos do request.
 
 ### Atalhos
