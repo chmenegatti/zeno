@@ -15,7 +15,7 @@ func src(name, url string) Source {
 	return Source{Name: name, Text: string(b), URL: url}
 }
 
-// compara com testdata/golden/<nome>.json (saída dos importadores do Electron, testdata/gen.ts)
+// compara com testdata/golden/<nome>.json (saída dos importadores do Electron até a 0.7; referência fixa)
 func golden(t *testing.T, name string, r Result, err error) {
 	t.Helper()
 	want, _ := os.ReadFile(filepath.Join("testdata", "golden", name+".json"))

@@ -2,7 +2,6 @@ package scripts
 
 import (
 	"encoding/base64"
-	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -11,20 +10,6 @@ import (
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 )
-
-// bootstrap.js é o mesmo texto do BOOTSTRAP de src/main/scripts.ts
-func TestMesmaAPIDoElectron(t *testing.T) {
-	b, err := os.ReadFile("../../../src/main/scripts.ts")
-	if err != nil {
-		t.Skip("sem o código do Electron:", err)
-	}
-	s := string(b)
-	start := strings.Index(s, "const BOOTSTRAP = String.raw`") + len("const BOOTSTRAP = String.raw`")
-	end := strings.Index(s[start:], "\n`\n")
-	if s[start:start+end+1] != bootstrap {
-		t.Error("bootstrap.js desatualizado: copie de novo o BOOTSTRAP de src/main/scripts.ts")
-	}
-}
 
 func input() *Doc {
 	return doc.New("phase", "post", "where", "Login", "env", doc.New("tenant", "acme"), "base", doc.New("base_url", "https://x.test"), "vars", doc.New(),

@@ -141,6 +141,7 @@ h2 { margin: 0 0 16px; font-size: clamp(30px, 4.2vw, 44px); line-height: 1.12; l
 .code .k { color: #ff6ac1; }
 .code .s { color: #00ffd4; }
 .code .p { color: #577787; user-select: none; }
+.code .c { color: #577787; }
 .code .ok { color: #00ffd4; }
 .code .bad { color: #ff4d9e; }
 .term { margin: 0; box-shadow: var(--shadow); }

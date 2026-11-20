@@ -59,7 +59,7 @@
         <h1>O cliente de API<br /><span class="grad">que sai do seu caminho</span></h1>
         <p class="lead">
           Uma tela, sem abas. Coleções em arquivos YAML que você versiona no git, segredos criptografados com o chaveiro do sistema
-          e import direto do Insomnia. Código aberto, local primeiro, sem conta.
+          e import direto do Insomnia. Feito em Go, leve, para Linux, Windows e macOS. Código aberto, local primeiro, sem conta.
         </p>
         <div class="cta">
           <a class="btn primary" id="dl-deb" href="https://github.com/chmenegatti/zeno/releases/latest">
@@ -100,7 +100,7 @@
           <article class="card" style="--c: var(--blue)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></svg></div><h3>Uma tela, sem abas</h3><p>Lateral, request e resposta. Clicar troca o conteúdo; nada se empilha. Paleta de comandos com <kbd>Ctrl</kbd>+<kbd>P</kbd>.</p></article>
           <article class="card" style="--c: var(--green)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H7a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2 2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1M16 3h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2 2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-1"/></svg></div><h3>Coleções em YAML</h3><p>Cada request é um arquivo legível na sua pasta. Revise em PR, edite no editor favorito, o app recarrega sozinho.</p></article>
           <article class="card" style="--c: var(--purple)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></div><h3>Encadeamento</h3><p><code>{% response %}</code> pega token, header ou campo de outro request e só reenvia quando o valor expira.</p></article>
-          <article class="card" style="--c: var(--pink)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>Cofre de segredos</h3><p>Senhas e tokens cifrados com AES-256-GCM, chave no gnome-keyring ou KWallet. O YAML pode ir pro git.</p></article>
+          <article class="card" style="--c: var(--pink)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>Cofre de segredos</h3><p>Senhas e tokens cifrados com AES-256-GCM, chave no chaveiro do sistema (gnome-keyring/KWallet, DPAPI, Keychain). O YAML pode ir pro git.</p></article>
           <article class="card" style="--c: var(--orange)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h3>Scripts e asserções</h3><p>JavaScript antes e depois do envio, compatível com Insomnia e Postman, e checagens sem código.</p></article>
           <article class="card" style="--c: var(--lime)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 17 6-6-6-6M12 19h8"/></svg></div><h3>Executor e CLI</h3><p>Rode pastas inteiras com dados CSV/JSON e relatório JUnit, no app ou com <code>zeno run</code> no CI.</p></article>
           <article class="card" style="--c: var(--blue)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></div><h3>Linha do tempo</h3><p>O request exatamente como saiu, cada redirect, DNS, TLS, espera e o certificado do servidor.</p></article>
@@ -302,7 +302,7 @@
             <h3>A partir do código</h3>
 <pre class="code"><code><span class="p">$</span> git clone https://github.com/chmenegatti/zeno
 <span class="p">$</span> cd zeno &amp;&amp; npm install
-<span class="p">$</span> npm run dev</code></pre>
+<span class="p">$</span> npm run dev   <span class="c"># Go 1.26+ e Node 22+</span></code></pre>
           </div>
         </div>
         <div class="cta center">

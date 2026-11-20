@@ -1,5 +1,5 @@
-// Fora do Electron (protótipo Go/Wails, pasta wails/): window.zeno vira chamadas a App.Call(canal, args).
-// No Electron o preload já definiu window.zeno e este arquivo não faz nada.
+// window.zeno: a API do app em cima do Wails (wails/): cada canal vira App.Call(canal, args) no Go e os
+// eventos vêm pelo runtime do Wails.
 
 type Bound = { main: { App: { Call(channel: string, args: string[]): Promise<unknown> } } }
 type WailsRuntime = { EventsOn(name: string, cb: (...a: unknown[]) => void): () => void; BrowserOpenURL(url: string): void }
@@ -89,7 +89,7 @@ if (!w.zeno) {
     /* sem navigator.clipboard */
   }
 
-  // links externos vão pro navegador do sistema (no Electron: setWindowOpenHandler)
+  // links externos vão pro navegador do sistema
   document.addEventListener(
     'click',
     (e) => {

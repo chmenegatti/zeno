@@ -4,5 +4,5 @@
     "strict": true, "skipLibCheck": true, "esModuleInterop": true, "noEmit": true,
     "types": ["node"], "paths": { "@shared/*": ["./src/shared/*"] }
   },
-  "include": ["electron.vite.config.ts", "src/main/**/*", "src/preload/**/*", "src/shared/**/*", "test/**/*"]
+  "include": ["vite.config.ts", "src/shared/**/*", "test/**/*"]
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 )
 
-// copia testdata/electron (pasta escrita pelo Store do Electron, ver testdata/gen.ts) pra um temporário
+// copia testdata/electron (pasta escrita pelo Store do Electron até a 0.7; referência fixa) pra um temporário
 func electronDir(t *testing.T) string {
 	t.Helper()
 	dst := t.TempDir()

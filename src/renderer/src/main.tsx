@@ -1,4 +1,4 @@
-// precisa vir antes de tudo: define window.zeno fora do Electron (protótipo Go)
+// precisa vir antes de tudo: define window.zeno (ponte com o Go)
 import './bridge'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'

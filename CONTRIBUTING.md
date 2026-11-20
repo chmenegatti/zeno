@@ -11,16 +11,16 @@ Obrigado pelo interesse! Este guia explica como propor mudanças de um jeito que
 
 ## Ambiente de desenvolvimento
 
-Requisitos: Node.js 22+ (veja `.nvmrc`), git e Linux, macOS ou Windows.
+Requisitos: Go 1.26+, Node.js 22+ (veja `.nvmrc`), git e Linux, macOS ou Windows. No Linux, também `libgtk-3-dev` e `libwebkit2gtk-4.1-dev` (WebKitGTK); no Windows, o WebView2 (já vem no Windows 10/11).
 
 ```bash
 git clone https://github.com/<seu-usuario>/zeno.git
 cd zeno
 npm install
-npm run dev
+npm run dev        # compila a interface (Vite) e o app (Go + Wails) e abre
 ```
 
-No Linux, se o Electron reclamar do `chrome-sandbox`, o `npm run dev` já passa `--noSandbox`. Para não misturar com seus dados reais, use outra pasta:
+Para não misturar com seus dados reais, use outra pasta:
 
 ```bash
 ZENO_DATA_DIR=/tmp/zeno-dev npm run dev
@@ -29,12 +29,11 @@ ZENO_DATA_DIR=/tmp/zeno-dev npm run dev
 ## Fluxo
 
 1. Faça um fork e crie uma branch a partir da `main`: `feat/123-descricao-curta` ou `fix/123-descricao-curta`.
-2. Escreva testes para o que mudou (`test/*.test.ts`). Lógica pura vai em `src/shared/` para ser testável sem Electron.
+2. Escreva testes para o que mudou: Go em `wails/internal/*/…_test.go`, interface em `test/*.test.ts` (lógica pura vai em `src/shared/`).
 3. Rode tudo antes de abrir o PR:
    ```bash
-   npm run typecheck
-   npm test
-   npm run build
+   npm run typecheck && npm test
+   cd wails && make test vet && make e2e   # e2e abre o app (no Linux sem tela: xvfb-run make e2e)
    ```
 4. Abra o PR preenchendo o modelo, com prints ou GIF quando mexer na interface.
 
@@ -62,19 +61,21 @@ Use um escopo quando ajudar (`cofre`, `import`, `ui`, `http`, `tags`…). Refere
 
 ## Padrões de código
 
-- TypeScript estrito; evite `any`.
+- Go com `gofmt`; TypeScript estrito, evite `any`.
 - Interface em português do Brasil: textos curtos e diretos.
 - Cores sempre pelas variáveis do tema em `src/renderer/src/styles.css`, nunca valores soltos.
-- Segredos nunca chegam decifrados ao renderer, exceto quando o usuário pede para mostrar.
+- Segredos nunca chegam decifrados à interface, exceto quando o usuário pede para mostrar.
+- Canal novo da interface: método em `src/shared/api.ts` e handler em `wails/handlers.go` (ou num `*ops.go`).
 - O formato YAML é contrato com o usuário: mudanças nele precisam continuar lendo arquivos antigos.
 
 ## Estrutura
 
 ```text
-src/main/       processo principal: store YAML, HTTP, cofre, import, tags, IPC
-src/preload/    contextBridge: API tipada exposta como window.zeno
-src/renderer/   interface React (componentes em src/renderer/src/components)
-src/shared/     tipos e lógica pura (templates, variáveis, varredura de segredos)
+wails/          app em Go + Wails: main.go, canais da interface (handlers.go, *ops.go)
+wails/internal/ store YAML, HTTP, motor de envio, cofre, importadores, git, GitHub, executor, CLI, plugins
+wails/e2e/      teste ponta a ponta no app (make e2e)
+src/renderer/   interface React (componentes em src/renderer/src/components; bridge.ts = window.zeno)
+src/shared/     tipos e lógica pura da interface (templates, variáveis, tags, cURL)
 test/           Vitest; fixtures em test/fixtures
 ```
 
