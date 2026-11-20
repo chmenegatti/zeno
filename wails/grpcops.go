@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"net/url"
 	"strings"
 	"time"
@@ -48,6 +49,9 @@ func (a *App) grpcPrep(args Args) (*Doc, vars.Prepared, *grpc.ClientConn, metada
 	if err != nil {
 		return nil, p, nil, nil, err
 	}
+	if len(p.Missing) > 0 {
+		return nil, p, nil, nil, errors.New("variáveis sem valor: " + strings.Join(p.Missing, ", "))
+	}
 	addr, secure, err := grpcc.ParseURL(p.URL)
 	if err != nil {
 		return nil, p, nil, nil, err
@@ -60,7 +64,11 @@ func (a *App) grpcPrep(args Args) (*Doc, vars.Prepared, *grpc.ClientConn, metada
 		}
 		tlsCfg = c
 	}
-	conn, err := grpcc.Dial(addr, tlsCfg)
+	dialer, err := httpc.ProxyDialer(p, secure)
+	if err != nil {
+		return nil, p, nil, nil, err
+	}
+	conn, err := grpcc.Dial(addr, tlsCfg, dialer)
 	if err != nil {
 		return nil, p, nil, nil, err
 	}

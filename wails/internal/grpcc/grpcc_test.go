@@ -3,11 +3,18 @@ package grpcc
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"net"
+	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/chmenegatti/zeno/wails/internal/grpcc/grpctest"
+	"github.com/chmenegatti/zeno/wails/internal/httpc"
+	"github.com/chmenegatti/zeno/wails/internal/vars"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -33,7 +40,7 @@ func TestParseURL(t *testing.T) {
 
 func TestDescribe(t *testing.T) {
 	addr := server(t)
-	conn, _ := Dial(addr, nil)
+	conn, _ := Dial(addr, nil, nil)
 	defer conn.Close()
 	for name, src := range map[string]Source{"reflection": {Conn: conn}, "proto": {ProtoFile: "grpctest/loja.proto"}} {
 		svcs, err := Describe(context.Background(), src)
@@ -68,7 +75,7 @@ func (r rec) wait(t *testing.T, kind string) Event {
 
 func call(t *testing.T, m *Manager, addr, method, first string) {
 	t.Helper()
-	conn, _ := Dial(addr, nil)
+	conn, _ := Dial(addr, nil, nil)
 	md, err := FindMethod(context.Background(), Source{Conn: conn}, "loja.Loja", method)
 	if err != nil {
 		t.Fatal(err)
@@ -151,6 +158,42 @@ func TestChamadas(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 	if m.Active("r") {
 		t.Error("ainda ativa")
+	}
+}
+
+// pelo proxy HTTP do workspace (CONNECT)
+func TestPeloProxy(t *testing.T) {
+	addr := server(t)
+	var tunnels atomic.Int32
+	px := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodConnect {
+			w.WriteHeader(405)
+			return
+		}
+		// loopback nunca passa por proxy: o teste usa loja.test, que o proxy manda pro servidor
+		_, port, _ := net.SplitHostPort(r.Host)
+		up, err := net.Dial("tcp", "127.0.0.1:"+port)
+		if err != nil {
+			w.WriteHeader(502)
+			return
+		}
+		tunnels.Add(1)
+		c, _, _ := w.(http.Hijacker).Hijack()
+		_, _ = c.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+		go func() { _, _ = io.Copy(up, c) }()
+		_, _ = io.Copy(c, up)
+	}))
+	defer px.Close()
+	dialer, err := httpc.ProxyDialer(vars.Prepared{Net: vars.Net{ProxyMode: "custom", ProxyURL: px.URL}}, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, port, _ := net.SplitHostPort(addr)
+	conn, _ := Dial("loja.test:"+port, nil, dialer)
+	defer conn.Close()
+	svcs, err := Describe(context.Background(), Source{Conn: conn})
+	if err != nil || len(svcs) != 1 || tunnels.Load() == 0 {
+		t.Fatalf("%v %v túneis %d", svcs, err, tunnels.Load())
 	}
 }
 

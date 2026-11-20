@@ -21,6 +21,7 @@ import (
 
 	"github.com/chmenegatti/zeno/wails/internal/vars"
 	"golang.org/x/net/http/httpproxy"
+	"golang.org/x/net/proxy"
 	"software.sslmate.com/src/go-pkcs12"
 )
 
@@ -216,11 +217,21 @@ func (t *tunnels) get(addr string) *url.URL {
 // e CONNECT pro destino; o TLS do destino é feito depois, pelo http.Transport, dentro do túnel
 func dialTunnel(ctx context.Context, proxy *url.URL, addr string, roots *x509.CertPool, insecure bool) (net.Conn, error) {
 	port := proxy.Port()
-	if port == "" {
-		port = "443"
+	var conn net.Conn
+	var err error
+	if proxy.Scheme == "http" {
+		// proxy HTTP: CONNECT em texto (gRPC e outros que não passam pelo http.Transport)
+		if port == "" {
+			port = "80"
+		}
+		conn, err = (&net.Dialer{Timeout: 15 * time.Second}).DialContext(ctx, "tcp", net.JoinHostPort(proxy.Hostname(), port))
+	} else {
+		if port == "" {
+			port = "443"
+		}
+		d := &tls.Dialer{NetDialer: &net.Dialer{Timeout: 15 * time.Second}, Config: &tls.Config{ServerName: proxy.Hostname(), RootCAs: roots, InsecureSkipVerify: insecure}}
+		conn, err = d.DialContext(ctx, "tcp", net.JoinHostPort(proxy.Hostname(), port))
 	}
-	d := &tls.Dialer{NetDialer: &net.Dialer{Timeout: 15 * time.Second}, Config: &tls.Config{ServerName: proxy.Hostname(), RootCAs: roots, InsecureSkipVerify: insecure}}
-	conn, err := d.DialContext(ctx, "tcp", net.JoinHostPort(proxy.Hostname(), port))
 	if err != nil {
 		return nil, fmt.Errorf("proxy %s: %w", proxy.Host, err)
 	}
@@ -277,6 +288,49 @@ func NetClient(p vars.Prepared, target *url.URL) (*http.Client, error) {
 		TLSHandshakeTimeout: 15 * time.Second,
 	}
 	return &http.Client{Transport: tr}, nil
+}
+
+// ProxyDialer (#5): conexão TCP até addr pelo proxy do workspace (HTTP/HTTPS com CONNECT ou SOCKS5),
+// respeitando as exceções; sem proxy, direta. secure diz se o destino é TLS (escolhe HTTPS_PROXY)
+func ProxyDialer(p vars.Prepared, secure bool) (func(ctx context.Context, addr string) (net.Conn, error), error) {
+	pf, err := proxyFunc(p.Net, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	roots, err := rootCAs(p.Net.CAFile)
+	if err != nil {
+		return nil, err
+	}
+	direct := &net.Dialer{Timeout: 15 * time.Second}
+	scheme := "http"
+	if secure {
+		scheme = "https"
+	}
+	return func(ctx context.Context, addr string) (net.Conn, error) {
+		if pf == nil {
+			return direct.DialContext(ctx, "tcp", addr)
+		}
+		px, err := pf(&http.Request{URL: &url.URL{Scheme: scheme, Host: addr}})
+		if err != nil {
+			return nil, err
+		}
+		if px == nil {
+			return direct.DialContext(ctx, "tcp", addr)
+		}
+		if px.Scheme == "socks5" || px.Scheme == "socks5h" {
+			var auth *proxy.Auth
+			if px.User != nil {
+				pass, _ := px.User.Password()
+				auth = &proxy.Auth{User: px.User.Username(), Password: pass}
+			}
+			d, err := proxy.SOCKS5("tcp", px.Host, auth, direct)
+			if err != nil {
+				return nil, err
+			}
+			return d.(proxy.ContextDialer).DialContext(ctx, "tcp", addr)
+		}
+		return dialTunnel(ctx, px, addr, roots, p.InsecureTLS)
+	}, nil
 }
 
 // TLSConfig (#5): TLS do workspace (CA própria, certificado de cliente do host de target, aceitar

@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/url"
 	"path/filepath"
 	"sort"
@@ -49,13 +50,19 @@ func ParseURL(raw string) (addr string, secure bool, err error) {
 	return addr, secure, nil
 }
 
-// Dial: conexão (preguiçosa) com TLS do workspace ou sem TLS
-func Dial(addr string, tlsCfg *tls.Config) (*grpc.ClientConn, error) {
+// Dial: conexão (preguiçosa) com TLS do workspace ou sem TLS; dialer (opcional) abre o TCP, ex.: pelo
+// proxy do workspace (recebe host:porta sem resolver, pro proxy decidir)
+func Dial(addr string, tlsCfg *tls.Config, dialer func(context.Context, string) (net.Conn, error)) (*grpc.ClientConn, error) {
 	creds := insecure.NewCredentials()
 	if tlsCfg != nil {
 		creds = credentials.NewTLS(tlsCfg)
 	}
-	return grpc.NewClient(addr, grpc.WithTransportCredentials(creds), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(64<<20)))
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(creds), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(64 << 20))}
+	if dialer != nil {
+		opts = append(opts, grpc.WithContextDialer(dialer))
+		addr = "passthrough:///" + addr
+	}
+	return grpc.NewClient(addr, opts...)
 }
 
 // Method: um método do serviço; Input é um JSON de exemplo da mensagem de entrada
