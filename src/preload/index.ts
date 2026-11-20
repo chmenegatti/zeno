@@ -9,7 +9,7 @@ const call =
     ipcRenderer.invoke(channel, ...args)
 
 const channels = [
-  'load', 'setState', 'createWorkspace', 'saveWorkspace', 'deleteWorkspace',
+  'load', 'setState', 'createWorkspace', 'saveWorkspace', 'deleteWorkspace', 'duplicateWorkspace', 'openWorkspaceDir',
   'createRequest', 'createFolder', 'saveRequest', 'saveFolder', 'deleteNode', 'moveNode', 'duplicate',
   'saveEnvironment', 'deleteEnvironment', 'send', 'cancel', 'responses', 'clearResponses',
   'importPreview', 'importRun', 'pickFile', 'openDataDir',

@@ -59,3 +59,37 @@ export function slugify(name: string): string {
     .slice(0, 60)
   return s || 'sem-nome'
 }
+
+/**
+ * cópia de um workspace com ids novos em todos os níveis (workspace, pastas, requests, ambientes);
+ * referências aos ids antigos dentro dos textos (ex.: {% response 'body', 'req_…' %}) passam a
+ * apontar pra cópia. Sem histórico, cookies nem local (vai pra pasta de dados).
+ */
+export function cloneWorkspace(ws: Workspace, name: string, makeId: typeof newId = newId): Workspace {
+  const ids = new Map<string, string>()
+  const collect = (nodes: TreeNode[]): void =>
+    nodes.forEach((n) => {
+      ids.set(n.id, makeId(n.kind === 'request' ? 'req' : 'fld'))
+      if (n.kind === 'folder') collect(n.children)
+    })
+  ids.set(ws.id, makeId('wrk'))
+  ws.environments.forEach((e) => ids.set(e.id, makeId('env')))
+  collect(ws.children)
+  // ids mais longos primeiro: um id nunca é trocado dentro de outro
+  const old = [...ids.keys()].sort((a, b) => b.length - a.length)
+  const swap = (s: string): string => {
+    if (ids.has(s)) return ids.get(s)!
+    let out = s
+    for (const o of old) if (out.includes(o)) out = out.split(o).join(ids.get(o)!)
+    return out
+  }
+  const walk = (v: unknown): unknown => {
+    if (typeof v === 'string') return swap(v)
+    if (Array.isArray(v)) return v.map(walk)
+    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]))
+    return v
+  }
+  const { location: _loc, ...rest } = ws
+  void _loc
+  return { ...(walk(rest) as Workspace), name }
+}

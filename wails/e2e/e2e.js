@@ -140,6 +140,10 @@
     ok('mover pra raiz', ws && list.find((x) => x.id === wsId).children.some((c) => c.id === d.id))
     list = await z.deleteNode(d.id)
     ok('excluir', !find(list, d.id))
+    const cp = await z.duplicateWorkspace(wsId)
+    const copy = cp.workspaces.find((x) => x.id === cp.id)
+    ok('duplicar workspace', copy && copy.name === 'E2E (cópia)' && copy.id !== wsId && copy.children.length === ws.children.length, copy && copy.name)
+    await z.deleteWorkspace(cp.id)
   })
   await safe('importação', async () => {
     for (const [nome, url] of [['Insomnia v5', B + '/fx/loja.insomnia-v5.yaml'], ['OpenAPI', B + '/fx/loja-openapi.yaml'], ['Postman', B + '/fx/loja.postman_collection.json']]) {

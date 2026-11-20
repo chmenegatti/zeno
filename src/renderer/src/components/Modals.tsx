@@ -13,6 +13,7 @@ import { PluginsModal, PrefsModal, ShortcutsModal } from './Prefs'
 import { CommandPalette } from './CommandPalette'
 import { CookiesModal } from './Cookies'
 import { GitHubModal } from './GitHub'
+import { WorkspacesModal } from './Workspaces'
 import { editorTags } from './Tags'
 import { ScriptsEditor } from './Scripts'
 import { LockIcon, useVaultStatus } from './Secret'
@@ -65,6 +66,8 @@ export function Modals() {
       return <CommandPalette onClose={close} />
     case 'shortcuts':
       return <ShortcutsModal onClose={close} />
+    case 'workspaces':
+      return <WorkspacesModal onClose={close} />
     case 'run':
       return ws ? <RunModal ws={ws} folderId={modal.folderId ?? null} onClose={close} /> : null
   }

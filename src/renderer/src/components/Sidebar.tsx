@@ -303,7 +303,13 @@ function WorkspaceBar() {
       {ws && <button className="btn btn-ghost px-2" title="Configurações do workspace" onClick={() => openModal({ kind: 'workspace', id: ws.id })}>⚙</button>}
       {open && (
         <div className="absolute left-2 right-2 top-[42px] z-40 max-h-[60vh] overflow-auto rounded-lg border border-line bg-raised py-1 shadow-xl" onMouseLeave={() => setOpen(false)}>
-          {workspaces.map((w) => (
+          <button className="flex w-full items-center justify-between px-3 py-1.5 text-left hover:bg-line" onClick={() => { setOpen(false); openModal({ kind: 'workspaces' }) }}>
+            <span>▦ Gerenciar workspaces…</span>
+            <span className="text-[10.5px] text-faint">{kl('Ctrl+Shift+O')}</span>
+          </button>
+          <div className="my-1 border-t border-line" />
+          {/* arquivados ficam fora do menu (aparecem na tela de workspaces) */}
+          {workspaces.filter((w) => !app.wsMeta?.[w.id]?.archived || w.id === ws?.id).map((w) => (
             <button key={w.id} className={`block w-full truncate px-3 py-1.5 text-left hover:bg-line ${w.id === ws?.id ? 'text-accent' : ''}`} onClick={() => { setApp({ activeWorkspaceId: w.id, activeRequestId: undefined }); setOpen(false) }}>
               {w.name}
               {w.location?.linked && <span className="ml-1.5 text-[10.5px] text-faint" title={w.location.dir}>⎇</span>}

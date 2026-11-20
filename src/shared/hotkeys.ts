@@ -32,6 +32,7 @@ export const HOTKEYS: HotkeyDef[] = [
   { id: 'focusResponse', label: 'Focar a resposta', group: 'Interface', keys: ["Ctrl+'"] },
   { id: 'showShortcuts', label: 'Atalhos de teclado', group: 'Interface', keys: ['Ctrl+Shift+/'], global: true },
   { id: 'showPreferences', label: 'Preferências', group: 'Interface', keys: ['Ctrl+,'], global: true },
+  { id: 'workspaces', label: 'Gerenciar workspaces', group: 'Interface', keys: ['Ctrl+Shift+O'] },
   { id: 'workspaceSettings', label: 'Configurações do workspace', group: 'Interface', keys: ['Ctrl+Shift+,'] },
   { id: 'fullscreen', label: 'Tela cheia', group: 'Interface', keys: ['F11'], global: true },
   { id: 'devtools', label: 'Ferramentas de desenvolvedor', group: 'Interface', keys: ['Ctrl+Alt+I', 'Ctrl+Shift+I'], global: true },

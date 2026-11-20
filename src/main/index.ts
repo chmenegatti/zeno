@@ -22,7 +22,7 @@ import { SECRET_RE } from '../shared/secret'
 import { convert, insomniaSkipsTLS, INSOMNIA_DIR, readNedbDir, type ParseResult } from './import-insomnia'
 import { fetchSource, parseSources } from './import-sources'
 import { prepare } from '../shared/prepare'
-import { countTree, findNode, slugify } from '../shared/tree'
+import { cloneWorkspace, countTree, findNode, slugify } from '../shared/tree'
 import type { CookieInfo, Environment, Folder, ImportPreview, RequestDoc, RunOptions, RunReport, Workspace } from '../shared/types'
 
 // promise rejeitada sem tratamento (ex.: num script do usuário) não derruba o app
@@ -105,6 +105,20 @@ handle('setState', (s) => store.setState(s))
 handle('createWorkspace', (name: string) => store.createWorkspace(name))
 handle('saveWorkspace', (doc) => store.saveWorkspace(doc))
 handle('deleteWorkspace', (id: string) => store.deleteWorkspace(id))
+/** cópia com ids novos, na pasta de dados (sem histórico nem cookies) */
+handle('duplicateWorkspace', (id: string) => {
+  const ws = store.list().find((w) => w.id === id)
+  if (!ws) throw new Error('workspace não encontrado')
+  const copy = cloneWorkspace(ws, `${ws.name} (cópia)`)
+  store.writeWorkspace(copy)
+  return { id: copy.id, workspaces: store.load() }
+})
+/** abre a pasta do workspace no gerenciador de arquivos */
+handle('openWorkspaceDir', (id: string) => {
+  const dir = store.list().find((w) => w.id === id)?.location?.dir
+  if (!dir) throw new Error('workspace não encontrado')
+  return shell.openPath(dir).then(() => undefined)
+})
 
 /** vigia também as pastas vinculadas (pull do git aparece na hora) */
 function watchLinks(): void {
