@@ -25,8 +25,20 @@ type ghSaved struct {
 	github.Account
 	// token cifrado no cofre
 	Token string `json:"token"`
-	// último envio/download de cada workspace (#116): pra tela de workspaces dizer se mudou desde então
-	Synced map[string]ghSynced `json:"synced,omitempty"`
+}
+
+// último envio/download de cada workspace (#116), por conta → workspace, em .github-synced.json:
+// fica fora do .github.json pra sobreviver a sair e entrar de novo
+type ghSyncedFile map[string]map[string]ghSynced
+
+func (a *App) ghSyncedPath() string { return filepath.Join(a.store.Dir, ".github-synced.json") }
+
+func (a *App) ghSyncedRead() ghSyncedFile {
+	out := ghSyncedFile{}
+	if b, err := os.ReadFile(a.ghSyncedPath()); err == nil {
+		_ = json.Unmarshal(b, &out)
+	}
+	return out
 }
 
 type ghSynced struct {
@@ -56,14 +68,17 @@ func (a *App) ghMarkSynced(dirs map[string]string, commit string) {
 	if g == nil {
 		return
 	}
-	if g.Synced == nil {
-		g.Synced = map[string]ghSynced{}
+	all := a.ghSyncedRead()
+	if all[g.Login] == nil {
+		all[g.Login] = map[string]ghSynced{}
 	}
 	now := time.Now().UnixMilli()
 	for id, dir := range dirs {
-		g.Synced[id] = ghSynced{Repo: g.Repo, At: now, Commit: commit, Hash: wsHash(dir)}
+		all[g.Login][id] = ghSynced{Repo: g.Repo, At: now, Commit: commit, Hash: wsHash(dir)}
 	}
-	_ = a.ghWrite(g)
+	if b, err := json.MarshalIndent(all, "", "  "); err == nil {
+		_ = os.WriteFile(a.ghSyncedPath(), b, 0o600)
+	}
 }
 
 type deviceFlow struct {
@@ -130,16 +145,10 @@ func (a *App) ghLogin(token, via string) (any, error) {
 		return nil, err
 	}
 	repo := github.DefaultRepo
-	var synced map[string]ghSynced
-	if old := a.ghRead(); old != nil {
-		if old.Repo != "" {
-			repo = old.Repo
-		}
-		if old.Login == u.Login {
-			synced = old.Synced
-		}
+	if old := a.ghRead(); old != nil && old.Repo != "" {
+		repo = old.Repo
 	}
-	g := &ghSaved{Account: github.Account{Login: u.Login, Name: u.Name, Avatar: u.AvatarURL, Repo: repo, Via: via}, Token: enc, Synced: synced}
+	g := &ghSaved{Account: github.Account{Login: u.Login, Name: u.Name, Avatar: u.AvatarURL, Repo: repo, Via: via}, Token: enc}
 	if err := a.ghWrite(g); err != nil {
 		return nil, err
 	}
@@ -307,8 +316,9 @@ func (a *App) registerGitHub() {
 		if g == nil {
 			return out, nil
 		}
+		synced := a.ghSyncedRead()[g.Login]
 		for _, w := range st.List() {
-			sy, ok := g.Synced[w.Str("id")]
+			sy, ok := synced[w.Str("id")]
 			if !ok || sy.Repo != g.Repo {
 				continue
 			}
