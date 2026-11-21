@@ -2,6 +2,17 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [1.4.1](https://github.com/chmenegatti/zeno/compare/v1.4.0...v1.4.1) (2026-11-21)
+
+### Correções
+
+* **Memória depois de resposta grande**: a prévia de 256 KB guardada no histórico segurava o body inteiro (48 MB no teste) na memória; em repouso o app caiu de ~267 MB pra ~231 MB ([#175](https://github.com/chmenegatti/zeno/pull/175))
+
+### Novidades
+
+* **`ZENO_MEMSTATS=1`** grava a memória do Go e de cada processo do app (incluindo os do WebKit no Linux) a cada 10 s, pra diagnosticar problemas de memória ([#175](https://github.com/chmenegatti/zeno/pull/175))
+
+
 ## [1.4.0](https://github.com/chmenegatti/zeno/compare/v1.3.0...v1.4.0) (2026-11-21)
 
 ### Novidades
