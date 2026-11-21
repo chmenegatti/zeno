@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import type { KV } from '@shared/types'
+import { kvToText, textToKv } from '@shared/bulkkv'
 import { isEncrypted } from '@shared/secret'
 import { SecretInput } from './Secret'
 import { TemplateInput } from './Tags'
@@ -25,8 +27,46 @@ export function KeyValueTable<T extends Row>({ rows, onChange, keyPlaceholder, v
     onChange(next.filter((r, j) => j < rows.length || r.name || r.value || r.file) as T[])
   }
   const remove = (i: number) => onChange(rows.filter((_, j) => j !== i))
+  // edição em massa (#148): o texto fica local enquanto digita; cada mudança já vira linhas
+  const [bulk, setBulk] = useState(false)
+  const [text, setText] = useState('')
+  const hasFiles = rows.some((r) => r.file !== undefined)
+  const toggle = (
+    <div className="mb-1 flex justify-end">
+      <button
+        className="btn-ghost btn px-1.5 py-0 text-[11px]"
+        disabled={hasFiles && !bulk}
+        title={hasFiles && !bulk ? t('Linhas com arquivo só na tabela') : t('nome: valor ou nome=valor, uma linha por item; // desliga a linha')}
+        onClick={() => {
+          if (!bulk) setText(kvToText(rows))
+          setBulk(!bulk)
+        }}
+      >
+        {bulk ? t('Tabela') : t('Editar como texto')}
+      </button>
+    </div>
+  )
+  if (bulk) {
+    return (
+      <div className="flex flex-col">
+        {toggle}
+        <textarea
+          autoFocus
+          className="field h-48 w-full resize-y font-mono text-[12px]"
+          value={text}
+          placeholder={t('nome: valor ou nome=valor, uma linha por item; // desliga a linha')}
+          spellCheck={false}
+          onChange={(e) => {
+            setText(e.target.value)
+            onChange(textToKv(e.target.value) as T[])
+          }}
+        />
+      </div>
+    )
+  }
   return (
     <div className="flex flex-col">
+      {toggle}
       {all.map((r, i) => {
         const ghost = i === rows.length
         return (

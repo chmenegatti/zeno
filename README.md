@@ -50,7 +50,7 @@ Popular API clients keep piling on tabs, cloud accounts and ever more crowded sc
 
 | | |
 |---|---|
-| **Full HTTP** | All methods, query and path params (`:id` or `{id}` in the URL become editable rows), headers, JSON/XML/text/form/multipart bodies with file upload, redirects, timeout and cancellation |
+| **Full HTTP** | All methods, query and path params (`:id` or `{id}` in the URL become editable rows), headers (as a table or bulk-edited as text), JSON/XML/text/form/multipart bodies with file upload, redirects, timeout and cancellation |
 | **GraphQL** | Query editor with schema-based autocomplete and validation (introspection against the request URL, with headers and auth), JSON variables with `{{ }}`, operation picker and formatting; imports GraphQL requests from Insomnia and Postman |
 | **WebSocket and SSE** | A `ws://`/`wss://` URL becomes a WebSocket connection: connect, send the body as a message (with variables and tags), timestamped log of sent/received messages, filter and pretty-printed JSON; `text/event-stream` responses show each event as it arrives, with a stop button and an *Events* tab in the history. Auth, cookies, proxy and mTLS work just like HTTP |
 | **gRPC** | A `grpc://host:port` URL (or `grpcs://` for TLS) becomes a gRPC call: services and methods via server reflection or a `.proto` file, JSON message with a sample generated from the schema, unary, server, client and bidi streaming with a timestamped log of each message, status and trailers; headers become metadata, auth and variables work like HTTP; imports gRPC requests from Insomnia |
