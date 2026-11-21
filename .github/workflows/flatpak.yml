@@ -1,0 +1,78 @@
+name: Flatpak
+
+# Monta o pacote do Flathub (packaging/flatpak) do mesmo jeito que o buildbot do Flathub: offline, só com as
+# fontes declaradas no manifesto (app na tag, go-sources.json e node-sources.json). Roda o linter do
+# Flathub e deixa o .flatpak como artefato.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['packaging/flatpak/**', '.github/workflows/flatpak.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flatpak-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flatpak:
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Metainfo (AppStream)
+        run: appstreamcli validate --no-net --explain packaging/flatpak/com.cesarmenegatti.Zeno.metainfo.xml
+
+      # a imagem já traz o flatpak-builder-lint; lint-exceptions.json = exceções que o Flathub precisa
+      # conceder na revisão (--filesystem=home, ver packaging/flatpak/README.md)
+      - name: Linter do Flathub (manifesto)
+        run: flatpak-builder-lint --exceptions --user-exceptions packaging/flatpak/lint-exceptions.json manifest packaging/flatpak/com.cesarmenegatti.Zeno.yml
+
+      # atualizar (ou remover) os runtimes que já vêm na imagem falha no overlayfs do Docker ("Invalid
+      # cross-device link", flatpak/flatpak-github-actions#267): copia a instalação pra uma pasta nova, que
+      # fica toda na camada gravável, e aponta o flatpak pra ela
+      - name: Runtimes da imagem
+        run: |
+          cp -a /var/lib/flatpak /var/lib/flatpak-rw
+          echo "FLATPAK_SYSTEM_DIR=/var/lib/flatpak-rw" >> "$GITHUB_ENV"
+
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: packaging/flatpak/com.cesarmenegatti.Zeno.yml
+          bundle: zeno.flatpak
+          cache-key: flatpak-builder-${{ hashFiles('packaging/flatpak/*.json') }}
+          upload-artifact: true
+          artifact-name: zeno-flatpak
+
+      - name: Conferir o pacote
+        run: |
+          ls -la flatpak_app/files/bin
+          # integração git: git vem no pacote, ssh vem do runtime
+          test -x flatpak_app/files/bin/git
+          test -x "$FLATPAK_SYSTEM_DIR/runtime/org.gnome.Platform/x86_64/51/active/files/bin/ssh"
+          cat flatpak_app/metadata
+
+      - name: Linter do Flathub (repositório)
+        # sem o espelho de screenshots do Flathub, o lint do repo sempre acusa
+        # appstream-screenshots-not-mirrored-in-ostree: esse erro não conta aqui. As screenshots apontam pro
+        # main: enquanto não estiverem lá (PR que as adiciona), appstream-missing-screenshots também não conta
+        run: |
+          flatpak-builder-lint --exceptions --user-exceptions packaging/flatpak/lint-exceptions.json repo repo > lint.json || true
+          cat lint.json
+          shot=$(grep -o 'https://raw.githubusercontent.com/[^<]*' packaging/flatpak/com.cesarmenegatti.Zeno.metainfo.xml | head -1)
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$shot" || true)
+          echo "screenshot no main: HTTP $code"
+          SHOTS_PENDING=$([ "$code" = 200 ] && echo 0 || echo 1) python3 - <<'PY'
+          import json, os, sys
+          ok = {"appstream-screenshots-not-mirrored-in-ostree"}
+          if os.environ["SHOTS_PENDING"] == "1":
+              ok.add("appstream-missing-screenshots")
+          errs = [e for e in json.load(open("lint.json")).get("errors", []) if e not in ok]
+          if errs:
+              sys.exit("erros do linter: " + ", ".join(errs))
+          PY

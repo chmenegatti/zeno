@@ -1,0 +1,5 @@
+{
+  "com.cesarmenegatti.Zeno": {
+    "finish-args-home-filesystem-access": "Wails v2 uses GtkFileChooserDialog (no portal); workspaces are user folders (git repositories) anywhere in home"
+  }
+}

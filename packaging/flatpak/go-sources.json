@@ -1,0 +1,384 @@
+[
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/git.sr.ht/~jackmordaunt/go-toast/v2/@v/v2.0.3.zip",
+    "sha256": "9bb5ce85169e70d3fd58934f471c41ec8d63968e241050fb59a96035f065245f",
+    "strip-components": 4,
+    "dest": "wails/vendor/git.sr.ht/~jackmordaunt/go-toast/v2"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/bep/debounce/@v/v1.2.1.zip",
+    "sha256": "933a341b212aa8388af47dbf9dac10e8911285708471da5275728e236d914033",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/bep/debounce"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/bufbuild/protocompile/@v/v0.14.1.zip",
+    "sha256": "e91f690874eeec2dce2c24b777a79b0569501b4c5014e0360ad746566cf719ef",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/bufbuild/protocompile"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/coder/websocket/@v/v1.8.14.zip",
+    "sha256": "b729277821461eb21a816c16e29a02029dd6abbb1a43b526c1e0a6b794942de0",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/coder/websocket"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/dlclark/regexp2/v2/@v/v2.11.0.zip",
+    "sha256": "d492153b38c482547b347a114d4ccfdb12b4f1f57835d2ce974f914d27e2bad1",
+    "strip-components": 4,
+    "dest": "wails/vendor/github.com/dlclark/regexp2/v2"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/dop251/base64dec/@v/v0.0.0-20231022112746-c6c9f9a96217.zip",
+    "sha256": "c875143b0d6225e49b388a73fd07887217e8693306a3d58cf59d68816978232d",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/dop251/base64dec"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/dop251/goja/@v/v0.0.0-20261118204651-8dfece3d1e1d.zip",
+    "sha256": "ee5dad4d574d31607c974dc5cc72d4da57245923141663675c4b39ab4921fa29",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/dop251/goja"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/dop251/goja_nodejs/@v/v0.0.0-20260918173711-b481721df8a2.zip",
+    "sha256": "9a9dc1d3f3b616c3e88d4dd0c058466e5fc95af6e985b54bd43bbe4f86e006dc",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/dop251/goja_nodejs"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/fsnotify/fsnotify/@v/v1.10.1.zip",
+    "sha256": "b2c6a334e0d518da2e046066bdd9da34cb26bad6df9f17701802d3de522ab016",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/fsnotify/fsnotify"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/gabriel-vasile/mimetype/@v/v1.4.16.zip",
+    "sha256": "8b5a6b5e60c462072f9214676dc9a773f8c38844fa16eebeb37a2901abf26d3e",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/gabriel-vasile/mimetype"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/go-ole/go-ole/@v/v1.3.0.zip",
+    "sha256": "bbf5b3bfa227a5daa06eb16ecdecccc0b20e08749bf103afb523fd72764e727a",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/go-ole/go-ole"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/go-sourcemap/sourcemap/@v/v2.1.4+incompatible.zip",
+    "sha256": "600a00841ed0876868cccaf84ed625d9c6d492b36953848d45f00a565ffeb573",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/go-sourcemap/sourcemap"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/godbus/dbus/v5/@v/v5.2.4.zip",
+    "sha256": "2a3a2996c274cbb735aa7f634dbcc0b292c0dff154447896d3a95955d078fb83",
+    "strip-components": 4,
+    "dest": "wails/vendor/github.com/godbus/dbus/v5"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/golang/protobuf/@v/v1.5.4.zip",
+    "sha256": "9a2f43d3eac8ceda506ebbeb4f229254b87235ce90346692a0e233614182190b",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/golang/protobuf"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/google/pprof/@v/v0.0.0-20240727154555-813a5fbdbec8.zip",
+    "sha256": "22d5ff7b4582b1269199573f80cfc2c1ad251ed7dab03d0ee73b9af166172a52",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/google/pprof"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/google/uuid/@v/v1.6.0.zip",
+    "sha256": "d0f02f377217f42702e259684e06441edbf5140dddcc34ba9bea56038b38a6ed",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/google/uuid"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/gorilla/websocket/@v/v1.5.3.zip",
+    "sha256": "dbbd31dd0f08548c5dc43e4c2f12bbba66abff5252b224b1cd06afbb72783a76",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/gorilla/websocket"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/jchv/go-winloader/@v/v0.0.0-20210711035445-715c2860da7e.zip",
+    "sha256": "40edcc981971f657f6b638a2de1800ffea99ccf19b019d0ec9197742f4ef9b70",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/jchv/go-winloader"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/jhump/protoreflect/@v/v1.17.0.zip",
+    "sha256": "9d3b30e1d635f8116a746b1e59fd6bd1edeb11f9f32fc267c92a8765c5644efe",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/jhump/protoreflect"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/labstack/echo/v4/@v/v4.16.1.zip",
+    "sha256": "4c7d718291cd0153737b17d6ae0d06e2af1db746b4ea91a5326891a1b07358b2",
+    "strip-components": 4,
+    "dest": "wails/vendor/github.com/labstack/echo/v4"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/labstack/gommon/@v/v0.5.0.zip",
+    "sha256": "499054481c1a9e3e90b18a252868c518eb0a8b2803a3d280f44347a879a1566b",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/labstack/gommon"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/leaanthony/go-ansi-parser/@v/v1.6.1.zip",
+    "sha256": "4239fdf34ee1768900cf0d906ee024c2439578cd620b1cf7f18620398d8a4bf0",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/leaanthony/go-ansi-parser"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/leaanthony/gosod/@v/v1.0.4.zip",
+    "sha256": "aa5804f32c0c9a7894d15e57f79ca1a065ed3425132b88f649308739dc258714",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/leaanthony/gosod"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/leaanthony/slicer/@v/v1.6.0.zip",
+    "sha256": "96814c869cc516eba57fb64be860e1e683c60458719330190b8d5075be49e142",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/leaanthony/slicer"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/leaanthony/u/@v/v1.1.1.zip",
+    "sha256": "c116b7b2c99cd09779119d1fbea554330825fe73bc1514cce683b98d45301dd8",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/leaanthony/u"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/mattn/go-colorable/@v/v0.1.15.zip",
+    "sha256": "221144f51cc5eeda0a72bd7b5832181b94240c1d760bde0b3428895e63e63339",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/mattn/go-colorable"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/mattn/go-isatty/@v/v0.0.22.zip",
+    "sha256": "aee31e550fcdffd1fc4b8e7e7fa8bb59aa4311f9c0b51893f8c6837f8c3f7f37",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/mattn/go-isatty"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/pkg/browser/@v/v0.0.0-20240102092130-5ac0b6a4141c.zip",
+    "sha256": "8524ae36d809564d1f218978593b5c565cf3ee8dccd035d66b336ad0c56e60d1",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/pkg/browser"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/pkg/errors/@v/v0.9.1.zip",
+    "sha256": "d4c36b8bcd0616290a3913215e0f53b931bd6e00670596f2960df1b44af2bd07",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/pkg/errors"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/rivo/uniseg/@v/v0.4.7.zip",
+    "sha256": "b995e4aa0cc1e5779cc61138ac925cb8c1e963e40c80e4b93ee8553812ebb792",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/rivo/uniseg"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/samber/lo/@v/v1.49.1.zip",
+    "sha256": "d29ab816679f83ee880b811f6cb5b401d8dd807411a2515207b05702b06f61b2",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/samber/lo"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/tkrajina/go-reflector/@v/v0.5.8.zip",
+    "sha256": "2685fc2661c19df877c0c1c9ff0dcbda8990b71377af8c9a3cafbfb52d3c01df",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/tkrajina/go-reflector"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/valyala/bytebufferpool/@v/v1.0.0.zip",
+    "sha256": "7f59f32c568539afee9a21a665a4156962b019beaac8404e26ba37af056b4f1e",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/valyala/bytebufferpool"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/valyala/fasttemplate/@v/v1.2.2.zip",
+    "sha256": "86f15c8e9fa85757afe7a865402f1fd6208e85bde797cd934b3a2cf64b5a9f4d",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/valyala/fasttemplate"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/wailsapp/go-webview2/@v/v1.0.22.zip",
+    "sha256": "d4e1672a78da165f25de8773dd27429b215f21379f434c9d8b419b8152a0b869",
+    "strip-components": 3,
+    "dest": "wails/vendor/github.com/wailsapp/go-webview2"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/github.com/wailsapp/wails/v2/@v/v2.17.1.zip",
+    "sha256": "b4605bedc1f4d1c0f5991357cc92dd5bc7c80a196067614686b755afa1785913",
+    "strip-components": 4,
+    "dest": "wails/vendor/github.com/wailsapp/wails/v2"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/golang.org/x/crypto/@v/v0.59.0.zip",
+    "sha256": "b5cff645013a39d6b3348dce3c53eb452de71309f9a6831c5b12b3f8d6caf1d2",
+    "strip-components": 3,
+    "dest": "wails/vendor/golang.org/x/crypto"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/golang.org/x/net/@v/v0.62.0.zip",
+    "sha256": "50e869800f4921e910eb6550369f937c7187d130a7f7f78a26ef9b589a7071a6",
+    "strip-components": 3,
+    "dest": "wails/vendor/golang.org/x/net"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/golang.org/x/oauth2/@v/v0.38.0.zip",
+    "sha256": "d5a749d3b9bc1ccaaa21642643771f3164f2f56b0fa024b4fa2fce1ddfa28c90",
+    "strip-components": 3,
+    "dest": "wails/vendor/golang.org/x/oauth2"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/golang.org/x/sync/@v/v0.25.0.zip",
+    "sha256": "c27da17d7e217dec0c2f8c715e5ce2b92815fa76fc08da13c41a73dd6a67dfe0",
+    "strip-components": 3,
+    "dest": "wails/vendor/golang.org/x/sync"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/golang.org/x/sys/@v/v0.50.0.zip",
+    "sha256": "b115e8a144a7c9d1df3ffb8af20b283e162844b5b624a97ee342955cca69b9e6",
+    "strip-components": 3,
+    "dest": "wails/vendor/golang.org/x/sys"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/golang.org/x/text/@v/v0.44.0.zip",
+    "sha256": "e51c60a7d121a493048b1638023983ce183bd5d70df1db495423ce1415663202",
+    "strip-components": 3,
+    "dest": "wails/vendor/golang.org/x/text"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/google.golang.org/genproto/googleapis/rpc/@v/v0.0.0-20250218202821-56aae31c358a.zip",
+    "sha256": "6f468a8794718d79daaa8d424ff8479a07d86620968842b8251c9d3861343f15",
+    "strip-components": 4,
+    "dest": "wails/vendor/google.golang.org/genproto/googleapis/rpc"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/google.golang.org/grpc/@v/v1.72.2.zip",
+    "sha256": "1771ddbb42f96576b3fb19bf6895d1bebbbf07197f375d2fa2cc4be2f6431cc2",
+    "strip-components": 2,
+    "dest": "wails/vendor/google.golang.org/grpc"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/google.golang.org/protobuf/@v/v1.36.5.zip",
+    "sha256": "bef3555844d24e73f06b2c2e653bfd4ab4e3c79f4150def6ee9be45f0e2e81b5",
+    "strip-components": 2,
+    "dest": "wails/vendor/google.golang.org/protobuf"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/gopkg.in/yaml.v3/@v/v3.0.1.zip",
+    "sha256": "aab8fbc4e6300ea08e6afe1caea18a21c90c79f489f52c53e2f20431f1a9a015",
+    "strip-components": 2,
+    "dest": "wails/vendor/gopkg.in/yaml.v3"
+  },
+  {
+    "type": "archive",
+    "archive-type": "zip",
+    "url": "https://proxy.golang.org/software.sslmate.com/src/go-pkcs12/@v/v0.7.4.zip",
+    "sha256": "dbcf951b55999cc322fa6eedda3aa28d2dbc7d7d55cee1411283f4ede004d223",
+    "strip-components": 3,
+    "dest": "wails/vendor/software.sslmate.com/src/go-pkcs12"
+  },
+  {
+    "type": "file",
+    "path": "go-modules.txt",
+    "dest": "wails/vendor",
+    "dest-filename": "modules.txt"
+  }
+]

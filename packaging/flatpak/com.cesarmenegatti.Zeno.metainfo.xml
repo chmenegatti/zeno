@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.cesarmenegatti.Zeno</id>
+
+  <name>Zeno</name>
+  <summary>Focused API client for REST, GraphQL, gRPC and WebSocket</summary>
+  <developer id="com.cesarmenegatti">
+    <name>Cesar Menegatti</name>
+  </developer>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <description>
+    <p>
+      Zeno is a local-first, tab-less desktop API client. Collections live in the sidebar, the request in
+      the middle and the response on the right: clicking a request swaps the content and nothing piles up.
+      There is no account, no cloud and no telemetry.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>REST with every method, params, headers and JSON, XML, form or multipart bodies</li>
+      <li>GraphQL with schema-based autocomplete, gRPC (reflection or .proto), WebSocket and Server-Sent Events</li>
+      <li>Collections stored as readable YAML files that you can keep and review in a git repository</li>
+      <li>Secrets encrypted inside the YAML, with the key kept in the system keyring</li>
+      <li>Environments with inherited variables, request chaining, scripts and assertions</li>
+      <li>OAuth 2.0, proxies, custom CA and client certificates (mTLS)</li>
+      <li>Local mock server built from saved response examples</li>
+      <li>Import from Insomnia and Postman, export to Insomnia and Postman, code generation in 20 languages</li>
+      <li>English or Portuguese interface, 20 themes and a command palette</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">com.cesarmenegatti.Zeno.desktop</launchable>
+  <provides>
+    <binary>zeno</binary>
+  </provides>
+
+  <url type="homepage">https://www.cesarmenegatti.com/zeno/</url>
+  <url type="bugtracker">https://github.com/chmenegatti/zeno/issues</url>
+  <url type="vcs-browser">https://github.com/chmenegatti/zeno</url>
+  <url type="contribute">https://github.com/chmenegatti/zeno/blob/main/CONTRIBUTING.md</url>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#a6f4ff</color>
+    <color type="primary" scheme_preference="dark">#00121c</color>
+  </branding>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>A request and its response on a single screen</caption>
+      <image>https://raw.githubusercontent.com/chmenegatti/zeno/main/packaging/flatpak/screenshots/hero-dark.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Light theme</caption>
+      <image>https://raw.githubusercontent.com/chmenegatti/zeno/main/packaging/flatpak/screenshots/hero-light.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>GraphQL with schema-based autocomplete</caption>
+      <image>https://raw.githubusercontent.com/chmenegatti/zeno/main/packaging/flatpak/screenshots/graphql.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>gRPC call with server reflection</caption>
+      <image>https://raw.githubusercontent.com/chmenegatti/zeno/main/packaging/flatpak/screenshots/grpc.png</image>
+    </screenshot>
+  </screenshots>
+
+  <requires>
+    <display_length compare="ge">900</display_length>
+  </requires>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="1.2.0" date="2026-11-20">
+      <url type="details">https://github.com/chmenegatti/zeno/releases/tag/v1.2.0</url>
+      <description>
+        <p>Zeno in English: the interface and the app messages are now in English by default, with Portuguese available in Preferences.</p>
+      </description>
+    </release>
+    <release version="1.1.0" date="2026-11-20">
+      <url type="details">https://github.com/chmenegatti/zeno/releases/tag/v1.1.0</url>
+      <description>
+        <p>Beyond REST: GraphQL, WebSocket, Server-Sent Events and gRPC, full OAuth 2.0, proxy, custom CA and mTLS, a mock server and export to Insomnia and Postman.</p>
+      </description>
+    </release>
+    <release version="1.0.0" date="2026-11-20">
+      <url type="details">https://github.com/chmenegatti/zeno/releases/tag/v1.0.0</url>
+      <description>
+        <p>Zeno rewritten in Go with the system web view: lighter and faster, with a new workspaces screen and a standalone command-line runner.</p>
+      </description>
+    </release>
+  </releases>
+</component>
