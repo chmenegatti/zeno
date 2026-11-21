@@ -219,7 +219,17 @@ type Part struct {
 func Prepare(ws, req *Doc, anc []*Doc, envID string, tagValues map[string]string) Prepared {
 	r := &renderer{vars: BuildVars(ws, envID, anc), tags: tagValues, missing: map[string]bool{}, unsupported: map[string]bool{}}
 	R := func(s string) string { return r.render(s, 0) }
-	u := strings.TrimSpace(R(req.Str("url")))
+	// :id / {id} no path viram o valor (com variáveis); sem valor, o trecho fica como está
+	pathValues := map[string]string{}
+	for _, x := range req.List("pathParams") {
+		if p, ok := x.(*Doc); ok {
+			pathValues[p.Str("name")] = p.Str("value")
+		}
+	}
+	u := strings.TrimSpace(R(ReplacePathParams(req.Str("url"), func(n string) (string, bool) {
+		v := pathValues[n]
+		return v, v != ""
+	})))
 	if u != "" && !schRe.MatchString(u) && !strings.HasPrefix(u, "{{") && !strings.HasPrefix(u, "{%") {
 		u = "http://" + u
 	}

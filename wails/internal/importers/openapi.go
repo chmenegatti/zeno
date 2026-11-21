@@ -1,7 +1,7 @@
 package importers
 
 // OpenAPI 3.x e Swagger 2.0 → workspace: uma pasta por tag, um request por operação, base_url no
-// ambiente Base, parâmetros de path como {{ variável }} e body de exemplo (port de
+// ambiente Base, parâmetros de path como {id} na URL (valor do exemplo no request) e body de exemplo (port de
 // src/main/import-openapi.ts).
 
 import (
@@ -191,8 +191,6 @@ func serverURL(d *Doc, sourceURL string) string {
 	return strings.TrimRight(u, "/")
 }
 
-var pathParamRe = regexp.MustCompile(`\{([^}]+)\}`)
-
 // ConvertOpenAPI: spec → workspace
 func ConvertOpenAPI(spec any, sourceURL string) Result {
 	w := &warner{uniq: true}
@@ -303,6 +301,7 @@ func ConvertOpenAPI(spec any, sourceURL string) Result {
 			}
 			body := doc.New("mime", nil)
 			formFields := []any{}
+			var pathParams []any
 			for _, p := range byKey.list() {
 				var ex any
 				switch {
@@ -334,7 +333,10 @@ func ConvertOpenAPI(spec any, sourceURL string) Result {
 				}
 				switch p.Get("in") {
 				case "path":
-					addVar(p.Str("name"), blank())
+					// {id} fica na URL (parâmetro de caminho, #149); o exemplo vira o valor
+					if v := blank(); v != "" {
+						pathParams = append(pathParams, doc.New("name", p.Str("name"), "value", v))
+					}
 				case "query":
 					params = append(params, doc.New("name", p.Get("name"), "value", blank(), "enabled", truthy(p.Get("required"))))
 				case "header":
@@ -388,8 +390,11 @@ func ConvertOpenAPI(spec any, sourceURL string) Result {
 			req := doc.New("kind", "request", "id", StableID("req", wsID, m, path), "name", name)
 			setDef(req, "description", orNil(str(op.Get("description"))))
 			req.Set("method", strings.ToUpper(m))
-			req.Set("url", "{{ base_url }}"+pathParamRe.ReplaceAllString(path, "{{ $1 }}"))
+			req.Set("url", "{{ base_url }}"+path)
 			req.Set("params", params)
+			if len(pathParams) > 0 {
+				req.Set("pathParams", pathParams)
+			}
 			req.Set("headers", headers)
 			req.Set("body", body)
 			switch {

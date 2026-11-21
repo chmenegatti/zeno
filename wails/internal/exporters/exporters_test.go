@@ -30,8 +30,8 @@ func sample() *Doc {
        {"kind": "request", "id": "req_listar", "name": "Listar", "method": "GET", "url": "{{ base }}/itens",
         "params": [{"name": "q", "value": "{{ user }}", "enabled": true}, {"name": "off", "value": "1", "enabled": false}],
         "headers": [{"name": "X-A", "value": "a", "enabled": true}], "body": {"mime": null}, "auth": {"type": "inherit"}, "sortKey": 0},
-       {"kind": "request", "id": "req_criar", "name": "Criar", "method": "POST", "url": "{{ base }}/itens",
-        "params": [], "headers": [], "body": {"mime": "application/json", "text": "{\"nome\": \"{{ user }}\"}"},
+       {"kind": "request", "id": "req_criar", "name": "Criar", "method": "POST", "url": "{{ base }}/itens/:grupo",
+        "params": [], "pathParams": [{"name": "grupo", "value": "{{ user }}"}], "headers": [], "body": {"mime": "application/json", "text": "{\"nome\": \"{{ user }}\"}"},
         "auth": {"type": "basic", "username": "ana", "password": "s3"}, "sortKey": 1}
      ]},
     {"kind": "request", "id": "req_gql", "name": "GraphQL", "method": "POST", "url": "{{ base }}/graphql", "params": [], "headers": [],

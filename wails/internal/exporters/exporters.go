@@ -18,6 +18,7 @@ import (
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 	"github.com/chmenegatti/zeno/wails/internal/github"
 	"github.com/chmenegatti/zeno/wails/internal/i18n"
+	"github.com/chmenegatti/zeno/wails/internal/vars"
 	"github.com/chmenegatti/zeno/wails/internal/vault"
 )
 
@@ -279,9 +280,12 @@ func Insomnia(ws []*Doc) (Result, error) {
 				body = doc.New()
 			}
 			r := doc.New("_id", n.Str("id"), "_type", "request", "parentId", parent, "name", n.Str("name"), "description", n.Str("description"),
-				"method", n.Str("method"), "url", n.Str("url"), "parameters", insKV(kvs(n, "params")), "headers", insKV(kvs(n, "headers")),
+				"method", n.Str("method"), "url", colonPath(n.Str("url")), "parameters", insKV(kvs(n, "params")), "headers", insKV(kvs(n, "headers")),
 				"body", insBody(body), "authentication", insAuth(n.Map("auth")), "metaSortKey", sk(n),
 				"settingSendCookies", n.Get("sendCookies") != false, "settingStoreCookies", n.Get("storeCookies") != false)
+			if pp := pathParams(n, "name"); len(pp) > 0 {
+				r.Set("pathParameters", pp)
+			}
 			scripts(r, n)
 			res = append(res, r)
 		}
@@ -497,7 +501,7 @@ func pmItems(list []*Doc, trail string, w *warner) []any {
 			out = append(out, f)
 			continue
 		}
-		raw := pmText(n.Str("url"), where, w)
+		raw := pmText(colonPath(n.Str("url")), where, w)
 		q := pmKV(kvs(n, "params"), where, w)
 		full := raw
 		var on []string
@@ -517,6 +521,9 @@ func pmItems(list []*Doc, trail string, w *warner) []any {
 		u := doc.New("raw", full)
 		if len(q) > 0 {
 			u.Set("query", q)
+		}
+		if pv := pathParams(n, "key"); len(pv) > 0 {
+			u.Set("variable", pv)
 		}
 		r := doc.New("method", n.Str("method"), "header", pmKV(kvs(n, "headers"), where, w), "url", u)
 		if b := n.Map("body"); b != nil {
@@ -613,4 +620,24 @@ func Postman(ws []*Doc) (Result, error) {
 		return Result{}, err
 	}
 	return Result{Data: buf.Bytes(), Name: baseName(ws, "zeno-workspaces") + ".postman.zip", Warnings: w.list}, nil
+}
+
+// colonPath: Insomnia e Postman só entendem :id; {id} (OpenAPI) vira :id (#149)
+func colonPath(u string) string {
+	return vars.ReplacePathParams(u, func(n string) (string, bool) { return ":" + n, true })
+}
+
+// pathParams: valores dos parâmetros de caminho que estão na URL; key = "name" (Insomnia) ou "key" (Postman)
+func pathParams(n *Doc, key string) []any {
+	vals := map[string]string{}
+	for _, x := range n.List("pathParams") {
+		if p, ok := x.(*Doc); ok {
+			vals[p.Str("name")] = p.Str("value")
+		}
+	}
+	out := []any{}
+	for _, name := range vars.PathParamNames(n.Str("url")) {
+		out = append(out, doc.New(key, name, "value", vals[name]))
+	}
+	return out
 }

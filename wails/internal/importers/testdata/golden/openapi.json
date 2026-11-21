@@ -16,7 +16,6 @@
           "data": {
             "base_url": "https://api.loja.test/v1",
             "token": "",
-            "id": "p-1",
             "chave": ""
           },
           "sortKey": 0
@@ -96,8 +95,14 @@
               "id": "req_050fb8fc2017079c7b556637",
               "name": "obterProduto",
               "method": "GET",
-              "url": "{{ base_url }}/produtos/{{ id }}",
+              "url": "{{ base_url }}/produtos/{id}",
               "params": [],
+              "pathParams": [
+                {
+                  "name": "id",
+                  "value": "p-1"
+                }
+              ],
               "headers": [],
               "body": {
                 "mime": null
@@ -115,8 +120,14 @@
               "id": "req_789d3bf57e8f2141284e6d7d",
               "name": "Apagar produto (obsoleto)",
               "method": "DELETE",
-              "url": "{{ base_url }}/produtos/{{ id }}",
+              "url": "{{ base_url }}/produtos/{id}",
               "params": [],
+              "pathParams": [
+                {
+                  "name": "id",
+                  "value": "p-1"
+                }
+              ],
               "headers": [],
               "body": {
                 "mime": null
@@ -131,7 +142,7 @@
               "id": "req_713c926a7cb3bd8889567c89",
               "name": "Enviar foto",
               "method": "PUT",
-              "url": "{{ base_url }}/produtos/{{ id }}/foto",
+              "url": "{{ base_url }}/produtos/{id}/foto",
               "params": [],
               "headers": [],
               "body": {

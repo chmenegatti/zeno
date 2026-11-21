@@ -13,8 +13,7 @@
           "name": "Base",
           "parentId": null,
           "data": {
-            "baseUrl": "https://loja.test",
-            "id": "p-1"
+            "baseUrl": "https://loja.test"
           },
           "sortKey": 0
         },
@@ -50,7 +49,7 @@
               "id": "req_eb0a08c0b9b79f2657ffb641",
               "name": "Obter produto",
               "method": "GET",
-              "url": "{{baseUrl}}/produtos/{{ id }}",
+              "url": "{{baseUrl}}/produtos/:id",
               "params": [
                 {
                   "name": "campos",
@@ -61,6 +60,12 @@
                   "name": "x",
                   "value": "{{$randomInt}}",
                   "enabled": true
+                }
+              ],
+              "pathParams": [
+                {
+                  "name": "id",
+                  "value": "p-1"
                 }
               ],
               "headers": [

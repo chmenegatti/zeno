@@ -16,8 +16,7 @@
           "data": {
             "base_url": "https://loja.test/api",
             "username": "",
-            "password": "",
-            "itemId": "0"
+            "password": ""
           },
           "sortKey": 0
         }
@@ -39,12 +38,18 @@
               "id": "req_1fa0d00bccee3c48dbb47355",
               "name": "Atualizar item",
               "method": "PUT",
-              "url": "{{ base_url }}/itens/{{ itemId }}",
+              "url": "{{ base_url }}/itens/{itemId}",
               "params": [
                 {
                   "name": "status",
                   "value": "ativo",
                   "enabled": false
+                }
+              ],
+              "pathParams": [
+                {
+                  "name": "itemId",
+                  "value": "0"
                 }
               ],
               "headers": [],
@@ -64,8 +69,14 @@
               "id": "req_3b255192341f0c44b4c1c26e",
               "name": "Anexar",
               "method": "POST",
-              "url": "{{ base_url }}/itens/{{ itemId }}/anexo",
+              "url": "{{ base_url }}/itens/{itemId}/anexo",
               "params": [],
+              "pathParams": [
+                {
+                  "name": "itemId",
+                  "value": "0"
+                }
+              ],
               "headers": [],
               "body": {
                 "mime": "multipart/form-data",

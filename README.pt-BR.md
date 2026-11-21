@@ -48,7 +48,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 
 | | |
 |---|---|
-| **HTTP completo** | Todos os métodos, params, headers, body JSON/XML/texto/form/multipart com arquivo, redirects, timeout e cancelamento |
+| **HTTP completo** | Todos os métodos, params de query e de caminho (`:id` ou `{id}` na URL viram linhas editáveis), headers, body JSON/XML/texto/form/multipart com arquivo, redirects, timeout e cancelamento |
 | **GraphQL** | Editor de consulta com autocomplete e validação pelo schema (introspecção na URL do request, com headers e auth), variáveis em JSON com `{{ }}`, escolha da operação e formatação; importa o GraphQL do Insomnia e do Postman |
 | **WebSocket e SSE** | URL `ws://`/`wss://` vira conexão WebSocket: conectar, mandar o body como mensagem (com variáveis e tags), log com horário de enviadas/recebidas, filtro e JSON formatado; respostas `text/event-stream` mostram cada evento conforme chega, com parar e aba *Eventos* no histórico. Auth, cookies, proxy e mTLS iguais ao HTTP |
 | **gRPC** | URL `grpc://host:porta` (ou `grpcs://` com TLS) vira chamada gRPC: serviços e métodos por server reflection ou por um arquivo `.proto`, mensagem em JSON com exemplo gerado do schema, unary, server, client e bidi streaming com log de cada mensagem e horário, status e trailers; headers viram metadata, auth e variáveis iguais ao HTTP; importa o gRPC do Insomnia |

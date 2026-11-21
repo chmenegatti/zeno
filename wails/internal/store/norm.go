@@ -68,6 +68,21 @@ func kvList(v any) []any {
 	return out
 }
 
+// pathParams (#149): só nome e valor; sem nenhum, o campo não vai pro YAML
+func pathParamList(v any) any {
+	arr, _ := v.([]any)
+	out := []any{}
+	for _, it := range arr {
+		if m, ok := it.(*Doc); ok && m.Str("name") != "" {
+			out = append(out, doc.New("name", m.Str("name"), "value", m.Str("value")))
+		}
+	}
+	if len(out) == 0 {
+		return undef
+	}
+	return out
+}
+
 func authOf(v any) any {
 	if m, ok := v.(*Doc); ok && m.Has("type") {
 		return m
@@ -192,6 +207,7 @@ func normRequest(raw *Doc, fallback string) *Doc {
 	r.Set("method", method)
 	r.Set("url", raw.Str("url"))
 	r.Set("params", kvList(raw.Get("params")))
+	r.Set("pathParams", pathParamList(raw.Get("pathParams")))
 	r.Set("headers", kvList(raw.Get("headers")))
 	r.Set("body", body)
 	r.Set("auth", authOf(raw.Get("auth")))
