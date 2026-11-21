@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { buildTag, FIELDS, findRequestRef, FN_NAMES, FN_SPECS, parseArgs, parseTag, TAG_CHOICES, TRIGGERS, type FnName, type ResponseTag, type TagDef } from '@shared/tagdef'
 import { findNode, sortNodes } from '@shared/tree'
-import { matchVars, openVarAt, tokenize } from '@shared/vars'
+import { dropToken, matchVars, openVarAt, tokenize } from '@shared/vars'
 import type { PluginArg, PluginInfo, PluginTagInfo, TreeNode, Workspace } from '@shared/types'
 import type { PromptAsk } from '@shared/api'
 import { activeWorkspace, api, useStore } from '../state'
 import { MethodBadge, Modal } from './ui'
 import { FAKER } from '@shared/faker'
-import { editorVars, useVarSources, VarBadge, varOptions } from './Vars'
+import { editorVars, useVarSources, VarBadge, varDrag, varOptions } from './Vars'
 import type { TagSupport } from './CodeEditor'
 import { Select } from './Select'
 import { locale, t, tk } from '@shared/i18n'
@@ -255,6 +255,8 @@ export function TemplateInput({ value, onChange, placeholder, className = '', pa
   const tokens = useMemo(() => tokenize(value), [value])
   const hasTokens = tokens.some((x) => x.t !== 'text')
   const ac = useVarAutocomplete(value, onChange, ref)
+  const owner = useRef({}).current
+  const [over, setOver] = useState(false)
   useEffect(() => {
     if (editing) ref.current?.focus()
   }, [editing])
@@ -297,28 +299,60 @@ export function TemplateInput({ value, onChange, placeholder, className = '', pa
       </>
     )
   }
+  const lens = tokens.map((tok) => (tok.t === 'text' ? tok.v.length : tok.raw.length))
+  const starts = lens.map((_, i) => lens.slice(0, i).reduce((a, b) => a + b, 0))
   // troca o token na posição i pelo texto novo
   const replaceAt = (i: number, next: string) => {
-    let pos = 0
-    for (let j = 0; j < i; j++) pos += tokens[j].t === 'text' ? (tokens[j] as { v: string }).v.length : (tokens[j] as { raw: string }).raw.length
     const raw = (tokens[i] as { raw: string }).raw
-    onChange(value.slice(0, pos) + next + value.slice(pos + raw.length))
+    onChange(value.slice(0, starts[i]) + next + value.slice(starts[i] + raw.length))
+  }
+  // posição no texto sob o ponteiro: dentro de um trecho de texto, o caractere; num badge, antes ou depois dele
+  const dropPos = (e: React.DragEvent): number => {
+    const d = document as Document & { caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null }
+    const r = d.caretRangeFromPoint?.(e.clientX, e.clientY)
+    const c = r ? { node: r.startContainer, offset: r.startOffset } : (() => { const p = d.caretPositionFromPoint?.(e.clientX, e.clientY); return p && { node: p.offsetNode, offset: p.offset } })()
+    const el = (e.target as Element).closest?.('[data-tok]') as HTMLElement | null
+    if (!el || !e.currentTarget.contains(el)) return value.length
+    const i = Number(el.dataset.tok)
+    if (tokens[i].t === 'text' && !password && c && c.node.nodeType === Node.TEXT_NODE && el.contains(c.node)) return starts[i] + Math.min(c.offset, lens[i])
+    const rect = el.getBoundingClientRect()
+    return starts[i] + (e.clientX > rect.left + rect.width / 2 ? lens[i] : 0)
   }
   return (
     <div
       tabIndex={0}
-      className={`field flex min-w-0 flex-1 cursor-text items-center gap-0.5 overflow-hidden whitespace-nowrap font-mono ${className}`}
+      className={`field flex min-w-0 flex-1 cursor-text items-center gap-0.5 overflow-hidden whitespace-nowrap font-mono ${over ? 'ring-1 ring-tblue/60' : ''} ${className}`}
       onClick={() => setEditing(true)}
-      onFocus={(e) => e.target === e.currentTarget && setEditing(true)}
+      // clicar num badge também foca o campo; aí o clique é do badge, não edição
+      onFocus={(e) => e.target === e.currentTarget && Date.now() - varDrag.pressAt > 300 && setEditing(true)}
+      onDragOver={(e) => {
+        if (!varDrag.cur) return
+        e.preventDefault()
+        e.dataTransfer.dropEffect = varDrag.cur.from?.owner === owner ? 'move' : 'copy'
+        setOver(true)
+      }}
+      onDragLeave={(e) => !e.currentTarget.contains(e.relatedTarget as Node) && setOver(false)}
+      onDrop={(e) => {
+        const d = varDrag.cur
+        setOver(false)
+        if (!d) return
+        e.preventDefault()
+        varDrag.cur = null
+        onChange(dropToken(value, dropPos(e), d.raw, d.from?.owner === owner ? d.from.start : undefined))
+      }}
       title={title ?? t('Clique pra editar · clique num badge pra mudar · {{ ou Ctrl+Espaço sugere variáveis e tags')}
     >
       {tokens.map((tok, i) =>
         tok.t === 'text' ? (
-          <span key={i} className="whitespace-pre">{password ? '•'.repeat(Math.min(tok.v.length, 12)) : tok.v}</span>
+          <span key={i} data-tok={i} className="whitespace-pre">{password ? '•'.repeat(Math.min(tok.v.length, 12)) : tok.v}</span>
         ) : tok.t === 'var' ? (
-          <VarBadge key={i} name={tok.name} />
+          <span key={i} data-tok={i} className="inline-flex">
+            <VarBadge name={tok.name} dragFrom={{ owner, start: starts[i], raw: tok.raw, remove: () => onChange(value.slice(0, starts[i]) + value.slice(starts[i] + tok.raw.length)) }} onSwap={(next) => replaceAt(i, `{{ ${next} }}`)} />
+          </span>
         ) : (
-          <TagBadge key={i} raw={tok.raw} onChange={(next) => replaceAt(i, next)} />
+          <span key={i} data-tok={i} className="inline-flex">
+            <TagBadge raw={tok.raw} onChange={(next) => replaceAt(i, next)} />
+          </span>
         )
       )}
     </div>

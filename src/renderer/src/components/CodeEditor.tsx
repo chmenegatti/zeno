@@ -27,7 +27,7 @@ export type TagChoice = (typeof TAG_CHOICES)[number]
 export interface VarSupport {
   list: () => { name: string; detail: string; source: string }[]
   pill: (name: string) => { cls: string; text: string; title: string; lock: boolean }
-  open: (name: string, el: Element) => void
+  open: (name: string, el: Element, swap?: (name: string) => void) => void
   /** avisa quando ambiente/valores mudam (redesenha os badges) */
   subscribe: (cb: () => void) => () => void
 }
@@ -45,7 +45,7 @@ class VarWidget extends WidgetType {
   eq(o: VarWidget): boolean {
     return o.raw === this.raw && o.look.cls === this.look.cls && o.look.text === this.look.text && o.look.title === this.look.title
   }
-  toDOM(): HTMLElement {
+  toDOM(view: EditorView): HTMLElement {
     const el = document.createElement('span')
     el.className = this.look.cls
     el.textContent = `${this.look.lock ? '🔒 ' : ''}${this.look.text}`
@@ -53,7 +53,12 @@ class VarWidget extends WidgetType {
     el.onmousedown = (e) => e.preventDefault()
     el.onclick = (e) => {
       e.preventDefault()
-      this.vars.open(this.name, el)
+      // trocar a variável: reescreve o {{ }} no lugar, se o texto ainda for o mesmo
+      this.vars.open(this.name, el, (next) => {
+        const from = view.posAtDOM(el)
+        if (view.state.sliceDoc(from, from + this.raw.length) !== this.raw) return
+        view.dispatch({ changes: { from, to: from + this.raw.length, insert: `{{ ${next} }}` } })
+      })
     }
     return el
   }
