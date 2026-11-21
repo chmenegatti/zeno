@@ -47,6 +47,8 @@ const AUTH_LABEL: Record<AuthType, string> = {
   basic: 'Basic',
   bearer: 'Bearer token',
   apikey: 'API key',
+  digest: 'Digest',
+  awsv4: 'AWS Signature v4',
   oauth2: 'OAuth 2.0'
 }
 
@@ -317,6 +319,8 @@ export function AuthEditor({ auth, inherited, onChange, allowInherit = true, oau
     if (type === 'basic') onChange({ type, username: '', password: '' })
     else if (type === 'bearer') onChange({ type, token: '' })
     else if (type === 'apikey') onChange({ type, key: '', value: '', addTo: 'header' })
+    else if (type === 'digest') onChange({ type, username: '', password: '' })
+    else if (type === 'awsv4') onChange({ type, accessKeyId: '', secretAccessKey: '', region: 'us-east-1', service: '' })
     else if (type === 'oauth2') onChange(newOAuth2())
     else onChange({ type })
   }
@@ -351,6 +355,23 @@ export function AuthEditor({ auth, inherited, onChange, allowInherit = true, oau
         <>
           {row(t('Usuário'), auth.username, (username) => onChange({ ...auth, username }))}
           {secretRow(t('Senha'), auth.password, (password) => onChange({ ...auth, password }))}
+        </>
+      )}
+      {auth.type === 'digest' && (
+        <>
+          {row(t('Usuário'), auth.username, (username) => onChange({ ...auth, username }))}
+          {secretRow(t('Senha'), auth.password, (password) => onChange({ ...auth, password }))}
+          <p className="text-[11px] text-faint">{t('No 401 com desafio Digest, o Zeno reenvia com o header calculado (MD5 ou SHA-256). Os dois saltos aparecem na linha do tempo.')}</p>
+        </>
+      )}
+      {auth.type === 'awsv4' && (
+        <>
+          {row('Access key ID', auth.accessKeyId, (accessKeyId) => onChange({ ...auth, accessKeyId }))}
+          {secretRow('Secret access key', auth.secretAccessKey, (secretAccessKey) => onChange({ ...auth, secretAccessKey }))}
+          {secretRow(t('Token de sessão'), auth.sessionToken ?? '', (sessionToken) => onChange({ ...auth, sessionToken: sessionToken || undefined }))}
+          {row(t('Região'), auth.region, (region) => onChange({ ...auth, region }))}
+          {row(t('Serviço'), auth.service, (service) => onChange({ ...auth, service }))}
+          <p className="text-[11px] text-faint">{t('Assina o request final (depois de variáveis e scripts), com o hash do body. Serviço: execute-api, s3, es, lambda…')}</p>
         </>
       )}
       {auth.type === 'bearer' && (

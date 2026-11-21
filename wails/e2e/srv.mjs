@@ -13,6 +13,15 @@ const server = http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x')
     const json = (code, v, h = {}) => { res.writeHead(code, { 'content-type': 'application/json', ...h }); res.end(JSON.stringify(v)) }
     if (u.pathname === '/echo') return json(200, { method: req.method, query: Object.fromEntries(u.searchParams), headers: req.headers, body })
+    // Digest (#150): MD5, qop=auth, usuário ana / senha s3nha
+    if (u.pathname === '/digest') {
+      const md5 = (s) => crypto.createHash('md5').update(s).digest('hex')
+      const a = Object.fromEntries([...(req.headers.authorization ?? '').matchAll(/(\w+)="?([^",]*)"?/g)].map((m) => [m[1], m[2]]))
+      const ok = a.username === 'ana' && a.response === md5(`${md5('ana:e2e:s3nha')}:n1:${a.nc}:${a.cnonce}:auth:${md5(`${req.method}:${a.uri}`)}`)
+      if (ok) return json(200, { digest: 'ok' })
+      res.writeHead(401, { 'www-authenticate': 'Digest realm="e2e", nonce="n1", qop="auth"' })
+      return res.end()
+    }
     if (u.pathname === '/redirect') { res.writeHead(302, { location: '/echo?from=redirect', 'set-cookie': 'sessao=abc123; Path=/' }); return res.end() }
     // OAuth 2.0 client credentials (Basic cliente:segredo)
     if (u.pathname === '/token') return req.headers.authorization === 'Basic ' + Buffer.from('cliente:segredo').toString('base64') && /grant_type=client_credentials/.test(body) ? json(200, { access_token: 'oauth-e2e', token_type: 'Bearer', expires_in: 3600 }) : json(401, { error: 'invalid_client' })

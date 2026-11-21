@@ -450,6 +450,11 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 
 	u, method := p.URL, p.Method
 	var res *http.Response
+	firstOrigin := ""
+	if pu, err := url.Parse(u); err == nil {
+		firstOrigin = origin(pu)
+	}
+	digestTried := false
 	for hop := 0; ; hop++ {
 		if pu, err := url.Parse(u); err == nil {
 			certs.setTarget(pu)
@@ -521,6 +526,10 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 		if hostHeader != "" {
 			req.Host = hostHeader
 		}
+		// AWS SigV4 (#150): assina cada envio pra mesma origem (redirect pra outra não leva credencial)
+		if p.AWS != nil && origin(req.URL) == firstOrigin {
+			SignAWSV4(req, payload, *p.AWS, time.Now())
+		}
 		res, err = client.Do(req)
 		if err != nil {
 			return fail(unwrapURL(err))
@@ -531,6 +540,21 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 			"statusText", statusText(res), "headers", responseHeaders(res.Header), "atMs", round(ms(time.Since(start)))))
 		if set := res.Header.Values("Set-Cookie"); len(set) > 0 && cookies.Store != nil {
 			cookies.Store(u, set)
+		}
+		// Digest (#150): 401 com desafio Digest → reenvia uma vez com o header calculado
+		if p.Digest != nil && !digestTried && res.StatusCode == 401 {
+			for _, wa := range res.Header.Values("Www-Authenticate") {
+				if ch, ok := parseChallenge(wa); ok {
+					digestTried = true
+					setHeader(headers, "Authorization", digestHeader(*p.Digest, ch, method, req.URL.RequestURI(), payload, newCnonce()))
+					break
+				}
+			}
+			if digestTried {
+				_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 1<<20))
+				res.Body.Close()
+				continue
+			}
 		}
 		loc := res.Header.Get("Location")
 		limit := maxRedirects

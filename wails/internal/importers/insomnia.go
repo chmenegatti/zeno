@@ -331,6 +331,10 @@ func insAuth(a *Doc, where string, w *warner) *Doc {
 		return doc.New("type", "none")
 	case "basic":
 		return doc.New("type", "basic", "username", s("username"), "password", s("password"))
+	case "digest":
+		return doc.New("type", "digest", "username", s("username"), "password", s("password"))
+	case "iam":
+		return doc.New("type", "awsv4", "accessKeyId", s("accessKeyId"), "secretAccessKey", s("secretAccessKey"), "sessionToken", s("sessionToken"), "region", s("region"), "service", s("service"))
 	case "oauth2":
 		clientAuth := ""
 		if a.Get("credentialsInBody") == true {

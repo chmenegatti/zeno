@@ -175,6 +175,10 @@ func insAuth(a *Doc) *Doc {
 		return doc.New("type", "none")
 	case "basic":
 		return doc.New("type", "basic", "username", a.Str("username"), "password", a.Str("password"))
+	case "digest":
+		return doc.New("type", "digest", "username", a.Str("username"), "password", a.Str("password"))
+	case "awsv4":
+		return doc.New("type", "iam", "accessKeyId", a.Str("accessKeyId"), "secretAccessKey", a.Str("secretAccessKey"), "sessionToken", a.Str("sessionToken"), "region", a.Str("region"), "service", a.Str("service"))
 	case "bearer":
 		d := doc.New("type", "bearer", "token", a.Str("token"))
 		if p := a.Str("prefix"); p != "" {
@@ -359,6 +363,10 @@ func pmAuth(a *Doc, where string, w *warner) *Doc {
 		return doc.New("type", "noauth")
 	case "basic":
 		return pairs("basic", "username", a.Str("username"), "password", a.Str("password"))
+	case "digest":
+		return pairs("digest", "username", a.Str("username"), "password", a.Str("password"))
+	case "awsv4":
+		return pairs("awsv4", "accessKey", a.Str("accessKeyId"), "secretKey", a.Str("secretAccessKey"), "sessionToken", a.Str("sessionToken"), "region", a.Str("region"), "service", a.Str("service"))
 	case "bearer":
 		if p := a.Str("prefix"); p != "" && !strings.EqualFold(p, "bearer") {
 			w.warn(i18n.T("%s: prefixo do Bearer \"%s\" não existe no Postman", where, p))
