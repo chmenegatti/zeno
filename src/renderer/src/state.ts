@@ -27,6 +27,8 @@ export interface VarEdit {
   name: string
   x: number
   y: number
+  /** troca o badge por outra variável (só quando aberto a partir de um badge editável) */
+  swap?: (name: string) => void
 }
 
 interface Store {

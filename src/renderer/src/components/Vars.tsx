@@ -11,9 +11,9 @@ import { Select } from './Select'
 import { t } from '@shared/i18n'
 
 /** abre o popover de edição ancorado no elemento */
-export function openVar(name: string, el: Element): void {
+export function openVar(name: string, el: Element, swap?: (name: string) => void): void {
   const r = el.getBoundingClientRect()
-  useStore.setState({ varEdit: { name, x: r.left, y: r.bottom + 4 } })
+  useStore.setState({ varEdit: { name, x: r.left, y: r.bottom + 4, swap } })
 }
 
 function useVarContext() {
@@ -62,7 +62,7 @@ export function varOptions(sources: Map<string, VarInfo>): { name: string; detai
 export const editorVars: VarSupport = {
   list: () => varOptions(currentVarSources()),
   pill: (name) => pillInfo(name, currentVarSources().get(name), useStore.getState().showValues),
-  open: (name, el) => openVar(name, el),
+  open: (name, el, swap) => openVar(name, el, swap),
   subscribe: (cb) =>
     useStore.subscribe((s, p) => {
       if (s.workspaces !== p.workspaces || s.app !== p.app || s.showValues !== p.showValues) cb()
@@ -73,7 +73,39 @@ export function useVarSources(): Map<string, VarInfo> {
   return useVarContext().sources
 }
 
-export function VarBadge({ name, label }: { name: string; label?: string }) {
+/** arraste de variável em curso: chip da lateral (copia) ou badge de um campo (move dentro dele) */
+export const varDrag: { cur: { raw: string; from?: { owner: object; start: number } } | null; pressAt: number; cleanup?: () => void } = { cur: null, pressAt: 0 }
+
+/**
+ * badge arrastado pra fora do campo e solto em qualquer lugar da janela sai do campo (igual ao
+ * Insomnia). Outro campo de texto ou editor recebe a cópia; Esc ou soltar fora da janela não muda nada.
+ */
+function dropOutsideRemoves(remove: () => void): void {
+  const over = (e: DragEvent) => {
+    e.preventDefault()
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+  }
+  const drop = (e: DragEvent) => {
+    // varDrag.cur zerado = um campo com badges já tratou o drop
+    const target = e.target as Element | null
+    const editor = target?.closest?.('input, textarea, [contenteditable=true], .cm-editor')
+    if (varDrag.cur && !editor) {
+      e.preventDefault()
+      remove()
+    }
+    varDrag.cleanup?.()
+  }
+  varDrag.cleanup?.()
+  document.addEventListener('dragover', over)
+  document.addEventListener('drop', drop)
+  varDrag.cleanup = () => {
+    document.removeEventListener('dragover', over)
+    document.removeEventListener('drop', drop)
+    varDrag.cleanup = undefined
+  }
+}
+
+export function VarBadge({ name, label, dragFrom, onSwap }: { name: string; label?: string; dragFrom?: { owner: object; start: number; raw: string; remove: () => void }; onSwap?: (name: string) => void }) {
   const { sources } = useVarContext()
   const showValues = useStore((s) => s.showValues)
   const p = pillInfo(name, sources.get(name), showValues)
@@ -82,10 +114,25 @@ export function VarBadge({ name, label }: { name: string; label?: string }) {
       role="button"
       className={p.cls}
       title={p.title}
-      onMouseDown={(e) => e.preventDefault()}
+      draggable
+      // sem preventDefault aqui: ele impede o arraste; o campo usa pressAt pra não entrar em edição
+      onMouseDown={() => (varDrag.pressAt = Date.now())}
+      onDragStart={(e) => {
+        e.stopPropagation()
+        const raw = dragFrom?.raw ?? `{{ ${name} }}`
+        e.dataTransfer.effectAllowed = dragFrom ? 'copyMove' : 'copy'
+        // text/plain também serve pra soltar em inputs e no editor do body
+        e.dataTransfer.setData('text/plain', raw)
+        varDrag.cur = { raw, from: dragFrom && { owner: dragFrom.owner, start: dragFrom.start } }
+        if (dragFrom) dropOutsideRemoves(dragFrom.remove)
+      }}
+      onDragEnd={() => {
+        varDrag.cur = null
+        varDrag.cleanup?.()
+      }}
       onClick={(e) => {
         e.stopPropagation()
-        openVar(name, e.currentTarget)
+        openVar(name, e.currentTarget, onSwap)
       }}
     >
       {p.lock && <LockIcon size={10} />}
@@ -196,6 +243,8 @@ export function VarPopover() {
   const [secretTouched, setSecretTouched] = useState(false)
   /** valor atual é token cifrado ainda não revelado/alterado */
   const [locked, setLocked] = useState(false)
+  /** variável escolhida pra trocar o badge; igual a edit.name = editar o valor */
+  const [pick, setPick] = useState('')
 
   const info = edit?.name ? sources.get(edit.name) : undefined
 
@@ -214,6 +263,7 @@ export function VarPopover() {
     if (!edit) return
     const enc = !!info && isEncrypted(info.value)
     setName(edit.name)
+    setPick(edit.name)
     setValue(info && !enc ? formatValue(info.value) : '')
     setLocked(enc)
     setSecret(enc)
@@ -234,7 +284,8 @@ export function VarPopover() {
 
   useEffect(() => {
     if (!edit) return
-    const onDown = (e: MouseEvent) => box.current && !box.current.contains(e.target as Node) && useStore.setState({ varEdit: null })
+    // a lista do Select abre num portal fora do popover: clicar nela não fecha
+    const onDown = (e: MouseEvent) => box.current && !box.current.contains(e.target as Node) && !(e.target as Element).closest?.('[role=listbox]') && useStore.setState({ varEdit: null })
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && useStore.setState({ varEdit: null })
     window.addEventListener('mousedown', onDown)
     window.addEventListener('keydown', onKey)
@@ -251,6 +302,10 @@ export function VarPopover() {
 
   if (!edit || !ws) return null
   const isNew = !edit.name
+  const swapping = !!edit.swap && !isNew && pick !== edit.name
+  const picked = swapping ? sources.get(pick) : undefined
+  const preview = !picked ? '' : isEncrypted(picked.value) || (isSecret(pick) && !show) ? MASK : formatValue(picked.value)
+  const close = () => useStore.setState({ varEdit: null })
 
   const reveal = async () => {
     if (!info || !isEncrypted(info.value)) return
@@ -317,86 +372,124 @@ export function VarPopover() {
         className="flex flex-col gap-2"
         onSubmit={(e) => {
           e.preventDefault()
-          save()
+          if (!swapping) return save()
+          edit.swap?.(pick)
+          close()
         }}
       >
         {isNew ? (
           <input autoFocus className="field font-mono text-[12px]" placeholder={t('nome_da_variavel')} value={name} onChange={(e) => setName(e.target.value)} />
+        ) : edit.swap ? (
+          // trocar o badge por outra variável do contexto (igual ao "Edit Variable" do Insomnia)
+          <div className="flex items-center gap-2">
+            <Select className="field min-w-0 flex-1 py-0.5 font-mono" aria-label={t('Trocar por outra variável')} value={pick} onChange={setPick}>
+              {!sources.has(edit.name) && <option value={edit.name}>{edit.name}</option>}
+              {[...sources.entries()]
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([n, v]) => (
+                  <option key={n} value={n}>
+                    {n} · {v.source.label}
+                  </option>
+                ))}
+            </Select>
+            {(swapping ? picked : info) ? null : <span className="text-[11px] text-faint">{t('não definida')}</span>}
+          </div>
         ) : (
           <div className="flex items-baseline gap-2">
             <span className="font-mono font-semibold text-tblue">{edit.name}</span>
             <span className="text-[11px] text-faint">{info ? t('de {source}', { source: info.source.label }) : t('não definida')}</span>
           </div>
         )}
-        {info && info.shadowed.length > 0 && <p className="text-[11px] text-faint">{t('sobrescreve:')} {info.shadowed.map((s) => s.label).join(', ')}</p>}
-        <div className="flex items-start gap-1">
-          {locked ? (
-            <input
-              className="field min-w-0 flex-1 font-mono text-[12px]"
-              type="password"
-              placeholder={t('criptografado — digite pra trocar')}
-              value={value}
-              onChange={(e) => {
-                setValue(e.target.value)
-                setLocked(false)
-              }}
-              autoFocus={!isNew}
-            />
-          ) : multiline && show ? (
-            <textarea className="field h-24 min-w-0 flex-1 resize-y font-mono text-[12px]" value={value} onChange={(e) => setValue(e.target.value)} autoFocus={!isNew} spellCheck={false} />
-          ) : (
-            <input
-              className="field min-w-0 flex-1 font-mono text-[12px]"
-              type={show ? 'text' : 'password'}
-              placeholder={t('valor')}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              autoFocus={!isNew}
-              spellCheck={false}
-            />
-          )}
-          <button type="button" className="btn btn-ghost px-2" title={show ? t('Esconder') : t('Mostrar')} onClick={() => (locked ? reveal() : setShow(!show))}>
-            {show && !locked ? '◉' : '◎'}
-          </button>
-        </div>
-        <label className="flex items-center gap-2 text-[11.5px]" title={t('Cifra com AES-256-GCM; a chave fica no chaveiro do sistema. No YAML vai só o valor cifrado.')}>
-          <input
-            type="checkbox"
-            className="[--cb:var(--color-tpurple)]"
-            checked={secret}
-            onChange={(e) => {
-              setSecret(e.target.checked)
-              setSecretTouched(true)
-            }}
-          />
-          <span className={`inline-flex items-center gap-1 ${secret ? 'text-tpurple' : 'text-dim'}`}>
-            <LockIcon /> {t('secreta (guardar criptografada no cofre)')}
-          </span>
-        </label>
-        <label className="flex items-center gap-2 text-[11.5px]">
-          <span className="text-dim">{t('Salvar em')}</span>
-          <Select className="field min-w-0 flex-1 py-0.5" value={targetId} onChange={(v) => setTargetId(v)}>
-            {targets.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.label}
-              </option>
-            ))}
-          </Select>
-        </label>
-        {err && <p className="text-[11.5px] text-tpink">{err}</p>}
-        <div className="flex items-center gap-2 pt-1">
-          {info && (
-            <button type="button" className="btn btn-ghost px-2 text-[12px] text-tpink" onClick={remove} title={t('Remover de {source}', { source: info.source.label })}>
-              {t('remover')}
-            </button>
-          )}
-          <div className="flex-1" />
-          <button type="button" className="btn" onClick={() => useStore.setState({ varEdit: null })}>
-            {t('Cancelar')}
-          </button>
-          <button className="btn btn-accent">{t('Salvar')}</button>
-        </div>
+        {swapping && <SwapPreview value={preview} onCancel={close} />}
+        {!swapping && (
+          <>
+            {info && info.shadowed.length > 0 && <p className="text-[11px] text-faint">{t('sobrescreve:')} {info.shadowed.map((s) => s.label).join(', ')}</p>}
+            <div className="flex items-start gap-1">
+              {locked ? (
+                <input
+                  className="field min-w-0 flex-1 font-mono text-[12px]"
+                  type="password"
+                  placeholder={t('criptografado — digite pra trocar')}
+                  value={value}
+                  onChange={(e) => {
+                    setValue(e.target.value)
+                    setLocked(false)
+                  }}
+                  autoFocus={!isNew}
+                />
+              ) : multiline && show ? (
+                <textarea className="field h-24 min-w-0 flex-1 resize-y font-mono text-[12px]" value={value} onChange={(e) => setValue(e.target.value)} autoFocus={!isNew} spellCheck={false} />
+              ) : (
+                <input
+                  className="field min-w-0 flex-1 font-mono text-[12px]"
+                  type={show ? 'text' : 'password'}
+                  placeholder={t('valor')}
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  autoFocus={!isNew}
+                  spellCheck={false}
+                />
+              )}
+              <button type="button" className="btn btn-ghost px-2" title={show ? t('Esconder') : t('Mostrar')} onClick={() => (locked ? reveal() : setShow(!show))}>
+                {show && !locked ? '◉' : '◎'}
+              </button>
+            </div>
+            <label className="flex items-center gap-2 text-[11.5px]" title={t('Cifra com AES-256-GCM; a chave fica no chaveiro do sistema. No YAML vai só o valor cifrado.')}>
+              <input
+                type="checkbox"
+                className="[--cb:var(--color-tpurple)]"
+                checked={secret}
+                onChange={(e) => {
+                  setSecret(e.target.checked)
+                  setSecretTouched(true)
+                }}
+              />
+              <span className={`inline-flex items-center gap-1 ${secret ? 'text-tpurple' : 'text-dim'}`}>
+                <LockIcon /> {t('secreta (guardar criptografada no cofre)')}
+              </span>
+            </label>
+            <label className="flex items-center gap-2 text-[11.5px]">
+              <span className="text-dim">{t('Salvar em')}</span>
+              <Select className="field min-w-0 flex-1 py-0.5" value={targetId} onChange={(v) => setTargetId(v)}>
+                {targets.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.label}
+                  </option>
+                ))}
+              </Select>
+            </label>
+            {err && <p className="text-[11.5px] text-tpink">{err}</p>}
+            <div className="flex items-center gap-2 pt-1">
+              {info && (
+                <button type="button" className="btn btn-ghost px-2 text-[12px] text-tpink" onClick={remove} title={t('Remover de {source}', { source: info.source.label })}>
+                  {t('remover')}
+                </button>
+              )}
+              <div className="flex-1" />
+              <button type="button" className="btn" onClick={() => useStore.setState({ varEdit: null })}>
+                {t('Cancelar')}
+              </button>
+              <button className="btn btn-accent">{t('Salvar')}</button>
+            </div>
+          </>
+        )}
       </form>
     </div>
+  )
+}
+
+/** prévia ao vivo do valor da variável escolhida pra trocar o badge */
+function SwapPreview({ value, onCancel }: { value: string; onCancel: () => void }) {
+  return (
+    <>
+      <pre className="field max-h-24 min-w-0 overflow-auto whitespace-pre-wrap break-all font-mono text-[12px]">{value || ' '}</pre>
+      <div className="flex items-center gap-2 pt-1">
+        <div className="flex-1" />
+        <button type="button" className="btn" onClick={onCancel}>
+          {t('Cancelar')}
+        </button>
+        <button className="btn btn-accent">{t('Trocar')}</button>
+      </div>
+    </>
   )
 }

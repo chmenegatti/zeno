@@ -203,6 +203,8 @@ const en: Record<string, string> = {
   'de {source}': 'from {source}',
   'não definida': 'not defined',
   'sobrescreve:': 'overrides:',
+  'Trocar por outra variável': 'Switch to another variable',
+  'Trocar': 'Switch',
   'criptografado — digite pra trocar': 'encrypted — type to replace',
   valor: 'value',
   Esconder: 'Hide',

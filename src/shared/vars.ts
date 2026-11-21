@@ -95,3 +95,16 @@ export function matchVars<T extends { name: string }>(vars: Iterable<T>, query: 
   const has = q ? all.filter((v) => !v.name.toLowerCase().startsWith(q) && v.name.toLowerCase().includes(q)) : []
   return [...starts.sort((a, b) => a.name.localeCompare(b.name)), ...has.sort((a, b) => a.name.localeCompare(b.name))].slice(0, limit)
 }
+
+/**
+ * solta a referência `raw` na posição `pos` de `s`. Com `from` (início do mesmo token no
+ * mesmo texto), move: tira de onde estava e põe no novo lugar.
+ */
+export function dropToken(s: string, pos: number, raw: string, from?: number): string {
+  pos = Math.max(0, Math.min(pos, s.length))
+  if (from === undefined) return s.slice(0, pos) + raw + s.slice(pos)
+  if (pos >= from && pos <= from + raw.length) return s
+  const rest = s.slice(0, from) + s.slice(from + raw.length)
+  const p = pos > from ? pos - raw.length : pos
+  return rest.slice(0, p) + raw + rest.slice(p)
+}
