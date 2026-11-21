@@ -98,6 +98,17 @@ git clone --depth 1 https://github.com/chmenegatti/zeno.git
 cd zeno/packaging/aur && makepkg -si
 ```
 
+**Flatpak**
+
+Baixe o `Zeno-*-x86_64.flatpak` do release e instale; na primeira vez o Flatpak baixa o runtime do GNOME do Flathub:
+
+```bash
+flatpak install --user ./Zeno-*-x86_64.flatpak
+flatpak run com.cesarmenegatti.Zeno
+```
+
+No sandbox, os dados ficam em `~/.var/app/com.cesarmenegatti.Zeno/data/zeno`. Pra continuar usando os dados de uma instalação `.deb`/`.rpm`/AppImage: `flatpak override --user --env=ZENO_DATA_DIR=$HOME/.local/share/zeno com.cesarmenegatti.Zeno`.
+
 **Qualquer distribuição (AppImage)**
 
 ```bash
