@@ -153,6 +153,23 @@ func BuildVars(ws *Doc, envID string, folders []*Doc) *Doc {
 			vars = deepMerge(vars, v)
 		}
 	}
+	// valores locais (#153), que não vão pro git: os do Base e depois os do sub-ambiente ativo vencem tudo
+	if lv := ws.Map("localVars"); lv != nil {
+		for _, e := range envs {
+			if d, _ := e.(*Doc); d != nil && d.Get("parentId") == nil {
+				if m := lv.Map(d.Str("id")); m != nil {
+					vars = deepMerge(vars, m)
+				}
+			}
+		}
+		for _, e := range envs {
+			if d, _ := e.(*Doc); d != nil && envID != "" && d.Str("id") == envID && d.Get("parentId") != nil {
+				if m := lv.Map(envID); m != nil {
+					vars = deepMerge(vars, m)
+				}
+			}
+		}
+	}
 	return vars
 }
 

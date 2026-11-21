@@ -66,7 +66,7 @@ func CloneWorkspace(ws *Doc, name string) *Doc {
 		case *Doc:
 			out := doc.New()
 			for _, k := range x.Keys() {
-				if k == "location" && x == ws {
+				if (k == "location" || k == "localVars") && x == ws {
 					continue
 				}
 				out.Set(k, walk(x.Get(k)))

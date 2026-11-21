@@ -83,6 +83,7 @@ const en: Record<string, string> = {
   'nada encontrado': 'nothing found',
   // variáveis
   'pasta {name}': 'folder {name}',
+  'local ({env})': 'local ({env})',
   // curl
   'não é um comando curl': 'not a curl command',
   'arquivo de cookies ignorado: {c}': 'cookie file ignored: {c}',

@@ -91,6 +91,7 @@ opções:
   -d, --delay <ms>       espera entre requests
       --data <arquivo>   CSV (com cabeçalho) ou JSON (lista de objetos); cada linha vira variáveis
       --var <nome=valor> variável extra (pode repetir); vale sobre ambiente e dados
+      --env-file <arq>   variáveis de um arquivo .env (NOME=valor por linha); --var vence
       --junit <arquivo>  grava relatório JUnit XML
       --bail             para no primeiro request que falhar
       --data-dir <dir>   pasta de dados do Zeno (padrão: a do app)
@@ -107,6 +108,7 @@ options:
   -d, --delay <ms>       wait between requests
       --data <file>      CSV (with header) or JSON (list of objects); each row becomes variables
       --var <name=value> extra variable (repeatable); overrides environment and data
+      --env-file <file>  variables from a .env file (NAME=value per line); --var wins
       --junit <file>     write a JUnit XML report
       --bail             stop at the first failing request
       --data-dir <dir>   Zeno data folder (default: the app's)

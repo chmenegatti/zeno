@@ -7,6 +7,8 @@ import { varPath } from './template'
 export type VarSource =
   | { kind: 'env'; envId: string; label: string }
   | { kind: 'folder'; folderId: string; label: string }
+  /** valor local (#153): só nesta máquina, guardado por ambiente */
+  | { kind: 'local'; envId: string; label: string }
 
 export interface VarInfo {
   name: string
@@ -29,7 +31,12 @@ export function varSources(ws: Workspace, activeEnvId: string | null | undefined
   const sub = activeEnvId ? ws.environments.find((e) => e.id === activeEnvId && e.parentId !== null) : undefined
   if (sub) put(sub.data, envSource(sub))
   for (const f of ancestors) put(f.vars ?? {}, { kind: 'folder', folderId: f.id, label: t('pasta {name}', { name: f.name }) })
+  for (const e of [base, sub]) if (e && ws.localVars?.[e.id]) put(ws.localVars[e.id], localSource(e))
   return out
+}
+
+export function localSource(e: Environment): VarSource {
+  return { kind: 'local', envId: e.id, label: t('local ({env})', { env: e.parentId === null ? 'Base' : e.name }) }
 }
 
 export function envSource(e: Environment): VarSource {

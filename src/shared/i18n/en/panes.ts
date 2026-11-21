@@ -196,6 +196,8 @@ const en: Record<string, string> = {
   'Ambiente {name}': 'Environment {name}',
   'Base (todos os ambientes)': 'Base (all environments)',
   'Pasta {name}': 'Folder {name}',
+  'Só nesta máquina ({env})': 'This machine only ({env})',
+  'Só nesta máquina (todos os ambientes)': 'This machine only (all environments)',
   'Nome inválido (letras, números, _ e -)': 'Invalid name (letters, digits, _ and -)',
   'Escolha onde salvar': 'Choose where to save',
   'Valor vazio': 'Empty value',

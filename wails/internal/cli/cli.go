@@ -38,6 +38,7 @@ opções:
   -d, --delay <ms>       espera entre requests
       --data <arquivo>   CSV (com cabeçalho) ou JSON (lista de objetos); cada linha vira variáveis
       --var <nome=valor> variável extra (pode repetir); vale sobre ambiente e dados
+      --env-file <arq>   variáveis de um arquivo .env (NOME=valor por linha); --var vence
       --junit <arquivo>  grava relatório JUnit XML
       --bail             para no primeiro request que falhar
       --data-dir <dir>   pasta de dados do Zeno (padrão: a do app)
@@ -63,6 +64,7 @@ type args struct {
 	workspace, folder, env string
 	iterations, delayMs    int
 	data, junit, dataDir   string
+	envFile                string
 	vars                   *Doc
 	bail                   bool
 }
@@ -126,6 +128,8 @@ func parseArgs(argv []string) (*args, bool, error) {
 				}
 				a.vars.Set(v[:eq], v[eq+1:])
 			}
+		case "--env-file":
+			a.envFile, err = val()
 		case "--junit":
 			a.junit, err = val()
 		case "--bail":
@@ -358,6 +362,18 @@ func Run(argv []string, protector keyring.Protector, out Out, tty bool) (code in
 			return fail(usagef(i18n.T("ambiente %q não existe em %s"), a.env, ws.Str("name")))
 		}
 	}
+	// --env-file: valores locais pra CI (#153); o que veio em --var vence
+	if a.envFile != "" {
+		b, err := os.ReadFile(a.envFile)
+		if err != nil {
+			return fail(err)
+		}
+		for _, kv := range ParseDotenv(string(b)) {
+			if !a.vars.Has(kv[0]) {
+				a.vars.Set(kv[0], kv[1])
+			}
+		}
+	}
 	var data []*Doc
 	if a.data != "" {
 		b, err := os.ReadFile(a.data)
@@ -500,4 +516,26 @@ func cliPlugins(dir string) *plugins.Plugins {
 	p := plugins.New(filepath.Join(dir, "plugins"), func(id string) bool { return off[id] })
 	p.Load()
 	return p
+}
+
+// ParseDotenv: NOME=valor por linha; ignora vazias e # comentários, aceita "export " e aspas em volta
+func ParseDotenv(text string) [][2]string {
+	var out [][2]string
+	for _, line := range strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		line = strings.TrimPrefix(line, "export ")
+		eq := strings.Index(line, "=")
+		if eq <= 0 {
+			continue
+		}
+		k, v := strings.TrimSpace(line[:eq]), strings.TrimSpace(line[eq+1:])
+		if len(v) >= 2 && (v[0] == '"' && v[len(v)-1] == '"' || v[0] == '\'' && v[len(v)-1] == '\'') {
+			v = v[1 : len(v)-1]
+		}
+		out = append(out, [2]string{k, v})
+	}
+	return out
 }

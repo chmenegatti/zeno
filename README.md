@@ -186,7 +186,9 @@ Same defaults as Insomnia. All of them can be remapped in **⌨ Shortcuts** (`Ct
 
 ## Variables and environments
 
-Each workspace has a **Base** environment and as many sub-environments as you like (Development, Production…). Folders can have variables too. When sending, the most specific definition wins: **folder > active sub-environment > Base**.
+Each workspace has a **Base** environment and as many sub-environments as you like (Development, Production…). Folders can have variables too. When sending, the most specific definition wins: **local value > folder > active sub-environment > Base**.
+
+**Local values** are for what is yours alone: your user, a local port, a personal token. In the badge popover, *Save to › This machine only* keeps the value in the app's data folder (`local-vars.yaml`, git-ignored), never in the workspace YAML, the export or *Save to GitHub*. The badge shows `local (…)` and what it overrides; *remove* goes back to the shared value. In CI, `zeno run --env-file .env` reads `NAME=value` lines (`--var` still wins).
 
 <img src="docs/variaveis.png" alt="Variable editing popover" width="640" />
 

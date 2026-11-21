@@ -466,7 +466,11 @@ func (e *Engine) previewVars() (*Doc, string, *Doc) {
 	if err != nil {
 		envs = ws.Get("environments")
 	}
-	return vars.BuildVars(doc.New("environments", envs), envID, nil), envID, ws
+	pre := doc.New("environments", envs)
+	if lv, err := e.Vault.DecryptDeep(ws.Get("localVars"), map[string]bool{}); err == nil && lv != nil {
+		pre.Set("localVars", lv)
+	}
+	return vars.BuildVars(pre, envID, nil), envID, ws
 }
 
 func (e *Engine) TagPreview(raw string, send bool) *Doc {
@@ -562,6 +566,15 @@ func (e *Engine) openForSendLocked(ws, req *doc.Doc, anc []*doc.Doc) (*doc.Doc, 
 	}
 	vault.CollectSecrets(ws.Get("settings"), set, secrets)
 	openWS := doc.New("id", ws.Get("id"), "settings", set, "environments", envs, "children", ws.Get("children"))
+	// valores locais (#153) também podem ser segredos do cofre
+	if lv := ws.Get("localVars"); lv != nil {
+		open, err := e.open(lv, &locked)
+		if err != nil {
+			return nil, nil, nil, nil, nil, err
+		}
+		vault.CollectSecrets(lv, open, secrets)
+		openWS.Set("localVars", open)
+	}
 	r, err := e.open(req, &locked)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
@@ -861,6 +874,7 @@ func (e *Engine) CodeInput(ws, req *Doc, envID string, resolveVars bool) (*Doc, 
 	}
 	bare := ws.Clone()
 	bare.Set("environments", []any{})
+	bare.Del("localVars")
 	return vars.Prepare(bare, r.(*Doc), open, envID, nil).Input(req.Str("id")), nil
 }
 

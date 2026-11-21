@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/chmenegatti/zeno/wails/internal/engine"
@@ -232,6 +233,17 @@ func (a *App) register() {
 			return nil, err
 		}
 		return list(st.SaveEnvironment(wsID, env))
+	})
+	// valor local (#153): só nesta máquina; value null apaga
+	a.handle("setLocalVar", func(args Args) (any, error) {
+		wsID, _ := Get[string](args, 0)
+		envID, _ := Get[string](args, 1)
+		name, _ := Get[string](args, 2)
+		var value any
+		if len(args) > 3 {
+			_ = json.Unmarshal([]byte(args[3]), &value)
+		}
+		return list(st.SetLocalVar(wsID, envID, name, value))
 	})
 	a.handle("deleteEnvironment", func(args Args) (any, error) {
 		id, _ := Get[string](args, 0)

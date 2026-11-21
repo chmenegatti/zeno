@@ -61,6 +61,8 @@ export interface ZenoApi {
 
   saveEnvironment(wsId: string, env: Environment): Promise<Workspace[]>
   deleteEnvironment(id: string): Promise<Workspace[]>
+  /** valor local de uma variável (#153), fora do git; value null apaga */
+  setLocalVar(wsId: string, envId: string, name: string, value: unknown): Promise<Workspace[]>
 
   send(wsId: string, req: RequestDoc, envId: string | null): Promise<SendResult>
   cancel(requestId: string): Promise<void>
