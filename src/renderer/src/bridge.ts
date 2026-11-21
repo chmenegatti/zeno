@@ -2,7 +2,7 @@
 // eventos vêm pelo runtime do Wails.
 
 type Bound = { main: { App: { Call(channel: string, args: string[]): Promise<unknown> } } }
-type WailsRuntime = { EventsOn(name: string, cb: (...a: unknown[]) => void): () => void; BrowserOpenURL(url: string): void }
+type WailsRuntime = { EventsOn(name: string, cb: (...a: unknown[]) => void): () => void; BrowserOpenURL(url: string): void; WindowSetTitle(title: string): void }
 const w = window as unknown as { zeno?: unknown; go?: Bound; runtime?: WailsRuntime }
 
 /**
@@ -86,6 +86,8 @@ if (!w.zeno) {
       document.documentElement.style.setProperty('zoom', String(f))
     }
   }
+  // versão no título da janela (barra do sistema, alt-tab, lista de janelas)
+  w.runtime?.WindowSetTitle(`Zeno ${__ZENO_VERSION__}`)
   w.zeno = new Proxy({}, { get: (_t, k) => (typeof k !== 'string' || k === 'then' ? undefined : (special[k] ?? call(k))) })
 
   // o WebKit só deixa copiar com gesto do usuário; o Go copia sempre
