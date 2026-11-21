@@ -166,6 +166,8 @@ Same defaults as Insomnia. All of them can be remapped in **⌨ Shortcuts** (`Ct
 | `Ctrl+Shift+=` / `Ctrl+Shift+-` | Editor font size |
 | `Ctrl+\` | Show/hide the sidebar |
 | `Ctrl+P` | Command palette: fuzzy search across requests in all workspaces and actions (switch environment/workspace, import, preferences…). A leading `>` = commands only |
+| `Alt+←` / `Alt+→` | Back / forward between the requests you opened (also the mouse's side buttons) |
+| `Ctrl+Tab` | Recent requests: hold `Ctrl`, press `Tab` to move down, release to open (one quick `Ctrl+Tab` = previous request) |
 | `Ctrl+Shift+F` | Filter the sidebar; with focus in an editor, formats the JSON (keeps `{{ }}` and `{% %}`) |
 | `Ctrl+L` / `Ctrl+'` | Focus the URL / the response |
 | `Ctrl+,` / `Ctrl+Shift+,` | Preferences (zoom, fonts) / workspace settings |

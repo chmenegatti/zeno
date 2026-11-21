@@ -3,6 +3,7 @@ import { bindings, HOTKEYS } from '@shared/hotkeys'
 import { indexRequests, norm, scoreFields, searchRequests } from '@shared/palette'
 import { activeWorkspace, useStore } from '../state'
 import { runAction, setUi } from '../hotkeys'
+import { nav } from '../nav'
 import { DEFAULT_THEME, THEMES } from '@shared/themes'
 import { Kbd } from './Prefs'
 import { MethodBadge } from './ui'
@@ -19,7 +20,7 @@ interface Command {
 type Item = { kind: 'cmd'; cmd: Command } | { kind: 'req'; id: string; wsId: string; name: string; method: string; path: string; url: string }
 
 // ações da lista de atalhos que fazem sentido na paleta (as de foco precisam do painel por trás)
-const SKIP = new Set(['quickSwitch', 'sidebarFilter', 'focusUrl', 'focusResponse', 'methodMenu', 'history', 'envSwitch', 'beautify'])
+const SKIP = new Set(['recentSwitch', 'quickSwitch', 'sidebarFilter', 'focusUrl', 'focusResponse', 'methodMenu', 'history', 'envSwitch', 'beautify'])
 
 function useCommands(): Command[] {
   const workspaces = useStore((s) => s.workspaces)
@@ -49,7 +50,7 @@ function useCommands(): Command[] {
   }, [workspaces, app, ws])
 }
 
-export function CommandPalette({ onClose }: { onClose: () => void }) {
+export function CommandPalette({ onClose, recent }: { onClose: () => void; recent?: boolean }) {
   const workspaces = useStore((s) => s.workspaces)
   const activeWsId = useStore((s) => activeWorkspace(s)?.id)
   const commands = useCommands()
@@ -71,13 +72,19 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       : commands
     const cmdItems: Item[] = cmds.slice(0, q.trim() ? 8 : 50).map((cmd) => ({ kind: 'cmd', cmd }))
     if (onlyCmds) return cmdItems
-    // sem busca: requests do workspace atual primeiro
-    const pool = q.trim() ? index : [...index.filter((r) => r.wsId === activeWsId), ...index.filter((r) => r.wsId !== activeWsId)]
+    // recentes (#152): na ordem de uso; Ctrl+Tab mostra só eles, com o atual no topo
+    const byKey = new Map(index.map((r) => [`${r.wsId}\u0000${r.id}`, r]))
+    const recents = nav.recent.map((e) => byKey.get(`${e.ws}\u0000${e.id}`)).filter((r) => !!r)
+    if (recent && !q.trim()) return recents.slice(0, 15).map((r) => ({ kind: 'req', ...r }) as Item)
+    // sem busca: recentes (menos o atual), depois o workspace atual e os outros
+    const rest = recents.slice(1)
+    const pool = q.trim() ? index : [...rest, ...index.filter((r) => r.wsId === activeWsId && !rest.includes(r)), ...index.filter((r) => r.wsId !== activeWsId && !rest.includes(r))]
     const reqs: Item[] = searchRequests(pool, q, 60).map((r) => ({ kind: 'req', ...r }))
     return q.trim() ? [...reqs, ...cmdItems] : [...reqs.slice(0, 30), ...cmdItems]
-  }, [q, onlyCmds, commands, index, activeWsId])
+  }, [q, onlyCmds, commands, index, activeWsId, recent])
 
-  useEffect(() => setSel(0), [query])
+  // Ctrl+Tab: já começa no anterior; soltar o Ctrl abre
+  useEffect(() => setSel(recent && !query ? Math.min(1, items.length - 1) : 0), [query]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     listRef.current?.querySelector(`[data-i="${sel}"]`)?.scrollIntoView({ block: 'nearest' })
   }, [sel])
@@ -92,7 +99,8 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   }
 
   const onKey = (e: React.KeyboardEvent): void => {
-    if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) setSel((i) => Math.min(items.length - 1, i + 1))
+    if (e.key === 'Tab' && (e.ctrlKey || e.metaKey)) setSel((i) => (items.length ? (i + (e.shiftKey ? items.length - 1 : 1)) % items.length : 0))
+    else if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) setSel((i) => Math.min(items.length - 1, i + 1))
     else if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'p')) setSel((i) => Math.max(0, i - 1))
     else if (e.key === 'PageDown') setSel((i) => Math.min(items.length - 1, i + 10))
     else if (e.key === 'PageUp') setSel((i) => Math.max(0, i - 10))
@@ -106,7 +114,11 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   const firstCmd = items.findIndex((it) => it.kind === 'cmd')
   return (
     <div className="fixed inset-0 z-50 flex justify-center bg-black/45 pt-[12vh]" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="flex h-fit max-h-[70vh] w-[min(680px,92vw)] flex-col overflow-hidden rounded-xl border border-line bg-panel shadow-2xl" onKeyDown={onKey}>
+      <div
+        className="flex h-fit max-h-[70vh] w-[min(680px,92vw)] flex-col overflow-hidden rounded-xl border border-line bg-panel shadow-2xl"
+        onKeyDown={onKey}
+        onKeyUp={(e) => recent && !query && (e.key === 'Control' || e.key === 'Meta') && pick(items[sel])}
+      >
         <input
           autoFocus
           className="border-b border-line bg-transparent px-4 py-3 text-[14px] outline-none placeholder:text-faint"

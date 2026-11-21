@@ -92,3 +92,11 @@ describe('keyLabel', () => {
     expect(keyLabel('Ctrl+Shift+E', false)).toBe('Ctrl+Shift+E')
   })
 })
+
+describe('setas no rótulo', () => {
+  it('mostra ← e →', async () => {
+    const { keyLabel } = await import('../src/shared/hotkeys')
+    expect(keyLabel('Alt+ArrowLeft', false)).toBe('Alt+←')
+    expect(keyLabel('Alt+ArrowRight', true)).toBe('⌥→')
+  })
+})
