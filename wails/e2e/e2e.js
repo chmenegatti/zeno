@@ -240,8 +240,11 @@
     ok('duplicar', !!find(d.workspaces, d.id))
     let list = await z.moveNode(d.id, wsId, 99)
     ok('mover pra raiz', ws && list.find((x) => x.id === wsId).children.some((c) => c.id === d.id))
-    list = await z.deleteNode(d.id)
-    ok('excluir', !find(list, d.id))
+    const del = await z.deleteNode(d.id)
+    ok('excluir vai pra lixeira', !find(del.workspaces, d.id) && !!del.id && (await z.listTrash(wsId)).some((x) => x.id === del.id))
+    const back = await z.restoreTrash(del.id)
+    ok('restaurar da lixeira', back.id === d.id && !!find(back.workspaces, d.id))
+    list = (await z.deleteNode(d.id)).workspaces
     const cp = await z.duplicateWorkspace(wsId)
     const copy = cp.workspaces.find((x) => x.id === cp.id)
     ok('duplicar workspace', copy && /^E2E \((cópia|copy)\)$/.test(copy.name) && copy.id !== wsId && copy.children.length === ws.children.length, copy && copy.name)

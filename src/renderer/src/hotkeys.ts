@@ -8,7 +8,7 @@ import { getTheme, themeVars } from '@shared/themes'
 import { findNode } from '@shared/tree'
 import type { UiPrefs } from '@shared/types'
 import { navigate } from './nav'
-import { activeWorkspace, api, createFolderIn, createRequestIn, deleteNode, duplicateNode, useStore } from './state'
+import { activeWorkspace, api, createFolderIn, createRequestIn, deleteNode, duplicateNode, undoDelete, useStore } from './state'
 
 export const ZOOM_STEPS = [0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2]
 export const UI_FONT = { min: 10, max: 20, def: 13 }
@@ -129,6 +129,11 @@ const ACTIONS: Record<string, () => void> = {
   delete: () => {
     const { found } = current()
     if (found) deleteNode(found.node)
+  },
+  undoDelete: () => undoDelete(),
+  trash: () => {
+    const { s, ws } = current()
+    if (ws) s.openModal({ kind: 'trash', id: ws.id })
   },
   methodMenu: () => {
     if (current().found?.node.kind === 'request') useStore.setState({ methodMenu: true })

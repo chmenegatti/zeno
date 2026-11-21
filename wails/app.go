@@ -65,6 +65,7 @@ type App struct {
 
 func NewApp() *App {
 	st := store.New(store.DefaultDataDir())
+	st.PurgeTrash(store.TrashMaxAge)
 	// "zeno": mesmo item do chaveiro que o Electron usa (application=zeno)
 	a := &App{store: st, cookies: cookies.New(st.Dir), vault: vault.New(st.Dir, systemKeyring()), handlers: map[string]handler{}}
 	a.prompts = prompts{waiting: map[int]chan *promptAnswer{}, memory: map[string]string{}}

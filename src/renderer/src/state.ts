@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { t } from '@shared/i18n'
 import type { SendResult } from '@shared/api'
-import { findNode } from '@shared/tree'
+import { findNode, walk } from '@shared/tree'
 import { prepare } from '@shared/prepare'
 import { isGrpcUrl, isWsUrl, type GrpcEvent, type SSEEvent, type WsEvent } from '@shared/stream'
 import type { AppState, Environment, PluginInfo, Folder, FolderDoc, RequestDoc, ResponseRecord, TreeNode, Workspace } from '@shared/types'
@@ -9,7 +9,7 @@ import type { AppState, Environment, PluginInfo, Folder, FolderDoc, RequestDoc, 
 const api = window.zeno
 
 interface Modal {
-  kind: 'env' | 'folder' | 'workspace' | 'import' | 'prompt' | 'confirm' | 'code' | 'git' | 'run' | 'shortcuts' | 'prefs' | 'palette' | 'cookies' | 'plugins' | 'github' | 'workspaces'
+  kind: 'env' | 'folder' | 'workspace' | 'import' | 'prompt' | 'confirm' | 'code' | 'git' | 'run' | 'shortcuts' | 'prefs' | 'palette' | 'cookies' | 'plugins' | 'github' | 'workspaces' | 'trash'
   /** id do alvo (pasta/workspace) */
   id?: string
   /** github: workspaces já marcados */
@@ -33,6 +33,11 @@ export interface VarEdit {
   swap?: (name: string) => void
 }
 
+export interface NoticeAction {
+  label: string
+  run: () => void
+}
+
 export interface Store {
   ready: boolean
   dataDir: string
@@ -52,6 +57,7 @@ export interface Store {
   error: string | null
   /** aviso curto que some sozinho */
   notice: string | null
+  noticeAction: NoticeAction | null
   /** badges mostram o valor da variável (Alt+Shift+U) */
   showValues: boolean
   /** lista de métodos aberta (Ctrl+Shift+L) */
@@ -87,7 +93,8 @@ export interface Store {
   openModal(m: Modal): void
   closeModal(): void
   showError(e: unknown): void
-  notify(msg: string): void
+  /** com action, o aviso ganha um botão (ex.: Desfazer) e fica mais tempo */
+  notify(msg: string, action?: NoticeAction): void
   run<T>(p: Promise<T>): Promise<T | undefined>
 }
 
@@ -161,6 +168,7 @@ export const useStore = create<Store>((set, get) => ({
   varEdit: null,
   error: null,
   notice: null,
+  noticeAction: null,
   showValues: false,
   sendMenu: false,
   methodMenu: false,
@@ -337,9 +345,9 @@ export const useStore = create<Store>((set, get) => ({
     set({ error: msg })
     setTimeout(() => get().error === msg && set({ error: null }), 6000)
   },
-  notify(msg) {
-    set({ notice: msg })
-    setTimeout(() => get().notice === msg && set({ notice: null }), 3500)
+  notify(msg, action) {
+    set({ notice: msg, noticeAction: action ?? null })
+    setTimeout(() => get().notice === msg && set({ notice: null, noticeAction: null }), action ? 8000 : 3500)
   },
   async run(p) {
     try {
@@ -386,20 +394,46 @@ export async function duplicateNode(id: string): Promise<void> {
   if (ws && findNode(ws, r.id)?.node.kind === 'request') st().selectRequest(r.id)
 }
 
-export function deleteNode(node: TreeNode): void {
-  st().openModal({
-    kind: 'confirm',
-    title: node.kind === 'folder' ? t('Excluir pasta') : t('Excluir request'),
-    message: node.kind === 'folder' ? t('Excluir a pasta "{name}" e tudo dentro dela?', { name: node.name }) : t('Excluir "{name}"?', { name: node.name }),
-    onOk: async () => {
-      await st().flushSaves()
-      const ws = await st().run(api.deleteNode(node.id))
-      if (!ws) return
-      st().setWorkspaces(ws)
-      const cur = activeWorkspace(st())
-      if (cur && st().app.activeRequestId && !findNode(cur, st().app.activeRequestId!)) st().selectRequest(undefined)
+// lixeira (#155): excluir não pergunta mais; o aviso tem Desfazer e Ctrl+Z restaura o último
+const trashed: string[] = []
+
+export async function deleteNode(node: TreeNode): Promise<void> {
+  await st().flushSaves()
+  const r = await st().run(api.deleteNode(node.id))
+  if (!r) return
+  st().setWorkspaces(r.workspaces)
+  const cur = activeWorkspace(st())
+  if (cur && st().app.activeRequestId && !findNode(cur, st().app.activeRequestId!)) st().selectRequest(undefined)
+  if (!r.id) return
+  trashed.push(r.id)
+  let n = 0
+  if (node.kind === 'folder') walk(node.children, (x) => x.kind === 'request' && n++)
+  const msg = node.kind === 'folder' ? t('Pasta "{name}" ({n} requests) foi pra lixeira', { name: node.name, n }) : t('"{name}" foi pra lixeira', { name: node.name })
+  st().notify(msg, { label: t('Desfazer'), run: () => restoreTrash(r.id) })
+}
+
+export async function restoreTrash(id: string): Promise<void> {
+  const r = await st().run(api.restoreTrash(id))
+  if (!r) return
+  const i = trashed.indexOf(id)
+  if (i >= 0) trashed.splice(i, 1)
+  st().setWorkspaces(r.workspaces)
+  for (const w of r.workspaces) {
+    const found = findNode(w, r.id)
+    if (!found) continue
+    if (found.node.kind === 'request') {
+      if (w.id !== activeWorkspace(st())?.id) st().setApp({ activeWorkspaceId: w.id })
+      st().selectRequest(found.node.id)
     }
-  })
+    st().notify(t('"{name}" restaurado', { name: found.node.name }))
+  }
+}
+
+/** Ctrl+Z na lateral: desfaz a última exclusão desta sessão */
+export function undoDelete(): void {
+  const id = trashed.at(-1)
+  if (id) restoreTrash(id)
+  else st().notify(t('Nada pra desfazer'))
 }
 
 export async function moveNode(id: string, parentId: string, sortKey: number): Promise<void> {
