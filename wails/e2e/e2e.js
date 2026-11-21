@@ -293,5 +293,10 @@
     await z.setState({ ...st, activeWorkspaceId: wsId })
     ok('estado salvo', (await z.load()).state.activeWorkspaceId === wsId)
   })
+  await safe('aviso de versão nova', async () => {
+    const u = await z.checkUpdate('1.0.0')
+    ok('versão nova encontrada', u && u.version === '99.0.0' && u.url.endsWith('/gh/v99'), JSON.stringify(u))
+    ok('em dia não avisa', (await z.checkUpdate('99.0.0')) === null)
+  })
   console.log('RESULTADO ' + pass + ' ok, ' + fail + ' falhas')
 })()

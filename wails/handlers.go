@@ -661,6 +661,14 @@ func (a *App) register() {
 		runtime.BrowserOpenURL(a.ctx, "file://"+filepath.ToSlash(st.Dir))
 		return nil, nil
 	})
+	// aviso de versão nova (#176)
+	a.handle("checkUpdate", func(args Args) (any, error) {
+		cur, _ := Get[string](args, 0)
+		if u := checkUpdate(a.ctx, cur); u != nil {
+			return u, nil
+		}
+		return nil, nil
+	})
 	// memória do runtime Go e de cada processo do app (#159)
 	a.handle("memStats", func(Args) (any, error) { return readMemSnapshot(), nil })
 	a.handle("benchLog", func(args Args) (any, error) {

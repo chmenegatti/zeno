@@ -254,6 +254,10 @@ export interface UiPrefs {
   wsSort?: 'manual' | 'name' | 'recent'
   /** idioma da interface (#132); sem = inglês */
   lang?: 'en' | 'pt'
+  /** avisar quando sair versão nova (#176); sem = sim */
+  updateCheck?: boolean
+  /** versão que o usuário mandou pular */
+  skipVersion?: string
 }
 
 /** request já com variáveis resolvidas, pronto pra enviar */

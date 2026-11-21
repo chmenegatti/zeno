@@ -29,7 +29,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 - **Seus dados são arquivos.** Cada request é um arquivo YAML legível, numa pasta sua. Dá pra versionar no git, revisar em PR e editar no seu editor favorito.
 - **Segredos não vazam.** Senhas e tokens ficam criptografados no próprio YAML, com a chave guardada no chaveiro do sistema.
 - **Migração sem dor.** Importa as coleções do Insomnia direto da pasta dele, incluindo ambientes e encadeamento de tokens.
-- **Local primeiro.** Sem conta, sem telemetria, sem sincronização obrigatória.
+- **Local primeiro.** Sem conta, sem telemetria, sem sincronização obrigatória. A única requisição automática é uma consulta anônima por versão nova na API de releases do GitHub (desliga nas Preferências ou com `ZENO_NO_UPDATE_CHECK=1`).
 - **Leve.** Feito em Go, com a janela no navegador do próprio sistema: pacote de 8 a 24 MB e cerca de 220 MB de memória com o app parado.
 - **Do seu jeito.** Interface em inglês ou português, 20 temas, atalhos iguais aos do Insomnia (e editáveis), paleta de comandos e plugins no formato do Insomnia.
 

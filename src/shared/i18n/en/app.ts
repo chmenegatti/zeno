@@ -20,7 +20,13 @@ const en: Record<string, string> = {
   'Novo request': 'New request',
   'Só dá pra formatar JSON válido': 'Only valid JSON can be formatted',
   'Variáveis mostrando o nome': 'Variables showing names',
-  'Variáveis mostrando o valor (Alt+Shift+U volta)': 'Variables showing values (Alt+Shift+U to switch back)'
+  'Variáveis mostrando o valor (Alt+Shift+U volta)': 'Variables showing values (Alt+Shift+U to switch back)',
+  'Zeno {v} disponível': 'Zeno {v} is available',
+  'você está na {v}': "you're on {v}",
+  'Atualize pelo gerenciador de pacotes:': 'Update with your package manager:',
+  'Baixe o AppImage novo e substitua o atual.': 'Download the new AppImage and replace the current one.',
+  'Novidades': "What's new",
+  'Pular esta versão': 'Skip this version'
 }
 
 export default en
