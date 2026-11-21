@@ -151,7 +151,7 @@ export function ResponsePane({ width }: { width: number }) {
                       ? [{ id: 'tests' as const, label: <>{t('Testes')}{report.tests.length ? <span className={`ml-1 text-[10.5px] ${failed ? 'text-tpink' : 'text-tgreen'}`}>{report.tests.length - report.tests.filter((x) => !x.ok).length}/{report.tests.length}</span> : failed ? <span className="ml-1 text-[10.5px] text-tpink">{t('erro')}</span> : null}</> }]
                       : []),
                     { id: 'timeline', label: t('Linha do tempo') },
-                    ...(history.length > 1 ? [{ id: 'compare' as const, label: t('Comparar') }] : [])
+                    ...(history.length > 1 || (cur?.req.examples?.length ?? 0) > 0 ? [{ id: 'compare' as const, label: t('Comparar') }] : [])
                   ]}
                 />
                 <div className="flex-1" />
@@ -178,7 +178,7 @@ export function ResponsePane({ width }: { width: number }) {
                 )}
                 {sec === 'tests' && (report ? <ScriptResults report={report} /> : <p className="p-3 text-faint">{t('Este envio não teve scripts nem asserções.')}</p>)}
                 {sec === 'timeline' && <TimelineView res={res} />}
-                {sec === 'compare' && <CompareView res={res} history={history} />}
+                {sec === 'compare' && <CompareView res={res} history={history} examples={cur?.req.examples} />}
               </div>
             </>
           )}

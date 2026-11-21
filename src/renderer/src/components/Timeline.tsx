@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
-import { diffLines } from '@shared/diff'
-import type { ResponseRecord } from '@shared/types'
+import { useEffect, useMemo, useState } from 'react'
+import { collapseSame, diffLines, sortedJson } from '@shared/diff'
+import type { Example, ResponseRecord } from '@shared/types'
 import { formatBytes } from './ui'
 import { Select } from './Select'
 import { locale, t } from '@shared/i18n'
@@ -127,29 +127,56 @@ export function TimelineView({ res }: { res: ResponseRecord }) {
   )
 }
 
-const pretty = (r: ResponseRecord): string => {
+const pretty = (r: ResponseRecord, sortKeys: boolean): string => {
   if (r.bodyEncoding === 'base64') return t('[binário {size}]', { size: formatBytes(r.size) })
   if (r.bodyFile) return r.body
+  if (sortKeys) return sortedJson(r.body) ?? r.body
   try {
     return JSON.stringify(JSON.parse(r.body), null, 2)
   } catch {
     return r.body
   }
 }
-const label = (r: ResponseRecord): string => `${new Date(r.at).toLocaleTimeString(locale())} · ${r.error ? t('erro') : r.status}`
+const isExample = (r: ResponseRecord): boolean => r.id.startsWith('ex:')
+const label = (r: ResponseRecord): string => (isExample(r) ? t('exemplo: {name}', { name: r.statusText }) : `${new Date(r.at).toLocaleTimeString(locale())} · ${r.error ? t('erro') : r.status}`)
 
-/** diff entre a resposta atual e outra do histórico */
-export function CompareView({ res, history }: { res: ResponseRecord; history: ResponseRecord[] }) {
-  const others = history.filter((h) => h.id !== res.id)
+/** exemplo salvo (mock) no formato de resposta, pra entrar na comparação */
+function exampleRecord(e: Example): ResponseRecord {
+  return {
+    id: `ex:${e.id}`, requestId: '', at: 0, method: '', url: '', status: e.status, statusText: e.name,
+    headers: e.headers.filter((h) => h.enabled).map((h) => [h.name, h.value]), body: e.body, bodyEncoding: e.bodyEncoding ?? 'utf8',
+    size: e.body.length, timing: { headersMs: 0, totalMs: 0 }
+  }
+}
+
+const ms = (n: number): string => `${Math.round(n)} ms`
+function Delta({ a, b, fmt }: { a: number; b: number; fmt: (n: number) => string }) {
+  if (a === b) return <span className="text-dim">{fmt(b)}</span>
+  return (
+    <span className="text-dim">
+      {fmt(a)} → <span className="text-ink">{fmt(b)}</span>
+    </span>
+  )
+}
+
+/** diff entre a resposta atual e outra do histórico (ou um exemplo salvo) */
+export function CompareView({ res, history, examples = [] }: { res: ResponseRecord; history: ResponseRecord[]; examples?: Example[] }) {
+  const others = [...history.filter((h) => h.id !== res.id), ...examples.map(exampleRecord)]
   const [otherId, setOtherId] = useState(others[0]?.id ?? '')
   const other = others.find((h) => h.id === otherId) ?? others[0]
   const [what, setWhat] = useState<'body' | 'headers'>('body')
+  const [sortKeys, setSortKeys] = useState(true)
+  const [all, setAll] = useState(false)
   const diff = useMemo(() => {
     if (!other) return null
     const text = (r: ResponseRecord): string =>
-      what === 'body' ? pretty(r) : [`${r.status} ${r.statusText}`, ...[...r.headers].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}: ${v}`)].join('\n')
+      what === 'body' ? pretty(r, sortKeys) : [`${r.status} ${isExample(r) ? '' : r.statusText}`.trim(), ...[...r.headers].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}: ${v}`)].join('\n')
     return diffLines(text(other), text(res))
-  }, [res, other, what])
+  }, [res, other, what, sortKeys])
+  const [opened, setOpened] = useState<Set<number>>(new Set())
+  // outra resposta ou outro modo: trechos abertos voltam a ficar recolhidos
+  useEffect(() => setOpened(new Set()), [diff])
+  const rows = useMemo(() => (diff ? (all ? diff.lines : collapseSame(diff.lines)) : []), [diff, all])
   if (!other || !diff) return <p className="p-3 text-faint">{t('Envie mais uma vez pra ter o que comparar.')}</p>
   // binário: sem diff de texto; diz se o conteúdo é igual (quando os dois estão no histórico)
   const binary = what === 'body' && (res.bodyEncoding === 'base64' || other.bodyEncoding === 'base64')
@@ -177,14 +204,54 @@ export function CompareView({ res, history }: { res: ResponseRecord; history: Re
         )}
         {(diff.cut || res.bodyFile || other.bodyFile) && <span className="text-faint">{t('(comparando só o começo)')}</span>}
       </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line/60 px-3 py-1 text-[11.5px]">
+        <span>
+          {t('status')} <Delta a={other.status} b={res.status} fmt={String} />
+        </span>
+        {!isExample(other) && (
+          <span>
+            {t('tempo')} <Delta a={other.timing.totalMs} b={res.timing.totalMs} fmt={ms} />
+          </span>
+        )}
+        <span>
+          {t('tamanho')} <Delta a={other.size} b={res.size} fmt={formatBytes} />
+        </span>
+        <div className="flex-1" />
+        {what === 'body' && (
+          <label className="flex items-center gap-1.5 text-dim" title={t('Compara o JSON com as chaves em ordem alfabética')}>
+            <input type="checkbox" checked={sortKeys} onChange={(e) => setSortKeys(e.target.checked)} />
+            {t('ignorar ordem das chaves')}
+          </label>
+        )}
+        <label className="flex items-center gap-1.5 text-dim">
+          <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} />
+          {t('mostrar tudo')}
+        </label>
+      </div>
       <pre className="min-h-0 flex-1 overflow-auto py-1 font-mono text-[11.5px] leading-[1.5] select-text">
         {binary && <div className="px-3 py-2 text-faint">{formatBytes(other.size)} → {formatBytes(res.size)}. {t('Diff linha a linha só pra texto.')}</div>}
-        {!binary && diff.lines.map((l, i) => (
-          <div key={i} className={l.t === 'add' ? 'bg-tgreen/10 text-tgreen' : l.t === 'del' ? 'bg-tpink/10 text-tpink' : 'text-dim'}>
-            <span className="inline-block w-5 select-none text-center opacity-70">{l.t === 'add' ? '+' : l.t === 'del' ? '−' : ' '}</span>
-            {l.text}
-          </div>
-        ))}
+        {!binary &&
+          rows.map((l, i) =>
+            l.t === 'gap' ? (
+              opened.has(l.from) ? (
+                diff.lines.slice(l.from, l.from + l.count).map((x, k) => (
+                  <div key={`${i}:${k}`} className="text-dim">
+                    <span className="inline-block w-5 select-none text-center opacity-70"> </span>
+                    {x.text}
+                  </div>
+                ))
+              ) : (
+                <button key={i} className="block w-full select-none bg-raised/60 px-3 text-left text-faint hover:text-ink" onClick={() => setOpened(new Set([...opened, l.from]))}>
+                  ⋯ {t('{n} linhas iguais', { n: l.count })}
+                </button>
+              )
+            ) : (
+              <div key={i} className={l.t === 'add' ? 'bg-tgreen/10 text-tgreen' : l.t === 'del' ? 'bg-tpink/10 text-tpink' : 'text-dim'}>
+                <span className="inline-block w-5 select-none text-center opacity-70">{l.t === 'add' ? '+' : l.t === 'del' ? '−' : ' '}</span>
+                {l.text}
+              </div>
+            )
+          )}
       </pre>
     </div>
   )

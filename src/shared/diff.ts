@@ -37,3 +37,39 @@ export function diffLines(a: string, b: string): { lines: DiffLine[]; cut: boole
   const same = (x: string[]): DiffLine[] => x.map((text) => ({ t: 'same', text }))
   return { lines: [...same(A.slice(0, pre)), ...mid, ...same(A.slice(A.length - suf))], cut }
 }
+
+/** JSON com as chaves em ordem alfabética (ordem diferente não vira diferença) */
+export function sortedJson(text: string): string | null {
+  const sort = (v: unknown): unknown =>
+    Array.isArray(v) ? v.map(sort) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sort((v as Record<string, unknown>)[k])])) : v
+  try {
+    return JSON.stringify(sort(JSON.parse(text)), null, 2)
+  } catch {
+    return null
+  }
+}
+
+export type DiffRow = DiffLine | { t: 'gap'; count: number; from: number }
+
+/** trechos iguais longos viram uma linha "N iguais" com `context` linhas de cada lado das mudanças */
+export function collapseSame(lines: DiffLine[], context = 3): DiffRow[] {
+  const out: DiffRow[] = []
+  let i = 0
+  while (i < lines.length) {
+    if (lines[i].t !== 'same') {
+      out.push(lines[i++])
+      continue
+    }
+    let j = i
+    while (j < lines.length && lines[j].t === 'same') j++
+    const keepStart = i === 0 ? 0 : context
+    const keepEnd = j === lines.length ? 0 : context
+    if (j - i > keepStart + keepEnd + 1) {
+      out.push(...lines.slice(i, i + keepStart))
+      out.push({ t: 'gap', count: j - i - keepStart - keepEnd, from: i + keepStart })
+      out.push(...lines.slice(j - keepEnd, j))
+    } else out.push(...lines.slice(i, j))
+    i = j
+  }
+  return out
+}
