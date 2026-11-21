@@ -57,7 +57,7 @@ Popular API clients keep piling on tabs, cloud accounts and ever more crowded sc
 | **Mock server** | ★ *example* saves a response from the history into the request (*Examples* tab: editable status, headers, body and delay, one default). *Start mock* runs a local server per workspace (`127.0.0.1:4010` or a port of your choice) that answers each route, `GET {{ base_url }}/users/{{ id }}` → `GET /users/1`, with its example; CORS enabled, 404 lists the routes, stops when the workspace is deleted or the app closes |
 | **Authentication** | Basic, Bearer, API key (header or query) and **OAuth 2.0** (authorization code with PKCE, client credentials, password, device code and implicit; login in the system browser, token cached encrypted in the vault and refreshed automatically), inherited from the folder |
 | **Environments and variables** | `{{ var }}` and `{{ _.var }}` with Base → sub-environment → folder inheritance; edit with `Ctrl+E`, switch with `Ctrl+Shift+E` |
-| **Variable badges** | Variables show up as badges in every field and editor, with autocomplete as you type `{{`; click to view, edit, create or move |
+| **Variable badges** | Variables show up as badges in every field and editor, with autocomplete as you type `{{`; click to view, edit, create, move or switch to another variable; drag from the *Variables* panel into a field, between positions, or out to remove |
 | **Scripts and tests** | JavaScript before sending and after the response (per request or folder), with `zeno.test`/`zeno.expect`; Insomnia and Postman scripts run unchanged |
 | **Assertions and runner** | Status, header, JSONPath, body and timing checks without code; run a whole folder with iterations, CSV/JSON data and a JUnit report, in the app or with `zeno run` in CI |
 | **Chaining and functions** | `{% response %}` uses the body, header or URL of another request, resending only when the value expires; `uuid`, `timestamp`, `faker`, `hash`, `base64`, `file`, `prompt` and `jsonpath` |
@@ -193,6 +193,8 @@ Each workspace has a **Base** environment and as many sub-environments as you li
 Click any badge to see where its value comes from, change it, move it to another level or mark it as secret. An orange badge means the variable doesn't exist in the active environment; clicking it creates it.
 
 Variables become badges everywhere: URL, params, headers, auth, form fields and also the body and environment editors. Typing `{{` opens the list of variables in the active environment, with value (secrets masked) and origin; `Ctrl+Space` shows variables and tags. `Alt+Shift+U` swaps names for values in the badges.
+
+Drag a chip from the *Variables* panel and drop it anywhere in the URL, params, headers or auth to insert `{{ name }}` there. Drag a badge to move it inside the field, or drop it outside any field to remove it. In the badge popover, the variable picker swaps the badge for another variable in scope, with a live preview of its value.
 
 ### Template tags
 

@@ -55,7 +55,7 @@ Clientes de API populares foram ganhando abas, contas na nuvem e telas cada vez 
 | **Mock server** | ★ *exemplo* salva uma resposta do histórico no request (aba *Exemplos*: status, headers, body e atraso editáveis, um padrão). *Ligar mock* sobe um servidor local por workspace (`127.0.0.1:4010` ou a porta escolhida) que responde cada rota, `GET {{ base_url }}/users/{{ id }}` → `GET /users/1`, com o exemplo; CORS liberado, 404 lista as rotas, para ao excluir o workspace ou fechar o app |
 | **Autenticação** | Basic, Bearer, API key (header ou query) e **OAuth 2.0** (authorization code com PKCE, client credentials, senha, device code e implicit; login no navegador do sistema, token em cache cifrado no cofre e renovado sozinho), com herança da pasta |
 | **Ambientes e variáveis** | `{{ var }}` e `{{ _.var }}` com herança Base → sub-ambiente → pasta; editor com `Ctrl+E`, troca com `Ctrl+Shift+E` |
-| **Badges de variáveis** | Variáveis aparecem como badges em todos os campos e editores, com autocomplete ao digitar `{{`; clique pra ver, editar, criar ou mover |
+| **Badges de variáveis** | Variáveis aparecem como badges em todos os campos e editores, com autocomplete ao digitar `{{`; clique pra ver, editar, criar, mover ou trocar por outra variável; arraste do painel *Variáveis* pra um campo, entre posições, ou pra fora pra remover |
 | **Scripts e testes** | JavaScript antes do envio e depois da resposta (por request ou pasta), com `zeno.test`/`zeno.expect`; scripts do Insomnia e do Postman rodam sem mudança |
 | **Asserções e executor** | Checagens de status, header, JSONPath, body e tempo sem programar; rode uma pasta inteira com iterações, dados CSV/JSON e relatório JUnit, no app ou com `zeno run` no CI |
 | **Encadeamento e funções** | `{% response %}` usa o body, header ou URL de outro request, reenviando só quando o valor expira; `uuid`, `timestamp`, `faker`, `hash`, `base64`, `file`, `prompt` e `jsonpath` |
@@ -191,6 +191,8 @@ Cada workspace tem um ambiente **Base** e quantos sub-ambientes quiser (Desenvol
 Clique em qualquer badge para ver de onde vem o valor, mudar, mover para outro nível ou marcar como secreto. Badge laranja indica variável que não existe no ambiente ativo; clicar nela já cria.
 
 As variáveis viram badge em todo lugar: URL, params, headers, auth, campos de formulário e também nos editores de body e de ambientes. Digitar `{{` abre a lista de variáveis do ambiente ativo, com valor (secretos mascarados) e origem; `Ctrl+Espaço` mostra variáveis e tags. `Alt+Shift+U` troca o nome pelo valor nos badges.
+
+Arraste um chip do painel *Variáveis* e solte em qualquer ponto da URL, params, headers ou auth pra inserir `{{ nome }}` ali. Arraste um badge pra mudar de lugar dentro do campo, ou solte fora de qualquer campo pra remover. No popover do badge, o seletor de variável troca o badge por outra variável do contexto, com prévia do valor.
 
 ### Tags de template
 

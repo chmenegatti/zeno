@@ -2,6 +2,22 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [1.3.0](https://github.com/chmenegatti/zeno/compare/v1.2.0...v1.3.0) (2026-11-20)
+
+### Novidades
+
+* **Arrastar variáveis pros campos**: chips do painel *Variáveis* podem ser arrastados pra URL, params, headers e auth, entrando na posição em que você solta; badges mudam de lugar dentro do campo e saem quando arrastados pra fora ([#147](https://github.com/chmenegatti/zeno/pull/147))
+* **Trocar o badge por outra variável**: o popover do badge tem um seletor com as variáveis do contexto e prévia do valor, como o *Edit Variable* do Insomnia ([#147](https://github.com/chmenegatti/zeno/pull/147))
+* **Pacote Flatpak** anexado a cada release; instruções pro Arch (AUR) e winget atualizado automaticamente ([#138](https://github.com/chmenegatti/zeno/pull/138), [#139](https://github.com/chmenegatti/zeno/pull/139), [#140](https://github.com/chmenegatti/zeno/pull/140))
+* **Site**: comparações com Insomnia, Postman e Bruno e guia de migração do Insomnia ([#141](https://github.com/chmenegatti/zeno/pull/141))
+
+### Correções
+
+* **Arrastar na lateral** voltou a funcionar no Linux e no macOS: pastas, requests e workspaces ([#146](https://github.com/chmenegatti/zeno/pull/146))
+* **Import do Insomnia**: a mensagem do compositor de WebSocket vira a mensagem do request ([#142](https://github.com/chmenegatti/zeno/pull/142))
+* Clicar na lista de um seletor dentro do popover de variável não fecha mais o popover ([#147](https://github.com/chmenegatti/zeno/pull/147))
+
+
 ## [1.2.0](https://github.com/chmenegatti/zeno/compare/v1.1.0...v1.2.0) (2026-11-20)
 
 **Zeno em inglês.** A interface e as mensagens agora saem em inglês por padrão; quem prefere português escolhe em **Preferences › Language / Idioma** (a escolha vale também pras mensagens geradas pelo app). Na linha de comando, `ZENO_LANG=pt` mantém a saída em português.
