@@ -45,5 +45,5 @@ body:
     id: logs
     attributes:
       label: Prints, logs ou YAML do request
-      description: Remova senhas, tokens e dados internos antes de colar.
+      description: Remova senhas, tokens e dados internos antes de colar. Problema de memória? Rode com `ZENO_MEMSTATS=1 zeno` e cole as linhas `MEM` do terminal.
       render: shell

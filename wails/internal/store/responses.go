@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
@@ -213,12 +214,13 @@ func (s *Store) AddResponse(rec *Doc) []any {
 	return append([]any{}, list...)
 }
 
-// os primeiros 256 Ki caracteres (UTF-16, como body.slice no JavaScript)
+// os primeiros 256 Ki caracteres (UTF-16, como body.slice no JavaScript). Cópia: s[:i] apontaria pro
+// mesmo array do body inteiro e a prévia no histórico em memória seguraria os MBs da resposta (#159)
 func preview(s string) string {
 	n := 0
 	for i, r := range s {
 		if n >= previewChars {
-			return s[:i]
+			return strings.Clone(s[:i])
 		}
 		if r > 0xFFFF {
 			n += 2

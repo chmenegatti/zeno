@@ -408,7 +408,7 @@ To check the UI without touching the window:
 ZENO_DATA_DIR=/tmp/zeno-teste ZENO_SCRIPT='console.log(document.title)' ./wails/build/zeno
 ```
 
-`ZENO_SCRIPT` runs JavaScript in the page (`console.log` goes to the terminal) and the app exits at the end; `ZENO_TRACE=1` shows the timing of each channel. More details in [CONTRIBUTING.md](CONTRIBUTING.md).
+`ZENO_SCRIPT` runs JavaScript in the page (`console.log` goes to the terminal) and the app exits at the end; `ZENO_TRACE=1` shows the timing of each channel; `ZENO_MEMSTATS=1` logs memory every 10 s (Go heap plus RSS/PSS of the app and each WebKit process; `ZENO_MEMSTATS=2s` changes the interval). More details in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Contributing
 

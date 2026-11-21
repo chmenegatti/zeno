@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unsafe"
 
 	"github.com/chmenegatti/zeno/wails/internal/doc"
 )
@@ -394,5 +395,14 @@ settings:
 	set.Map("proxy").Set("mode", "outro")
 	if normSettings(set).Map("proxy").Str("mode") != "none" {
 		t.Error("modo desconhecido devia virar none")
+	}
+}
+
+// a prévia não pode apontar pro array do body inteiro: seguraria a resposta grande na memória (#159)
+func TestPreviewCopia(t *testing.T) {
+	big := strings.Repeat("x", previewChars*2)
+	p := preview(big)
+	if len(p) != previewChars || unsafe.StringData(p) == unsafe.StringData(big) {
+		t.Fatalf("prévia compartilha o body: len=%d", len(p))
 	}
 }
