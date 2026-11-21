@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Migrate from Insomnia to Zeno in one minute</title>
+  <meta name="description" content="Step-by-step: import your Insomnia data folder into Zeno with environments, {% response %} chaining, scripts, plugins and shortcuts. No export needed." />
+  <link rel="canonical" href="https://www.cesarmenegatti.com/zeno/migrate-from-insomnia/" />
+  <meta property="og:title" content="Migrate from Insomnia to Zeno in one minute" />
+  <meta property="og:description" content="Step-by-step: import your Insomnia data folder into Zeno with environments, {% response %} chaining, scripts, plugins and shortcuts. No export needed." />
+  <meta property="og:image" content="https://www.cesarmenegatti.com/zeno/img/social.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://www.cesarmenegatti.com/zeno/migrate-from-insomnia/" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.cesarmenegatti.com/zeno/img/social.png" />
+  <script type="application/ld+json">[{"@context": "https://schema.org", "@type": "WebPage", "name": "Migrate from Insomnia to Zeno in one minute", "description": "Step-by-step: import your Insomnia data folder into Zeno with environments, {% response %} chaining, scripts, plugins and shortcuts. No export needed.", "url": "https://www.cesarmenegatti.com/zeno/migrate-from-insomnia/", "inLanguage": "en", "isPartOf": {"@type": "WebSite", "name": "Zeno", "url": "https://www.cesarmenegatti.com/zeno/"}, "about": {"@type": "SoftwareApplication", "name": "Zeno", "applicationCategory": "DeveloperApplication", "operatingSystem": "Linux, Windows, macOS", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "url": "https://www.cesarmenegatti.com/zeno/"}}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Do I need to export from Insomnia first?", "acceptedAnswer": {"@type": "Answer", "text": "No. Zeno reads the installed Insomnia data folder directly. Exports (v4 JSON or v5 YAML) also work."}}, {"@type": "Question", "name": "Will my {% response %} token chaining keep working?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Zeno uses the same template tag syntax as Insomnia, including {% response %} with its triggers."}}, {"@type": "Question", "name": "Does importing change anything in Insomnia?", "acceptedAnswer": {"@type": "Answer", "text": "No. Zeno only reads Insomnia's files."}}]}]</script>
+  <meta name="theme-color" content="#00121c" />
+  <link rel="icon" href="../img/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+.doc { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+.doc h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.12; margin: 8px 0 16px; text-wrap: balance; }
+.doc h2 { font-size: 24px; margin: 48px 0 12px; }
+.doc h3 { font-size: 18px; margin: 28px 0 8px; }
+.doc p, .doc li { color: var(--dim); font-size: 16.5px; line-height: 1.65; }
+.doc p.lede { font-size: 18.5px; color: var(--text, inherit); }
+.doc a { color: var(--blue); text-underline-offset: 3px; }
+.doc code { font-family: var(--mono); font-size: 0.92em; background: var(--bg2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+.doc ol li, .doc ul li { margin: 6px 0; }
+.tbl { overflow-x: auto; margin: 20px 0; border: 1px solid var(--line); border-radius: 12px; }
+.tbl table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 15px; }
+.tbl th, .tbl td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl th { font-weight: 600; background: var(--bg2); }
+.tbl td:first-child { font-weight: 600; white-space: nowrap; }
+.tbl td { color: var(--dim); }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 8px; }
+.note { font-size: 14px !important; color: var(--faint, var(--dim)) !important; border-top: 1px solid var(--line); margin-top: 48px; padding-top: 18px; }
+.crumbs { font: 600 12.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
+.crumbs a { color: inherit; text-decoration: none; }
+.related { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.related a { border: 1px solid var(--line); border-radius: 99px; padding: 6px 14px; text-decoration: none; font-size: 14.5px; }
+</style>
+  <script>
+    ;(function () {
+      try {
+        var t = localStorage.getItem('zeno-site-theme')
+        if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+        document.documentElement.dataset.theme = t
+      } catch (e) {}
+    })()
+  </script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-in">
+      <a class="brand" href="../"><img src="../img/logo.svg" alt="" width="30" height="30" /> Zeno</a>
+      <div class="nav-end">
+        <a class="btn primary" style="height:38px;padding:0 16px;font-size:14px" href="https://github.com/chmenegatti/zeno/releases/latest">Download</a>
+      </div>
+    </div>
+  </header>
+  <main class="doc">
+    <p class="crumbs"><a href="../">Zeno</a> / Guide</p>
+    <h1>Migrate from Insomnia to Zeno</h1>
+    <p class="lede">Zeno reads your Insomnia data directly, so moving takes about a minute and nothing changes in Insomnia. Your requests, environments, chained tokens, scripts and shortcuts come over, and anything that can't be converted is listed before you import.</p>
+<div class="cta">
+  <a class="btn primary" href="https://github.com/chmenegatti/zeno/releases/latest">Download Zeno</a>
+  <a class="btn ghost" href="https://github.com/chmenegatti/zeno">View on GitHub</a>
+</div>
+<h2>1. Install Zeno</h2>
+<p>Download it from the <a href="https://github.com/chmenegatti/zeno/releases/latest">releases page</a> (<code>.deb</code>, <code>.rpm</code>, AppImage, Flatpak, Windows installer, macOS <code>.dmg</code>), or use <code>brew install --cask chmenegatti/tap/zeno</code> or Scoop. Insomnia can stay installed; Zeno only reads its files.</p>
+<h2>2. Import</h2>
+<ol>
+<li>In Zeno, open the workspace menu and choose <b>Import…</b>.</li>
+<li>Click the button that reads your Insomnia data folder. Zeno finds it by itself:
+  <ul>
+  <li>Linux: <code>~/.config/Insomnia</code></li>
+  <li>Windows: <code>%APPDATA%\Insomnia</code></li>
+  <li>macOS: <code>~/Library/Application Support/Insomnia</code></li>
+  </ul>
+  If Insomnia is on another machine, export from Insomnia (v4 JSON or v5 YAML) and use <b>Choose files…</b> instead.</li>
+<li>Choose the workspaces to bring over in the preview. Keep the vault option checked: passwords, tokens and keys go to Zeno's vault and the YAML only keeps the encrypted value.</li>
+<li>Read the list of anything that couldn't be converted (for example a template tag from a plugin you don't have) and click <b>Import</b>.</li>
+</ol>
+<h2>What comes over</h2>
+<ul>
+<li>Workspaces, folders and requests, in the same order, with the same ids.</li>
+<li>Base and sub-environments, folder variables and headers, auth inheritance.</li>
+<li>Auth: Basic, Bearer, API key, OAuth 2.0.</li>
+<li>Bodies: JSON, XML, text, form, multipart with files, GraphQL. WebSocket and gRPC requests too (the URL, headers and auth; messages saved on a WebSocket request in Insomnia aren't imported, so recreate them in the request's message).</li>
+<li>Template tags: <code>{{ variable }}</code>, <code>{{ _.variable }}</code> and <code>{% response %}</code> chaining keep working; so do <code>uuid</code>, <code>now</code>, <code>base64</code>, <code>hash</code>, <code>faker</code> and <code>prompt</code>.</li>
+<li>Pre-request and after-response scripts (<code>insomnia.*</code> is an alias for <code>zeno.*</code>).</li>
+<li>Your customized Insomnia shortcuts. The defaults are already the same.</li>
+<li>Insomnia-format plugins: copy them into Zeno's <code>plugins/</code> folder.</li>
+</ul>
+<h2>3. Put the workspace in git (optional)</h2>
+<p>Each request is now a readable YAML file. In the workspace settings choose <b>Move to folder…</b> and pick a folder inside your service's repository: the collection is reviewed in pull requests like the rest of the code, and encrypted secrets can be committed without leaking. They open only with the vault key in your OS keychain, so teammates enter their own values (in CI, pass them with <code>--var</code>). Run it in CI with <code>zeno run</code>.</p>
+<h2>What's different from Insomnia</h2>
+<ul>
+<li>There are no tabs: clicking a request replaces what's on screen. <kbd>Ctrl</kbd>+<kbd>P</kbd> jumps to any request.</li>
+<li>No account and no cloud sync. To share, keep the workspace in git or use <b>Save to GitHub</b> (your own private repository).</li>
+<li>SOAP and Socket.IO aren't supported.</li>
+</ul>
+<p class="note">Questions or something that didn't import? <a href="https://github.com/chmenegatti/zeno/discussions">Ask in Discussions</a> or <a href="https://github.com/chmenegatti/zeno/issues/new">open an issue</a> with the warning text.</p>
+    <h2>FAQ</h2><h3>Do I need to export from Insomnia first?</h3><p>No. Zeno reads the installed Insomnia data folder directly. Exports (v4 JSON or v5 YAML) also work.</p><h3>Will my {% response %} token chaining keep working?</h3><p>Yes. Zeno uses the same template tag syntax as Insomnia, including {% response %} with its triggers.</p><h3>Does importing change anything in Insomnia?</h3><p>No. Zeno only reads Insomnia&#x27;s files.</p>
+    <h2>More</h2>
+    <div class="related"><a href="../vs/insomnia/">Zeno vs Insomnia</a><a href="../vs/postman/">Zeno vs Postman</a><a href="../vs/bruno/">Zeno vs Bruno</a></div>
+  </main>
+</body>
+</html>
