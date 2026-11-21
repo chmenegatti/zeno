@@ -4,8 +4,90 @@
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src blob:; frame-src blob:" />
     <title>Zeno</title>
+    <!-- splash (#181): estático pra aparecer antes do JavaScript; splash.ts preenche idioma/versão e some quando os workspaces carregam -->
+    <style>
+      #splash {
+        position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        overflow: hidden; background: #00121c; color: #e4f3f8; user-select: none; cursor: default;
+        font-family: Inter, 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+        transition: opacity 0.45s ease, transform 0.45s ease;
+      }
+      #splash.out { opacity: 0; transform: scale(1.015); pointer-events: none; }
+      /* aurora: duas manchas de luz nas cores da marca, girando devagar */
+      #splash .aurora { position: absolute; width: 70vmax; height: 70vmax; border-radius: 50%; filter: blur(80px); opacity: 0.22; animation: zs-drift 14s ease-in-out infinite alternate; }
+      #splash .a1 { background: radial-gradient(circle, #00dbff 0%, transparent 62%); top: -38vmax; left: -22vmax; }
+      #splash .a2 { background: radial-gradient(circle, #a44dff 0%, transparent 62%); bottom: -40vmax; right: -24vmax; animation-delay: -7s; }
+      /* grade fina, sumindo nas bordas */
+      #splash .grid {
+        position: absolute; inset: 0; opacity: 0.35;
+        background-image: linear-gradient(rgba(0, 219, 255, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 219, 255, 0.06) 1px, transparent 1px);
+        background-size: 44px 44px;
+        -webkit-mask-image: radial-gradient(ellipse at center, #000 0%, transparent 65%); mask-image: radial-gradient(ellipse at center, #000 0%, transparent 65%);
+      }
+      #splash .center { position: relative; display: flex; flex-direction: column; align-items: center; }
+      #splash .logo { width: 120px; height: 120px; filter: drop-shadow(0 12px 40px rgba(0, 219, 255, 0.25)); animation: zs-rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+      #splash .logo .s { fill: none; stroke-width: 96; stroke-linecap: round; stroke-dasharray: 600; stroke-dashoffset: 600; animation: zs-draw 0.55s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+      #splash .logo .s1 { animation-delay: 0.15s; }
+      #splash .logo .s2 { animation-delay: 0.45s; }
+      #splash .logo .s3 { animation-delay: 0.75s; }
+      #splash .logo .dot { transform-box: fill-box; transform-origin: center; transform: scale(0); animation: zs-pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) 1.05s forwards; }
+      #splash .name {
+        margin-top: 26px; font-size: 46px; font-weight: 700; letter-spacing: 0.02em; line-height: 1;
+        background: linear-gradient(100deg, #e4f3f8 10%, #00dbff 55%, #a44dff 95%); -webkit-background-clip: text; background-clip: text; color: transparent;
+        animation: zs-fade 0.6s ease 0.35s both;
+      }
+      #splash .tagline { margin-top: 10px; font-size: 14px; color: #8eaab8; animation: zs-fade 0.6s ease 0.5s both; }
+      #splash .version { margin-top: 14px; padding: 2px 10px; border: 1px solid rgba(0, 219, 255, 0.25); border-radius: 999px; font: 11px ui-monospace, 'JetBrains Mono', 'Cascadia Code', Menlo, monospace; color: #00dbff; animation: zs-fade 0.6s ease 0.6s both; }
+      #splash .version:empty { display: none; }
+      #splash .bar { position: relative; width: 168px; height: 3px; margin-top: 30px; overflow: hidden; border-radius: 3px; background: #0b3347; animation: zs-fade 0.6s ease 0.7s both; }
+      #splash .bar::after { content: ''; position: absolute; inset: 0; width: 40%; border-radius: 3px; background: linear-gradient(90deg, transparent, #00dbff, #a44dff, transparent); animation: zs-slide 1.3s ease-in-out infinite; }
+      #splash .credit { position: absolute; bottom: 34px; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12.5px; color: #577787; animation: zs-fade 0.8s ease 0.9s both; }
+      #splash .credit b { color: #e4f3f8; font-weight: 600; }
+      #splash .gh { display: inline-flex; align-items: center; gap: 6px; color: #8eaab8; font: 12px ui-monospace, 'JetBrains Mono', 'Cascadia Code', Menlo, monospace; }
+      #splash .gh svg { width: 14px; height: 14px; fill: currentColor; }
+      @keyframes zs-draw { to { stroke-dashoffset: 0; } }
+      @keyframes zs-pop { to { transform: scale(1); } }
+      @keyframes zs-rise { from { opacity: 0; transform: translateY(10px) scale(0.96); } }
+      @keyframes zs-fade { from { opacity: 0; transform: translateY(6px); } }
+      @keyframes zs-slide { from { transform: translateX(-110%); } to { transform: translateX(260%); } }
+      @keyframes zs-drift { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(6vmax, 4vmax) rotate(25deg); } }
+      @media (prefers-reduced-motion: reduce) {
+        #splash *, #splash *::after { animation-duration: 0.01s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+        #splash .bar::after { width: 100%; transform: none; }
+      }
+    </style>
   </head>
   <body>
+    <div id="splash" aria-hidden="true">
+      <div class="aurora a1"></div>
+      <div class="aurora a2"></div>
+      <div class="grid"></div>
+      <div class="center">
+        <svg class="logo" viewBox="0 0 1024 1024">
+          <defs>
+            <linearGradient id="zs-diag" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#00DBFF" /><stop offset="1" stop-color="#A44DFF" /></linearGradient>
+            <linearGradient id="zs-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#002A3F" /><stop offset="1" stop-color="#001521" /></linearGradient>
+          </defs>
+          <rect x="64" y="64" width="896" height="896" rx="208" fill="url(#zs-bg)" />
+          <rect x="64" y="64" width="896" height="896" rx="208" fill="none" stroke="#00DBFF" stroke-opacity="0.18" stroke-width="8" />
+          <path class="s s1" d="M300 300 H700" stroke="#00DBFF" />
+          <path class="s s2" d="M684 316 L340 708" stroke="url(#zs-diag)" />
+          <path class="s s3" d="M324 724 H600" stroke="#A44DFF" />
+          <circle class="dot" cx="716" cy="724" r="52" fill="#00FFD4" />
+        </svg>
+        <div class="name">Zeno</div>
+        <div class="tagline" data-en="The tab-less API client" data-pt="O cliente de API sem abas">The tab-less API client</div>
+        <div class="version"></div>
+        <div class="bar"></div>
+      </div>
+      <div class="credit">
+        <span><span data-en="Developed by" data-pt="Desenvolvido por">Developed by</span> <b>Cesar Menegatti</b></span>
+        <span class="gh">
+          <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" /></svg>
+          github.com/chmenegatti
+        </span>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="./src/main.tsx"></script>
   </body>

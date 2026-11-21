@@ -10,6 +10,7 @@ import { VarPopover } from './components/Vars'
 import { UpdateNotice } from './components/UpdateNotice'
 import { applyUi, installHotkeys } from './hotkeys'
 import { installNav } from './nav'
+import { hideSplash, rememberLang } from './splash'
 import { setLang, t } from '@shared/i18n'
 
 const WIDTH_KEY = 'zeno:response-width'
@@ -85,7 +86,14 @@ export function App() {
   setLang(lang)
   document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en'
 
-  if (!ready) return <div className="flex h-full items-center justify-center text-faint">{t('carregando…')}</div>
+  // splash (#181) sai quando carregou; o idioma fica guardado pro próximo splash
+  useEffect(() => {
+    if (!ready) return
+    rememberLang(lang)
+    hideSplash()
+  }, [ready, lang])
+
+  if (!ready) return null
 
   return (
     <div className="flex h-full" key={lang}>
