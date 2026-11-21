@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { diffLines } from '../src/shared/diff'
+import { collapseSame, diffLines, sortedJson } from '../src/shared/diff'
 
 describe('diffLines', () => {
   it('marca linhas trocadas, novas e removidas', () => {
@@ -18,5 +18,22 @@ describe('diffLines', () => {
     const r = diffLines(big, big.replace('\n1500\n', '\nx\n'))
     expect(r.cut).toBe(true)
     expect(r.lines.filter((l) => l.t !== 'same')).toHaveLength(2)
+  })
+})
+
+describe('comparar respostas (#156)', () => {
+  it('ordem das chaves não conta', () => {
+    expect(sortedJson('{"b":1,"a":{"d":2,"c":[{"y":1,"x":2}]}}')).toBe(sortedJson('{"a":{"c":[{"x":2,"y":1}],"d":2},"b":1}'))
+    expect(sortedJson('não é json')).toBeNull()
+  })
+  it('recolhe trechos iguais longos', () => {
+    const a = Array.from({ length: 30 }, (_, i) => `l${i}`)
+    const b = [...a]
+    b[15] = 'mudou'
+    const rows = collapseSame(diffLines(a.join('\n'), b.join('\n')).lines)
+    const gaps = rows.filter((r) => r.t === 'gap')
+    expect(gaps.map((g) => (g as { count: number }).count)).toEqual([12, 11])
+    expect(rows.filter((r) => r.t === 'add' || r.t === 'del').length).toBe(2)
+    expect(collapseSame(diffLines('a\nb', 'a\nc').lines).some((r) => r.t === 'gap')).toBe(false)
   })
 })
