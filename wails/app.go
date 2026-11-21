@@ -103,6 +103,9 @@ func (a *App) handle(channel string, h handler) {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.store.Load()
+	if every := memStatsInterval(os.Getenv("ZENO_MEMSTATS")); every > 0 {
+		go logMemStats(os.Stderr, every, ctx.Done())
+	}
 	// arquivo mudou fora do app (editor, git pull…): recarrega e avisa a interface
 	w, err := watch.New(append([]string{a.store.Dir}, a.store.LinkedDirs()...), watch.Options{
 		LastWrite: a.store.LastWrite,

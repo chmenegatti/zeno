@@ -406,7 +406,7 @@ Para verificar a interface sem mexer na janela:
 ZENO_DATA_DIR=/tmp/zeno-teste ZENO_SCRIPT='console.log(document.title)' ./wails/build/zeno
 ```
 
-`ZENO_SCRIPT` roda JavaScript na página (o `console.log` sai no terminal) e o app fecha no fim; `ZENO_TRACE=1` mostra o tempo de cada canal. Mais detalhes em [CONTRIBUTING.md](CONTRIBUTING.md).
+`ZENO_SCRIPT` roda JavaScript na página (o `console.log` sai no terminal) e o app fecha no fim; `ZENO_TRACE=1` mostra o tempo de cada canal; `ZENO_MEMSTATS=1` grava a memória a cada 10 s (heap do Go e RSS/PSS do app e de cada processo do WebKit; `ZENO_MEMSTATS=2s` muda o intervalo). Mais detalhes em [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Contribuindo
 

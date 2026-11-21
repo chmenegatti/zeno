@@ -4,6 +4,7 @@ package main
 // GC do Go não roda de novo e o heap do pico ficava preso no processo.
 
 import (
+	"os"
 	"runtime"
 	"runtime/debug"
 	"sync"
@@ -19,6 +20,9 @@ type memTrim struct {
 
 // after: chamado ao fim de cada Call; agenda a liberação (uma só, 1 s depois da última chamada grande)
 func (m *memTrim) after() {
+	if !trimEnabled() {
+		return
+	}
 	var s runtime.MemStats
 	runtime.ReadMemStats(&s)
 	if s.HeapAlloc < trimAbove {
@@ -31,3 +35,6 @@ func (m *memTrim) after() {
 	}
 	m.timer = time.AfterFunc(time.Second, debug.FreeOSMemory)
 }
+
+// trimEnabled: ZENO_NO_TRIM=1 desliga a liberação (comparar com GOMEMLIMIT/GOGC, #159)
+func trimEnabled() bool { return os.Getenv("ZENO_NO_TRIM") == "" }
