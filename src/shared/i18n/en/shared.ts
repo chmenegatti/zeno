@@ -12,6 +12,8 @@ const en: Record<string, string> = {
   'Mostrar/esconder lateral': 'Show/hide sidebar',
   'Filtrar a lateral': 'Filter sidebar',
   'Paleta de comandos': 'Command palette',
+  'Desfazer exclusão': 'Undo delete',
+  'Lixeira do workspace': 'Workspace trash',
   'Voltar ao request anterior': 'Back to previous request',
   'Avançar pro próximo request': 'Forward to next request',
   'Requests recentes': 'Recent requests',

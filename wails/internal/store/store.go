@@ -683,16 +683,15 @@ func replace(children []any, node *Doc) bool {
 }
 
 // DeleteNode apaga request ou pasta (com tudo dentro)
-func (s *Store) DeleteNode(id string) ([]*Doc, error) {
+// DeleteNode move a pasta/request pra lixeira (#155); devolve também o id do item na lixeira
+func (s *Store) DeleteNode(id string) ([]*Doc, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if e, ok := s.index[id]; ok && (e.kind == "request" || e.kind == "folder") {
-		s.touch()
-		if err := os.RemoveAll(e.path); err != nil {
-			return nil, err
-		}
+	tid, err := s.trashNode(id)
+	if err != nil {
+		return nil, "", err
 	}
-	return s.load(), nil
+	return s.load(), tid, nil
 }
 
 // MoveNode leva o nó pra outro pai (workspace ou pasta) e ajusta o sortKey

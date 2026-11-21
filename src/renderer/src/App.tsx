@@ -26,6 +26,7 @@ export function App() {
   const prefs = useStore((s) => s.app.ui)
   const error = useStore((s) => s.error)
   const notice = useStore((s) => s.notice)
+  const noticeAction = useStore((s) => s.noticeAction)
   const [width, setWidth] = useState(initialWidth)
   const [winWidth, setWinWidth] = useState(() => window.innerWidth)
   const dragging = useRef(false)
@@ -103,8 +104,13 @@ export function App() {
       <OAuthWait />
       <VarPopover />
       {notice && !error && (
-        <div className="fixed bottom-4 left-1/2 z-50 max-w-[70vw] -translate-x-1/2 rounded-lg border border-accent/40 bg-raised px-4 py-2 text-accent shadow-xl" onClick={() => useStore.setState({ notice: null })}>
-          {notice}
+        <div className="fixed bottom-4 left-1/2 z-50 flex max-w-[70vw] -translate-x-1/2 items-center gap-3 rounded-lg border border-accent/40 bg-raised px-4 py-2 text-accent shadow-xl" onClick={() => useStore.setState({ notice: null, noticeAction: null })}>
+          <span>{notice}</span>
+          {noticeAction && (
+            <button className="btn btn-accent py-0.5" onClick={() => noticeAction.run()}>
+              {noticeAction.label}
+            </button>
+          )}
         </div>
       )}
       {error && (

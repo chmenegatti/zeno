@@ -56,6 +56,8 @@ export const HOTKEYS: HotkeyDef[] = [
   { id: 'newFolder', label: tk('Nova pasta'), group: 'Request', keys: ['Ctrl+Shift+N'] },
   { id: 'duplicate', label: tk('Duplicar request'), group: 'Request', keys: ['Ctrl+D'], notInEditor: true },
   { id: 'delete', label: tk('Excluir request'), group: 'Request', keys: ['Ctrl+Shift+Backspace'], notInText: true },
+  { id: 'undoDelete', label: tk('Desfazer exclusão'), group: 'Request', keys: ['Ctrl+Z'], notInText: true, notInEditor: true },
+  { id: 'trash', label: tk('Lixeira do workspace'), group: 'Request', keys: [] },
   { id: 'methodMenu', label: tk('Trocar método HTTP'), group: 'Request', keys: ['Ctrl+Shift+L'] },
   { id: 'history', label: tk('Histórico de respostas'), group: 'Request', keys: ['Ctrl+Shift+H'] },
   { id: 'generateCode', label: tk('Gerar código'), group: 'Request', keys: ['Ctrl+Shift+G'] },

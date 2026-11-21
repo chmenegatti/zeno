@@ -128,7 +128,7 @@ func TestCriaRenomeiaMoveDuplicaApaga(t *testing.T) {
 	if _, err := s.MoveNode(fid, fid, 0); err == nil {
 		t.Error("pasta dentro dela mesma deveria falhar")
 	}
-	wss, _ = s.DeleteNode(fid)
+	wss, _, _ = s.DeleteNode(fid)
 	if len(wss[0].List("children")) != 0 {
 		t.Errorf("sobrou: %v", wss[0].List("children"))
 	}

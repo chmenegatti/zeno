@@ -212,7 +212,20 @@ func (a *App) register() {
 	})
 	a.handle("deleteNode", func(args Args) (any, error) {
 		id, _ := Get[string](args, 0)
-		return list(st.DeleteNode(id))
+		return created(st.DeleteNode(id))
+	})
+	// lixeira (#155)
+	a.handle("restoreTrash", func(args Args) (any, error) {
+		id, _ := Get[string](args, 0)
+		return created(st.RestoreTrash(id))
+	})
+	a.handle("listTrash", func(args Args) (any, error) {
+		wsID, _ := Get[string](args, 0)
+		return st.Trash(wsID), nil
+	})
+	a.handle("emptyTrash", func(args Args) (any, error) {
+		wsID, _ := Get[string](args, 0)
+		return nil, st.EmptyTrash(wsID)
 	})
 	a.handle("moveNode", func(args Args) (any, error) {
 		id, _ := Get[string](args, 0)

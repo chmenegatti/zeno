@@ -10,6 +10,17 @@ export interface MockStatus {
 }
 export type ExportFormat = 'zeno' | 'insomnia' | 'postman'
 
+/** item da lixeira (#155) */
+export interface TrashItem {
+  id: string
+  wsId: string
+  nodeId: string
+  kind: 'request' | 'folder'
+  name: string
+  requests: number
+  deletedAt: number
+}
+
 export interface Created {
   workspaces: Workspace[]
   id: string
@@ -55,7 +66,11 @@ export interface ZenoApi {
   createFolder(parentId: string, name: string): Promise<Created>
   saveRequest(req: RequestDoc): Promise<void>
   saveFolder(doc: FolderDoc): Promise<Workspace[]>
-  deleteNode(id: string): Promise<Workspace[]>
+  /** vai pra lixeira (#155): id = item da lixeira (vazio se nada foi apagado) */
+  deleteNode(id: string): Promise<Created>
+  restoreTrash(trashId: string): Promise<Created>
+  listTrash(wsId: string): Promise<TrashItem[]>
+  emptyTrash(wsId: string): Promise<void>
   moveNode(id: string, newParentId: string, sortKey: number): Promise<Workspace[]>
   duplicate(id: string): Promise<Created>
 

@@ -11,6 +11,7 @@ import { CodeModal } from './Code'
 import { RunModal } from './Runner'
 import { PluginsModal, PrefsModal, ShortcutsModal } from './Prefs'
 import { CommandPalette } from './CommandPalette'
+import { TrashModal } from './Trash'
 import { CookiesModal } from './Cookies'
 import { GitHubModal } from './GitHub'
 import { WorkspacesModal } from './Workspaces'
@@ -64,6 +65,8 @@ export function Modals() {
       return <PluginsModal onClose={close} />
     case 'cookies':
       return ws ? <CookiesModal ws={ws} onClose={close} /> : null
+    case 'trash':
+      return ws ? <TrashModal ws={ws} onClose={close} /> : null
     case 'palette':
       return <CommandPalette onClose={close} recent={modal.recent} />
     case 'shortcuts':
