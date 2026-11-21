@@ -286,6 +286,10 @@ func Insomnia(ws []*Doc) (Result, error) {
 			if pp := pathParams(n, "name"); len(pp) > 0 {
 				r.Set("pathParameters", pp)
 			}
+			// redirects por request (#151); o resto das configurações o Insomnia não tem por request
+			if b, ok := n.Map("settings").Get("followRedirects").(bool); ok {
+				r.Set("settingFollowRedirects", map[bool]string{true: "on", false: "off"}[b])
+			}
 			scripts(r, n)
 			res = append(res, r)
 		}
@@ -540,6 +544,22 @@ func pmItems(list []*Doc, trail string, w *warner) []any {
 		it := doc.New("name", n.Str("name"), "request", r)
 		if ev := pmEvents(n, where, w); len(ev) > 0 {
 			it.Set("event", ev)
+		}
+		// configurações do request (#151)
+		if rs := n.Map("settings"); rs != nil {
+			pb := doc.New()
+			if b, ok := rs.Get("followRedirects").(bool); ok {
+				pb.Set("followRedirects", b)
+			}
+			if rs.Has("maxRedirects") {
+				pb.Set("maxRedirects", rs.Get("maxRedirects"))
+			}
+			if rs.Get("insecureTLS") == true {
+				pb.Set("strictSSL", false)
+			}
+			if pb.Len() > 0 {
+				it.Set("protocolProfileBehavior", pb)
+			}
 		}
 		out = append(out, it)
 	}

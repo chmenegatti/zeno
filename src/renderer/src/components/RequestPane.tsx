@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { prepare } from '@shared/prepare'
 import { pathParamNames } from '@shared/pathparams'
 import { effectiveAuth } from '@shared/tree'
-import type { Auth, AuthType, Body, RequestDoc } from '@shared/types'
+import type { Auth, AuthType, Body, RequestDoc, RequestSettings, Workspace } from '@shared/types'
 import { activeEnvId, activeRequest, api, useStore } from '../state'
 import { CodeEditor, langFor } from './CodeEditor'
 import { KeyValueTable } from './KeyValueTable'
@@ -28,7 +28,7 @@ import { t, tk } from '@shared/i18n'
 
 const GraphQLBody = lazy(() => import('./GraphQLBody'))
 
-type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'assertions' | 'notes' | 'examples'
+type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'assertions' | 'notes' | 'examples' | 'settings'
 
 const BODY_TYPES: { mime: string | null; label: string }[] = [
   { mime: null, label: tk('Sem body') },
@@ -159,6 +159,7 @@ export function RequestPane() {
             { id: 'scripts', label: <>Scripts{hasScripts(req.scripts) ? <span className="ml-1 text-[10.5px] text-tpurple">●</span> : ancestors.some((a) => hasScripts(a.scripts)) ? <span className="ml-1 text-[10.5px] text-faint">↑</span> : null}</> },
             { id: 'assertions', label: <>{t('Asserções')}<Count n={req.assertions?.filter((a) => a.enabled).length ?? 0} /></> },
             ...(wsMode || grpcMode ? [] : [{ id: 'examples' as const, label: <>{t('Exemplos')}<Count n={req.examples?.length ?? 0} /></> }]),
+            ...(grpcMode ? [] : [{ id: 'settings' as const, label: <>{t('Opções')}{req.settings && Object.keys(req.settings).length ? <span className="ml-1 text-[10.5px] text-tpurple">●</span> : null}</> }]),
             { id: 'notes', label: t('Notas') }
           ]}
         />
@@ -198,6 +199,7 @@ export function RequestPane() {
         {sec === 'scripts' && <ScriptsEditor scripts={req.scripts} onChange={(scripts) => update({ scripts })} />}
         {sec === 'assertions' && <AssertionsEditor list={req.assertions ?? []} onChange={(assertions) => update({ assertions: assertions.length ? assertions : undefined })} />}
         {sec === 'examples' && <ExamplesEditor ws={cur.ws} req={req} onChange={(examples) => update({ examples })} />}
+        {sec === 'settings' && <RequestSettingsEditor req={req} ws={cur.ws} update={update} />}
         {sec === 'notes' && (
           <textarea className="h-full w-full resize-none bg-transparent p-3 outline-none" placeholder={t('Anotações sobre este request…')} value={req.description ?? ''} onChange={(e) => update({ description: e.target.value })} />
         )}
@@ -467,5 +469,47 @@ function PathParams({ req, update }: { req: RequestDoc; update: (patch: Partial<
       ))}
       <div className="mb-1 mt-4 text-[11px] text-faint">{t('Query')}</div>
     </>
+  )
+}
+
+/** configurações deste request (#151): vazio = vale o do workspace */
+function RequestSettingsEditor({ req, ws, update }: { req: RequestDoc; ws: Workspace; update: (patch: Partial<RequestDoc>) => void }) {
+  const set = req.settings ?? {}
+  const patch = (p: Partial<RequestSettings>): void => {
+    const next: Record<string, unknown> = { ...set, ...p }
+    for (const k of Object.keys(next)) if (next[k] === undefined) delete next[k]
+    update({ settings: Object.keys(next).length ? (next as RequestSettings) : undefined })
+  }
+  const num = (v: string): number | undefined => (v.trim() === '' || !Number.isFinite(Number(v)) || Number(v) < 0 ? undefined : Math.round(Number(v)))
+  return (
+    <div className="flex max-w-[560px] flex-col gap-3 p-3 text-[12.5px]">
+      <p className="text-[11.5px] text-faint">{t('Só para este request. Em branco vale o do workspace.')}</p>
+      <label className="flex items-center gap-2">
+        <span className="w-44 text-dim">{t('Timeout (ms)')}</span>
+        <input className="field w-32 font-mono" inputMode="numeric" placeholder={String(ws.settings.timeoutMs)} value={set.timeoutMs ?? ''} onChange={(e) => patch({ timeoutMs: num(e.target.value) })} />
+        <span className="text-[11px] text-faint">{t('0 = sem limite')}</span>
+      </label>
+      <label className="flex items-center gap-2">
+        <span className="w-44 text-dim">{t('Seguir redirects')}</span>
+        <input type="checkbox" checked={set.followRedirects !== false} onChange={(e) => patch({ followRedirects: e.target.checked ? undefined : false })} />
+        <span className="text-[11px] text-faint">{t('desligado: a resposta é o próprio 301/302…')}</span>
+      </label>
+      <label className="flex items-center gap-2">
+        <span className="w-44 text-dim">{t('Máximo de redirects')}</span>
+        <input className="field w-32 font-mono" inputMode="numeric" placeholder="10" disabled={set.followRedirects === false} value={set.maxRedirects ?? ''} onChange={(e) => patch({ maxRedirects: num(e.target.value) || undefined })} />
+      </label>
+      <label className="flex items-center gap-2">
+        <span className="w-44 text-dim">{t('Certificado TLS')}</span>
+        <Select
+          className="field w-72 py-0.5"
+          value={set.insecureTLS === undefined ? '' : set.insecureTLS ? 'off' : 'on'}
+          onChange={(v) => patch({ insecureTLS: v === '' ? undefined : v === 'off' })}
+        >
+          <option value="">{ws.settings.insecureTLS ? t('Como no workspace (não verifica)') : t('Como no workspace (verifica)')}</option>
+          <option value="on">{t('Verificar')}</option>
+          <option value="off">{t('Não verificar (certificado próprio/inválido)')}</option>
+        </Select>
+      </label>
+    </div>
   )
 }

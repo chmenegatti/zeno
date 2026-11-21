@@ -215,11 +215,34 @@ func normRequest(raw *Doc, fallback string) *Doc {
 	r.Set("assertions", normAssertions(raw.Get("assertions")))
 	r.Set("examples", normExamples(raw.Get("examples")))
 	r.Set("grpc", normGrpc(raw.Get("grpc")))
+	r.Set("settings", normReqSettings(raw.Get("settings")))
 	// só o "desligado" é gravado; ausente = ligado
 	r.Set("sendCookies", undefIfNotFalse(raw.Get("sendCookies")))
 	r.Set("storeCookies", undefIfNotFalse(raw.Get("storeCookies")))
 	r.Set("sortKey", num(raw.Num("sortKey", 0)))
 	return clean(r)
+}
+
+// normReqSettings (#151): só o que o request sobrescreve; ausente = vale o do workspace
+func normReqSettings(v any) any {
+	m, _ := v.(*Doc)
+	out := doc.New()
+	if n := m.Num("timeoutMs", -1); n >= 0 && m.Has("timeoutMs") {
+		out.Set("timeoutMs", num(n))
+	}
+	if b, ok := m.Get("followRedirects").(bool); ok {
+		out.Set("followRedirects", b)
+	}
+	if n := m.Num("maxRedirects", -1); n > 0 && m.Has("maxRedirects") {
+		out.Set("maxRedirects", num(n))
+	}
+	if b, ok := m.Get("insecureTLS").(bool); ok {
+		out.Set("insecureTLS", b)
+	}
+	if out.Len() == 0 {
+		return undef
+	}
+	return out
 }
 
 func undefIfNotFalse(v any) any {
