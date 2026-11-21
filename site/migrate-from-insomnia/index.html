@@ -68,7 +68,7 @@
   <main class="doc">
     <p class="crumbs"><a href="../">Zeno</a> / Guide</p>
     <h1>Migrate from Insomnia to Zeno</h1>
-    <p class="lede">Zeno reads your Insomnia data directly, so moving takes about a minute and nothing changes in Insomnia. Your requests, environments, chained tokens, scripts and shortcuts come over as they are.</p>
+    <p class="lede">Zeno reads your Insomnia data directly, so moving takes about a minute and nothing changes in Insomnia. Your requests, environments, chained tokens, scripts and shortcuts come over, and anything that can't be converted is listed before you import.</p>
 <div class="cta">
   <a class="btn primary" href="https://github.com/chmenegatti/zeno/releases/latest">Download Zeno</a>
   <a class="btn ghost" href="https://github.com/chmenegatti/zeno">View on GitHub</a>
@@ -93,14 +93,14 @@
 <li>Workspaces, folders and requests, in the same order, with the same ids.</li>
 <li>Base and sub-environments, folder variables and headers, auth inheritance.</li>
 <li>Auth: Basic, Bearer, API key, OAuth 2.0.</li>
-<li>Bodies: JSON, XML, text, form, multipart with files, GraphQL. WebSocket and gRPC requests too.</li>
+<li>Bodies: JSON, XML, text, form, multipart with files, GraphQL. WebSocket and gRPC requests too (the URL, headers and auth; messages saved on a WebSocket request in Insomnia aren't imported, so recreate them in the request's message).</li>
 <li>Template tags: <code>{{ variable }}</code>, <code>{{ _.variable }}</code> and <code>{% response %}</code> chaining keep working; so do <code>uuid</code>, <code>now</code>, <code>base64</code>, <code>hash</code>, <code>faker</code> and <code>prompt</code>.</li>
 <li>Pre-request and after-response scripts (<code>insomnia.*</code> is an alias for <code>zeno.*</code>).</li>
 <li>Your customized Insomnia shortcuts. The defaults are already the same.</li>
 <li>Insomnia-format plugins: copy them into Zeno's <code>plugins/</code> folder.</li>
 </ul>
 <h2>3. Put the workspace in git (optional)</h2>
-<p>Each request is now a readable YAML file. In the workspace settings choose <b>Move to folder…</b> and pick a folder inside your service's repository: the collection is reviewed in pull requests like the rest of the code, and encrypted secrets can be committed. Run it in CI with <code>zeno run</code>.</p>
+<p>Each request is now a readable YAML file. In the workspace settings choose <b>Move to folder…</b> and pick a folder inside your service's repository: the collection is reviewed in pull requests like the rest of the code, and encrypted secrets can be committed without leaking. They open only with the vault key in your OS keychain, so teammates enter their own values (in CI, pass them with <code>--var</code>). Run it in CI with <code>zeno run</code>.</p>
 <h2>What's different from Insomnia</h2>
 <ul>
 <li>There are no tabs: clicking a request replaces what's on screen. <kbd>Ctrl</kbd>+<kbd>P</kbd> jumps to any request.</li>
