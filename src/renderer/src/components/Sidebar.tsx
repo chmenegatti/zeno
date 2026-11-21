@@ -123,6 +123,8 @@ export function Sidebar() {
             draggable={renaming !== n.id}
             onDragStart={(e) => {
               e.dataTransfer.effectAllowed = 'move'
+              // WebKit (Linux e macOS) cancela o arraste se o dragstart não põe nenhum dado
+              e.dataTransfer.setData('text/plain', n.id)
               setDrag({ id: n.id })
             }}
             onDragEnd={() => setDrag(null)}
