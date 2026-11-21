@@ -30,7 +30,7 @@
     "description": "Cliente de API desktop, local primeiro e sem abas: REST, GraphQL, gRPC, WebSocket e SSE, coleções em YAML, segredos criptografados e import do Insomnia e Postman.",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Linux, Windows, macOS",
-    "softwareVersion": "1.3.0",
+    "softwareVersion": "1.4.0",
     "inLanguage": "pt-BR",
     "url": "https://www.cesarmenegatti.com/zeno/pt/",
     "downloadUrl": "https://github.com/chmenegatti/zeno/releases/latest",
@@ -141,7 +141,7 @@
           <article class="card" style="--c: var(--green)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></div><h3>Gerar código</h3><p>20 linguagens e 37 bibliotecas, coloridas como numa IDE, com variáveis e tags já resolvidas. Do cURL ao Rust.</p></article>
           <article class="card" style="--c: var(--purple)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-6 3-11 6"/></svg></div><h3>Git integrado</h3><p>Workspace no repo do projeto: status por request, diff, commit, pull, push e branches.</p></article>
           <article class="card" style="--c: var(--pink)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h4l3-8 4 16 3-8h2"/></svg></div><h3>Além do REST</h3><p>GraphQL com autocomplete pelo schema, WebSocket, Server-Sent Events ao vivo e gRPC com reflection ou <code>.proto</code>.</p></article>
-          <article class="card" style="--c: var(--orange)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>OAuth 2.0 e rede da empresa</h3><p>Todos os fluxos, login no navegador e token renovado sozinho. Proxy, CA própria e certificado de cliente (mTLS).</p></article>
+          <article class="card" style="--c: var(--orange)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>OAuth 2.0 e rede da empresa</h3><p>Todos os fluxos, login no navegador e token renovado sozinho. Digest e AWS Signature v4. Proxy, CA própria e certificado de cliente (mTLS).</p></article>
           <article class="card" style="--c: var(--lime)"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg></div><h3>Mock server</h3><p>Salve uma resposta como exemplo e ligue um servidor local que responde cada rota do workspace com ela.</p></article>
         </div>
       </div>
@@ -158,6 +158,7 @@
             <li>Base → sub-ambiente → pasta, com o ambiente ativo sempre à vista</li>
             <li>Funções: <code>uuid</code>, <code>timestamp</code>, <code>faker</code>, <code>hash</code>, <code>base64</code>, <code>prompt</code>…</li>
             <li>Mesma sintaxe do Insomnia: coleções importadas funcionam sem ajuste</li>
+            <li>Valores locais que não vão pro git, e arquivos <code>.env</code> no <code>zeno run</code></li>
           </ul>
         </div>
         <div class="shot"><img src="../img/autocomplete.webp" alt="Autocomplete de variáveis na URL" loading="lazy" width="1400" height="843" /></div>
@@ -220,7 +221,7 @@
           <p>JSON formatado e filtrado com JSONPath ou XPath, busca com <kbd>Ctrl</kbd>+<kbd>F</kbd>, imagens, PDF e HTML renderizados, e respostas de 50 MB sem travar.</p>
           <ul class="checks">
             <li>Linha do tempo com redirects, tempos e TLS</li>
-            <li>Comparar com uma resposta anterior do histórico</li>
+            <li>Comparar com uma resposta anterior ou um exemplo salvo, ignorando a ordem das chaves do JSON</li>
             <li>Salvar o body em arquivo</li>
           </ul>
         </div>
@@ -254,6 +255,8 @@
             <li><kbd>Ctrl</kbd>+<kbd>P</kbd> busca requests e ações</li>
             <li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> envia, <kbd>Ctrl</kbd>+<kbd>E</kbd> ambientes, <kbd>Ctrl</kbd>+<kbd>K</kbd> cookies</li>
             <li>Zoom, fontes e lateral com um atalho</li>
+            <li><kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> volta e avança, <kbd>Ctrl</kbd>+<kbd>Tab</kbd> mostra os recentes</li>
+            <li>Apagou sem querer? <kbd>Ctrl</kbd>+<kbd>Z</kbd> ou a lixeira traz de volta</li>
           </ul>
         </div>
         <div class="shot"><img src="../img/palette.webp" alt="Paleta de comandos buscando requests" loading="lazy" width="1400" height="843" /></div>

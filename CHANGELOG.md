@@ -2,6 +2,22 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [1.4.0](https://github.com/chmenegatti/zeno/compare/v1.3.0...v1.4.0) (2026-11-21)
+
+### Novidades
+
+* **Parâmetros de caminho**: `:id` e `{id}` na URL viram linhas na aba *Params*, com valor e variáveis; import e export do Insomnia, Postman e OpenAPI levam junto ([#160](https://github.com/chmenegatti/zeno/pull/160))
+* **Valores locais**: o valor de uma variável pode ficar só na sua máquina (`local-vars.yaml`, fora do git), por cima do ambiente; `zeno run --env-file` lê um `.env` ([#161](https://github.com/chmenegatti/zeno/pull/161))
+* **Editar como texto**: params, headers e form viram texto `chave: valor` pra colar ou editar em bloco ([#162](https://github.com/chmenegatti/zeno/pull/162))
+* **Voltar e avançar** entre requests com <kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> (e botões do mouse); <kbd>Ctrl</kbd>+<kbd>Tab</kbd> abre os recentes na paleta ([#163](https://github.com/chmenegatti/zeno/pull/163))
+* **Lixeira**: apagar pasta ou request não pede mais confirmação; *Desfazer* no aviso ou <kbd>Ctrl</kbd>+<kbd>Z</kbd> traz de volta, e a lixeira guarda os itens por 30 dias ([#164](https://github.com/chmenegatti/zeno/pull/164))
+* **Opções por request**: timeout, seguir redirects, máximo de redirects e ignorar TLS inválido, na aba *Opções*; import/export do Insomnia e Postman ([#165](https://github.com/chmenegatti/zeno/pull/165))
+* **Docs em Markdown** pra requests, pastas e workspaces, com prévia formatada ([#172](https://github.com/chmenegatti/zeno/pull/172))
+* **Auth Digest e AWS Signature v4** ([#173](https://github.com/chmenegatti/zeno/pull/173))
+* **Comparar respostas** ignorando a ordem das chaves do JSON, com resumo de status/tempo/tamanho, trechos iguais recolhidos e comparação com exemplos salvos ([#174](https://github.com/chmenegatti/zeno/pull/174))
+* **Versão no título da janela** ([#158](https://github.com/chmenegatti/zeno/pull/158))
+
+
 ## [1.3.0](https://github.com/chmenegatti/zeno/compare/v1.2.0...v1.3.0) (2026-11-20)
 
 ### Novidades
