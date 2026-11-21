@@ -36,9 +36,9 @@ func Dir() string {
 	return filepath.Join(home, ".config", "Insomnia")
 }
 
-var nedbFiles = []string{"Workspace", "RequestGroup", "Request", "Environment", "WebSocketRequest", "GrpcRequest"}
+var nedbFiles = []string{"Workspace", "RequestGroup", "Request", "Environment", "WebSocketRequest", "WebSocketPayload", "GrpcRequest"}
 
-var typeFromExport = map[string]string{"workspace": "Workspace", "request_group": "RequestGroup", "request": "Request", "environment": "Environment", "websocket_request": "WebSocketRequest", "grpc_request": "GrpcRequest"}
+var typeFromExport = map[string]string{"workspace": "Workspace", "request_group": "RequestGroup", "request": "Request", "environment": "Environment", "websocket_request": "WebSocketRequest", "websocket_payload": "WebSocketPayload", "grpc_request": "GrpcRequest"}
 
 // ordered: registros por _id na ordem em que apareceram (como um Map do JavaScript)
 type ordered struct {
@@ -256,6 +256,14 @@ func FromExportV5(raw any) ([]*Doc, error) {
 				for _, k := range []string{"name", "method", "url", "parameters", "headers", "body", "authentication"} {
 					setDef(m, k, get(x, k))
 				}
+				// WebSocket no v5: a mensagem do compositor vem no próprio request como body {value, mode}
+				if b := obj(get(x, "body")); b != nil && b.Has("value") && !b.Has("text") {
+					if v, _ := b.Get("value").(string); strings.TrimSpace(v) != "" {
+						m.Set("body", doc.New("mimeType", coalesce(orNil(b.Get("mode")), "application/json"), "text", v))
+					} else {
+						m.Set("body", doc.New())
+					}
+				}
 				setDef(m, "preRequestScript", get(x, "scripts", "preRequest"))
 				setDef(m, "afterResponseScript", get(x, "scripts", "afterResponse"))
 				docs = append(docs, m)
@@ -391,6 +399,26 @@ func insScripts(d *Doc) any {
 	return s
 }
 
+// wsMessage: a mensagem que estava no compositor de um WebSocket do Insomnia (registro WebSocketPayload,
+// filho do request) vira o body do request, que no Zeno é a mensagem a mandar
+func wsMessage(kids []*Doc, body *Doc) *Doc {
+	for _, k := range kids {
+		if k.Str("type") != "WebSocketPayload" {
+			continue
+		}
+		v, _ := k.Get("value").(string)
+		if strings.TrimSpace(v) == "" {
+			return body
+		}
+		mime := k.Str("mode")
+		if mime == "" {
+			mime = "application/json"
+		}
+		return doc.New("mime", mime, "text", v)
+	}
+	return body
+}
+
 // Convert: registros do Insomnia → workspaces
 func Convert(docs []*Doc, insecureTLS bool) Result {
 	w := &warner{}
@@ -458,7 +486,7 @@ func Convert(docs []*Doc, insecureTLS bool) Result {
 				r.Set("sortKey", sortKey(d))
 				nodes = append(nodes, r)
 			case "Request", "WebSocketRequest":
-				// WebSocket (#6): URL ws(s)://; a conexão é aberta pelo Zeno (as mensagens salvas do Insomnia ficam de fora)
+				// WebSocket (#6): URL ws(s)://; a conexão é aberta pelo Zeno e a mensagem do compositor vira o body
 				r := doc.New("kind", "request", "id", d.Get("_id"), "name", name)
 				setDef(r, "description", orNil(d.Get("description")))
 				r.Set("method", strings.ToUpper(str(or(d.Get("method"), "GET"))))
@@ -466,6 +494,9 @@ func Convert(docs []*Doc, insecureTLS bool) Result {
 				r.Set("params", insKV(d.Get("parameters")))
 				r.Set("headers", insKV(d.Get("headers")))
 				body := insBody(obj(d.Get("body")), where, w)
+				if d.Str("type") == "WebSocketRequest" {
+					body = wsMessage(children[d.Str("_id")], body)
+				}
 				r.Set("body", body)
 				r.Set("auth", insAuth(obj(d.Get("authentication")), where, w))
 				setDef(r, "scripts", insScripts(d))

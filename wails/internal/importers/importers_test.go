@@ -149,3 +149,35 @@ func TestInsomniaGrpc(t *testing.T) {
 		t.Fatalf("%v %v", req, r.Warnings)
 	}
 }
+
+func TestInsomniaWebSocketMensagem(t *testing.T) {
+	r, err := ParseSources([]Source{{Name: "v4.json", Text: `{"_type":"export","__export_format":4,"resources":[{"_id":"wrk_a","_type":"workspace","name":"A"},{"_id":"ws-req_1","_type":"websocket_request","parentId":"wrk_a","name":"Eco","url":"wss://eco.test/ws"},{"_id":"ws-payload_1","_type":"websocket_payload","parentId":"ws-req_1","value":"{\"oi\": 1}","mode":"application/json"},{"_id":"ws-req_2","_type":"websocket_request","parentId":"wrk_a","name":"Vazio","url":"wss://eco.test/ws"},{"_id":"ws-payload_2","_type":"websocket_payload","parentId":"ws-req_2","value":"","mode":"text/plain"}]}`}}, nil)
+	if err != nil || len(r.Workspaces) != 1 {
+		t.Fatal(err)
+	}
+	ws := r.Workspaces[0]
+	if req, _ := doc.Find(ws, "ws-req_1"); req == nil || req.Map("body").Str("text") != `{"oi": 1}` || req.Map("body").Str("mime") != "application/json" {
+		t.Fatalf("mensagem: %v", req)
+	}
+	if req, _ := doc.Find(ws, "ws-req_2"); req == nil || req.Map("body").Get("mime") != nil {
+		t.Fatalf("vazio: %v", req)
+	}
+	if n, _ := doc.Find(ws, "ws-payload_1"); n != nil {
+		t.Error("payload virou nó da árvore")
+	}
+}
+
+func TestInsomniaV5WebSocketMensagem(t *testing.T) {
+	yaml := "type: collection.insomnia.rest/5.0\nname: A\nmeta:\n  id: wrk_a\ncollection:\n  - url: wss://eco.test/ws\n    name: Eco\n    meta:\n      id: ws-req_1\n    body:\n      value: '{\"oi\": 1}'\n      mode: application/json\n  - url: wss://eco.test/ws\n    name: Vazio\n    meta:\n      id: ws-req_2\n    body:\n      value: ''\n      mode: text/plain\n"
+	r, err := ParseSources([]Source{{Name: "a.yaml", Text: yaml}}, nil)
+	if err != nil || len(r.Workspaces) != 1 {
+		t.Fatal(err)
+	}
+	ws := r.Workspaces[0]
+	if req, _ := doc.Find(ws, "ws-req_1"); req == nil || req.Map("body").Str("text") != `{"oi": 1}` || req.Map("body").Str("mime") != "application/json" {
+		t.Fatalf("mensagem: %v", req)
+	}
+	if req, _ := doc.Find(ws, "ws-req_2"); req == nil || req.Map("body").Get("mime") != nil {
+		t.Fatalf("vazio: %v", req)
+	}
+}
