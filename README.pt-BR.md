@@ -164,6 +164,8 @@ Mesmo padrão do Insomnia. Todos podem ser trocados em **⌨ Atalhos** (`Ctrl+Sh
 | `Ctrl+Shift+=` / `Ctrl+Shift+-` | Fonte dos editores |
 | `Ctrl+\` | Mostrar/esconder a lateral |
 | `Ctrl+P` | Paleta de comandos: busca difusa em requests de todos os workspaces e ações (trocar ambiente/workspace, importar, preferências…). `>` no começo = só comandos |
+| `Alt+←` / `Alt+→` | Voltar / avançar entre os requests que você abriu (também os botões laterais do mouse) |
+| `Ctrl+Tab` | Requests recentes: segure `Ctrl`, `Tab` desce, soltar abre (um `Ctrl+Tab` rápido = request anterior) |
 | `Ctrl+Shift+F` | Filtrar a lateral; com o foco num editor, formata o JSON (mantém `{{ }}` e `{% %}`) |
 | `Ctrl+L` / `Ctrl+'` | Focar a URL / a resposta |
 | `Ctrl+,` / `Ctrl+Shift+,` | Preferências (zoom, fontes) / configurações do workspace |

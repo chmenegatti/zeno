@@ -33,6 +33,9 @@ export const HOTKEYS: HotkeyDef[] = [
   { id: 'sidebarToggle', label: tk('Mostrar/esconder lateral'), group: 'Interface', keys: ['Ctrl+\\'] },
   { id: 'sidebarFilter', label: tk('Filtrar a lateral'), group: 'Interface', keys: ['Ctrl+Shift+F'], notInEditor: true },
   { id: 'quickSwitch', label: tk('Paleta de comandos'), group: 'Interface', keys: ['Ctrl+P'] },
+  { id: 'navBack', label: tk('Voltar ao request anterior'), group: 'Interface', keys: ['Alt+ArrowLeft'], notInText: true },
+  { id: 'navForward', label: tk('Avançar pro próximo request'), group: 'Interface', keys: ['Alt+ArrowRight'], notInText: true },
+  { id: 'recentSwitch', label: tk('Requests recentes'), group: 'Interface', keys: ['Ctrl+Tab'] },
   { id: 'focusUrl', label: tk('Focar a URL'), group: 'Interface', keys: ['Ctrl+L'], notInEditor: true },
   { id: 'focusResponse', label: tk('Focar a resposta'), group: 'Interface', keys: ["Ctrl+'"] },
   { id: 'showShortcuts', label: tk('Atalhos de teclado'), group: 'Interface', keys: ['Ctrl+Shift+/'], global: true },
@@ -220,9 +223,11 @@ export function fromInsomnia(registry: Record<string, { macKeys?: InsomniaKey[];
 
 
 /** combinação pra mostrar: no macOS com os símbolos (⌘⇧E); Ctrl também casa com Cmd lá */
+const ARROWS: Record<string, string> = { ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓' }
+
 export function keyLabel(combo: string, mac: boolean): string {
-  if (!mac) return combo
-  const sym: Record<string, string> = { Ctrl: '⌘', Shift: '⇧', Alt: '⌥', Enter: '↩', Backspace: '⌫', Escape: '⎋', Delete: '⌦' }
+  if (!mac) return combo.replace(/Arrow(Left|Right|Up|Down)/, (a) => ARROWS[a])
+  const sym: Record<string, string> = { Ctrl: '⌘', Shift: '⇧', Alt: '⌥', Enter: '↩', Backspace: '⌫', Escape: '⎋', Delete: '⌦', ...ARROWS }
   return combo
     .split('+')
     .map((p, i, all) => (p === '' && i === all.length - 1 ? '+' : (sym[p] ?? p)))

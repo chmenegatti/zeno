@@ -8,6 +8,7 @@ import { PromptHost, TagEditHost } from './components/Tags'
 import { OAuthWait } from './components/OAuth'
 import { VarPopover } from './components/Vars'
 import { applyUi, installHotkeys } from './hotkeys'
+import { installNav } from './nav'
 import { setLang, t } from '@shared/i18n'
 
 const WIDTH_KEY = 'zeno:response-width'
@@ -31,7 +32,12 @@ export function App() {
 
   useEffect(() => {
     useStore.getState().init()
-    return installHotkeys()
+    const offNav = installNav()
+    const offKeys = installHotkeys()
+    return () => {
+      offNav()
+      offKeys()
+    }
   }, [])
 
   useEffect(() => {

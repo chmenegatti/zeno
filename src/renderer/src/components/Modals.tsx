@@ -65,7 +65,7 @@ export function Modals() {
     case 'cookies':
       return ws ? <CookiesModal ws={ws} onClose={close} /> : null
     case 'palette':
-      return <CommandPalette onClose={close} />
+      return <CommandPalette onClose={close} recent={modal.recent} />
     case 'shortcuts':
       return <ShortcutsModal onClose={close} />
     case 'workspaces':

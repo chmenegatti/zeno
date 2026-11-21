@@ -20,6 +20,8 @@ interface Modal {
   value?: string
   message?: string
   onOk?: (value: string) => void
+  /** palette: abre com os recentes (Ctrl+Tab) */
+  recent?: boolean
 }
 
 export interface VarEdit {
@@ -31,7 +33,7 @@ export interface VarEdit {
   swap?: (name: string) => void
 }
 
-interface Store {
+export interface Store {
   ready: boolean
   dataDir: string
   workspaces: Workspace[]

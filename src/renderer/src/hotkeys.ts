@@ -7,6 +7,7 @@ import { findHotkeys, type HotkeyDef } from '@shared/hotkeys'
 import { getTheme, themeVars } from '@shared/themes'
 import { findNode } from '@shared/tree'
 import type { UiPrefs } from '@shared/types'
+import { navigate } from './nav'
 import { activeWorkspace, api, createFolderIn, createRequestIn, deleteNode, duplicateNode, useStore } from './state'
 
 export const ZOOM_STEPS = [0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2]
@@ -95,6 +96,9 @@ const ACTIONS: Record<string, () => void> = {
   sidebarToggle: () => setUi({ sidebarHidden: !ui().sidebarHidden }),
   sidebarFilter: () => showSearch(),
   quickSwitch: () => useStore.getState().openModal({ kind: 'palette' }),
+  navBack: () => navigate(-1),
+  navForward: () => navigate(1),
+  recentSwitch: () => useStore.getState().openModal({ kind: 'palette', recent: true }),
   focusUrl: () => focusTarget('url'),
   focusResponse: () => focusTarget('response'),
   showShortcuts: () => useStore.getState().openModal({ kind: 'shortcuts' }),
