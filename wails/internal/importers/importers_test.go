@@ -166,3 +166,18 @@ func TestInsomniaWebSocketMensagem(t *testing.T) {
 		t.Error("payload virou nó da árvore")
 	}
 }
+
+func TestInsomniaV5WebSocketMensagem(t *testing.T) {
+	yaml := "type: collection.insomnia.rest/5.0\nname: A\nmeta:\n  id: wrk_a\ncollection:\n  - url: wss://eco.test/ws\n    name: Eco\n    meta:\n      id: ws-req_1\n    body:\n      value: '{\"oi\": 1}'\n      mode: application/json\n  - url: wss://eco.test/ws\n    name: Vazio\n    meta:\n      id: ws-req_2\n    body:\n      value: ''\n      mode: text/plain\n"
+	r, err := ParseSources([]Source{{Name: "a.yaml", Text: yaml}}, nil)
+	if err != nil || len(r.Workspaces) != 1 {
+		t.Fatal(err)
+	}
+	ws := r.Workspaces[0]
+	if req, _ := doc.Find(ws, "ws-req_1"); req == nil || req.Map("body").Str("text") != `{"oi": 1}` || req.Map("body").Str("mime") != "application/json" {
+		t.Fatalf("mensagem: %v", req)
+	}
+	if req, _ := doc.Find(ws, "ws-req_2"); req == nil || req.Map("body").Get("mime") != nil {
+		t.Fatalf("vazio: %v", req)
+	}
+}

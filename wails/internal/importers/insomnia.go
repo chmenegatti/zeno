@@ -256,6 +256,14 @@ func FromExportV5(raw any) ([]*Doc, error) {
 				for _, k := range []string{"name", "method", "url", "parameters", "headers", "body", "authentication"} {
 					setDef(m, k, get(x, k))
 				}
+				// WebSocket no v5: a mensagem do compositor vem no próprio request como body {value, mode}
+				if b := obj(get(x, "body")); b != nil && b.Has("value") && !b.Has("text") {
+					if v, _ := b.Get("value").(string); strings.TrimSpace(v) != "" {
+						m.Set("body", doc.New("mimeType", coalesce(orNil(b.Get("mode")), "application/json"), "text", v))
+					} else {
+						m.Set("body", doc.New())
+					}
+				}
 				setDef(m, "preRequestScript", get(x, "scripts", "preRequest"))
 				setDef(m, "afterResponseScript", get(x, "scripts", "afterResponse"))
 				docs = append(docs, m)
