@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Zeno vs Insomnia: a tab-less, local-first alternative</title>
+  <meta name="description" content="How Zeno compares with Insomnia: accounts, git storage, encrypted secrets, protocols, mock servers and tabs. Zeno imports your Insomnia data folder directly." />
+  <link rel="canonical" href="https://www.cesarmenegatti.com/zeno/vs/insomnia/" />
+  <meta property="og:title" content="Zeno vs Insomnia: a tab-less, local-first alternative" />
+  <meta property="og:description" content="How Zeno compares with Insomnia: accounts, git storage, encrypted secrets, protocols, mock servers and tabs. Zeno imports your Insomnia data folder directly." />
+  <meta property="og:image" content="https://www.cesarmenegatti.com/zeno/img/social.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://www.cesarmenegatti.com/zeno/vs/insomnia/" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.cesarmenegatti.com/zeno/img/social.png" />
+  <script type="application/ld+json">[{"@context": "https://schema.org", "@type": "WebPage", "name": "Zeno vs Insomnia: a tab-less, local-first alternative", "description": "How Zeno compares with Insomnia: accounts, git storage, encrypted secrets, protocols, mock servers and tabs. Zeno imports your Insomnia data folder directly.", "url": "https://www.cesarmenegatti.com/zeno/vs/insomnia/", "inLanguage": "en", "isPartOf": {"@type": "WebSite", "name": "Zeno", "url": "https://www.cesarmenegatti.com/zeno/"}, "about": {"@type": "SoftwareApplication", "name": "Zeno", "applicationCategory": "DeveloperApplication", "operatingSystem": "Linux, Windows, macOS", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "url": "https://www.cesarmenegatti.com/zeno/"}}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Can I move my Insomnia collections to Zeno?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Zeno reads the installed Insomnia data folder or a v4/v5 export file, and keeps environments, folders, auth, scripts, template tags like {% response %} and your custom shortcuts."}}, {"@type": "Question", "name": "Does Zeno need an account?", "acceptedAnswer": {"@type": "Answer", "text": "No. Zeno has no accounts and no telemetry; everything is stored in local files."}}, {"@type": "Question", "name": "Is Zeno free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Zeno is open source under the MIT license and has no paid tier."}}]}]</script>
+  <meta name="theme-color" content="#00121c" />
+  <link rel="icon" href="../../img/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../style.css" />
+  <style>
+.doc { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+.doc h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.12; margin: 8px 0 16px; text-wrap: balance; }
+.doc h2 { font-size: 24px; margin: 48px 0 12px; }
+.doc h3 { font-size: 18px; margin: 28px 0 8px; }
+.doc p, .doc li { color: var(--dim); font-size: 16.5px; line-height: 1.65; }
+.doc p.lede { font-size: 18.5px; color: var(--text, inherit); }
+.doc a { color: var(--blue); text-underline-offset: 3px; }
+.doc code { font-family: var(--mono); font-size: 0.92em; background: var(--bg2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+.doc ol li, .doc ul li { margin: 6px 0; }
+.tbl { overflow-x: auto; margin: 20px 0; border: 1px solid var(--line); border-radius: 12px; }
+.tbl table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 15px; }
+.tbl th, .tbl td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl th { font-weight: 600; background: var(--bg2); }
+.tbl td:first-child { font-weight: 600; white-space: nowrap; }
+.tbl td { color: var(--dim); }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 8px; }
+.note { font-size: 14px !important; color: var(--faint, var(--dim)) !important; border-top: 1px solid var(--line); margin-top: 48px; padding-top: 18px; }
+.crumbs { font: 600 12.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
+.crumbs a { color: inherit; text-decoration: none; }
+.related { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.related a { border: 1px solid var(--line); border-radius: 99px; padding: 6px 14px; text-decoration: none; font-size: 14.5px; }
+</style>
+  <script>
+    ;(function () {
+      try {
+        var t = localStorage.getItem('zeno-site-theme')
+        if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+        document.documentElement.dataset.theme = t
+      } catch (e) {}
+    })()
+  </script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-in">
+      <a class="brand" href="../../"><img src="../../img/logo.svg" alt="" width="30" height="30" /> Zeno</a>
+      <div class="nav-end">
+        <a class="btn primary" style="height:38px;padding:0 16px;font-size:14px" href="https://github.com/chmenegatti/zeno/releases/latest">Download</a>
+      </div>
+    </div>
+  </header>
+  <main class="doc">
+    <p class="crumbs"><a href="../../">Zeno</a> / Compare</p>
+    <h1>Zeno vs Insomnia</h1>
+    <p class="lede">Zeno started as a replacement for Insomnia: the same template syntax, the same shortcuts and a direct import of your Insomnia data, on a single screen without tabs and without an account.</p>
+<div class="cta">
+  <a class="btn primary" href="https://github.com/chmenegatti/zeno/releases/latest">Download Zeno</a>
+  <a class="btn ghost" href="https://github.com/chmenegatti/zeno">View on GitHub</a>
+</div>
+<h2>At a glance</h2>
+<div class="tbl"><table><thead><tr><th></th><th>Zeno</th><th>Insomnia</th></tr></thead><tbody><tr><td>Account</td><td>Never. No account, no login, no telemetry</td><td>Optional: Scratch Pad works without login, all local; mock servers need an account</td></tr><tr><td>Price</td><td>Free, MIT licensed. No paid tier</td><td>Essentials $0 (Git Sync up to 3 users), Pro $12 and Enterprise $45 per user/month</td></tr><tr><td>Storage</td><td>YAML files, one per request, in a folder you choose (it can be your service's git repository). Optional push to your own private GitHub repo</td><td>Local Vault, Cloud Sync, or Git Sync (YAML files in your repository)</td></tr><tr><td>Secrets</td><td>Encrypted (AES-256-GCM) inside the YAML itself, key in the OS keychain, so the files can be committed</td><td>Secret variables encrypted locally in a private global sub-environment, not synced; confidential values export in plain text; external vaults on Enterprise</td></tr><tr><td>Protocols</td><td>HTTP/REST, GraphQL, gRPC (reflection or .proto, all streaming modes), WebSocket, Server-Sent Events</td><td>REST, GraphQL, gRPC, SOAP, WebSocket, Socket.IO, SSE</td></tr><tr><td>Mock server</td><td>Local mock server built from saved responses, no account</td><td>Cloud-hosted or self-hosted (Mockbin); not available in Scratch Pad</td></tr><tr><td>Interface</td><td>One screen, no tabs: clicking a request swaps the content</td><td>Insomnia 12 opens requests in tabs</td></tr><tr><td>CI</td><td><code>zeno run</code> / <code>zeno-cli</code> with JUnit output</td><td>Inso CLI</td></tr><tr><td>Migration</td><td>Reads Insomnia's data folder directly (no export needed), keeps template tags, scripts and shortcuts</td><td>—</td></tr></tbody></table></div>
+<h2>Where Zeno is different</h2>
+<ul>
+<li><b>One screen.</b> Sidebar, request, response. Insomnia 12 opens requests in tabs and has no setting to turn that off; Zeno never opens a tab.</li>
+<li><b>Everything works without an account.</b> Including the mock server, which in Insomnia needs a login.</li>
+<li><b>Secrets travel with the collection, encrypted.</b> Zeno encrypts passwords and tokens inside the YAML files, so the whole folder can go to git. Insomnia keeps secret variables in a private environment that isn't synced, and exports confidential values in plain text.</li>
+<li><b>Your Insomnia work comes over as it is.</b> Zeno reads the installed Insomnia data folder (or a v4/v5 export), including environments, <code>{% response %}</code> chaining, scripts (<code>insomnia.*</code> is an alias), Insomnia-format plugins and the shortcuts you customized. See the <a href="../../migrate-from-insomnia/">migration guide</a>.</li>
+<li><b>Free, with no tiers.</b> Zeno is MIT licensed and has no paid plan; Git storage isn't limited by user count.</li>
+</ul>
+<h2>Where Insomnia is the better choice</h2>
+<ul>
+<li>You need <b>team features</b>: cloud sync, organizations, SSO, enterprise vault integrations.</li>
+<li>You use <b>SOAP</b> or <b>Socket.IO</b>, which Zeno doesn't support.</li>
+<li>You design APIs with Insomnia's <b>OpenAPI editor</b>; Zeno imports OpenAPI but doesn't edit specs.</li>
+<li>You prefer a tool backed by a company (Kong) with a larger community and signed builds. Zeno's builds are unsigned for now.</li>
+</ul>
+<p class="note">Insomnia facts checked on November 20, 2026 against <a href="https://insomnia.rest/pricing">insomnia.rest/pricing</a> and the official docs (<a href="https://developer.konghq.com/insomnia/storage/">storage</a>, <a href="https://developer.konghq.com/insomnia/git-sync/">Git Sync</a>, <a href="https://developer.konghq.com/insomnia/environments/">environments</a>, <a href="https://developer.konghq.com/insomnia/mock-servers/">mock servers</a>). Products change; if something here is out of date, <a href="https://github.com/chmenegatti/zeno/issues/new">open an issue</a>.</p>
+    <h2>FAQ</h2><h3>Can I move my Insomnia collections to Zeno?</h3><p>Yes. Zeno reads the installed Insomnia data folder or a v4/v5 export file, and keeps environments, folders, auth, scripts, template tags like {% response %} and your custom shortcuts.</p><h3>Does Zeno need an account?</h3><p>No. Zeno has no accounts and no telemetry; everything is stored in local files.</p><h3>Is Zeno free?</h3><p>Yes. Zeno is open source under the MIT license and has no paid tier.</p>
+    <h2>More</h2>
+    <div class="related"><a href="../../vs/postman/">Zeno vs Postman</a><a href="../../vs/bruno/">Zeno vs Bruno</a><a href="../../migrate-from-insomnia/">Migrate from Insomnia</a></div>
+  </main>
+</body>
+</html>
