@@ -2,6 +2,14 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [1.5.0](https://github.com/chmenegatti/zeno/compare/v1.4.1...v1.5.0) (2026-11-21)
+
+### Novidades
+
+* **Aviso de versão nova**: ao abrir (e a cada 24 h) o app consulta a última release no GitHub e avisa com *Novidades*, *Baixar* e *Pular esta versão*; no Flatpak e no Scoop mostra o comando do gerenciador. Consulta anônima, sem enviar dados; desliga em **Preferências › Atualizações** ou com `ZENO_NO_UPDATE_CHECK=1` ([#180](https://github.com/chmenegatti/zeno/pull/180))
+* **Splash screen** enquanto o app carrega: logo animado, versão e crédito, no idioma da interface ([#182](https://github.com/chmenegatti/zeno/pull/182))
+
+
 ## [1.4.1](https://github.com/chmenegatti/zeno/compare/v1.4.0...v1.4.1) (2026-11-21)
 
 ### Correções
