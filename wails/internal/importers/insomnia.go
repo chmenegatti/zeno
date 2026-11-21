@@ -492,6 +492,10 @@ func Convert(docs []*Doc, insecureTLS bool) Result {
 				r.Set("method", strings.ToUpper(str(or(d.Get("method"), "GET"))))
 				r.Set("url", coalesce(d.Get("url"), ""))
 				r.Set("params", insKV(d.Get("parameters")))
+				// Insomnia 8+: :id no path com valores em pathParameters (#149)
+				if pp := insPathParams(d.Get("pathParameters")); len(pp) > 0 {
+					r.Set("pathParams", pp)
+				}
 				r.Set("headers", insKV(d.Get("headers")))
 				body := insBody(obj(d.Get("body")), where, w)
 				if d.Str("type") == "WebSocketRequest" {
@@ -593,6 +597,16 @@ func unknownTags(texts []string) []string {
 				seen[name] = true
 				out = append(out, "{% "+name+" %}")
 			}
+		}
+	}
+	return out
+}
+
+func insPathParams(v any) []any {
+	var out []any
+	for _, x := range arr(v) {
+		if p := obj(x); p != nil && str(p.Get("name")) != "" && str(p.Get("value")) != "" {
+			out = append(out, doc.New("name", str(p.Get("name")), "value", str(p.Get("value"))))
 		}
 	}
 	return out

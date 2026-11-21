@@ -2,6 +2,7 @@
 
 import { buildVars, render, type TagValues, type Vars } from './template'
 import { effectiveAuth, effectiveHeaders } from './tree'
+import { replacePathParams } from './pathparams'
 import type { Folder, RequestDoc, SendInput, Workspace } from './types'
 
 export interface Prepared {
@@ -33,7 +34,9 @@ export function prepare(
     return out.value
   }
 
-  let url = r(req.url).trim()
+  // :id / {id} no path viram o valor (com variáveis); sem valor, o trecho fica como está
+  const pathValues = new Map((req.pathParams ?? []).map((p) => [p.name, p.value]))
+  let url = r(replacePathParams(req.url, (n) => pathValues.get(n) || undefined)).trim()
   // sem esquema vira http://, menos quando começa com variável não resolvida (gerar código mantendo {{ var }})
   if (url && !/^[a-z][a-z0-9+.-]*:\/\//i.test(url) && !/^\{[{%]/.test(url)) url = `http://${url}`
 

@@ -63,6 +63,7 @@ export function requestVarRefs(req: RequestDoc): string[] {
   const texts = [
     req.url,
     ...req.params.flatMap((p) => [p.name, p.value]),
+    ...(req.pathParams ?? []).map((p) => p.value),
     ...req.headers.flatMap((h) => [h.name, h.value]),
     req.body.text ?? '',
     ...(req.body.fields ?? []).flatMap((f) => [f.name, f.value]),

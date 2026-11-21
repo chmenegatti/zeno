@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { prepare } from '@shared/prepare'
+import { pathParamNames } from '@shared/pathparams'
 import { effectiveAuth } from '@shared/tree'
 import type { Auth, AuthType, Body, RequestDoc } from '@shared/types'
 import { activeEnvId, activeRequest, api, useStore } from '../state'
@@ -151,7 +152,7 @@ export function RequestPane() {
           value={sec}
           onChange={setSection}
           options={[
-            ...(grpcMode ? [] : [{ id: 'params' as const, label: <>Params<Count n={req.params.length} /></> }]),
+            ...(grpcMode ? [] : [{ id: 'params' as const, label: <>Params<Count n={req.params.length + pathParamNames(req.url).length} /></> }]),
             { id: 'headers', label: <>{grpcMode ? 'Metadata' : 'Headers'}<Count n={req.headers.length} /></> },
             { id: 'body', label: <>{wsMode || grpcMode ? t('Mensagem') : 'Body'}{req.body.mime && <span className="ml-1 text-[10.5px] text-faint">{t(BODY_TYPES.find((b) => b.mime === req.body.mime)?.label ?? req.body.mime)}</span>}</> },
             { id: 'auth', label: <>Auth<span className="ml-1 text-[10.5px] text-faint">{req.auth.type === 'inherit' ? '↑' : req.auth.type === 'none' ? '' : req.auth.type === 'oauth2' ? 'OAuth2' : t(AUTH_LABEL[req.auth.type])}</span></> },
@@ -166,6 +167,7 @@ export function RequestPane() {
       <div className="min-h-0 flex-1 overflow-auto">
         {sec === 'params' && (
           <div className="p-3">
+            <PathParams req={req} update={update} />
             <KeyValueTable rows={req.params} onChange={(params) => update({ params })} />
           </div>
         )}
@@ -441,5 +443,29 @@ function SendOptions({ reqId }: { reqId: string }) {
         </div>
       )}
     </div>
+  )
+}
+
+/** parâmetros de caminho (:id, {id}) da URL: o nome segue a URL, o valor fica no request (#149) */
+function PathParams({ req, update }: { req: RequestDoc; update: (patch: Partial<RequestDoc>) => void }) {
+  const names = pathParamNames(req.url)
+  if (!names.length) return null
+  const val = (n: string): string => req.pathParams?.find((p) => p.name === n)?.value ?? ''
+  const set = (n: string, v: string): void => update({ pathParams: names.map((x) => ({ name: x, value: x === n ? v : val(x) })).filter((p) => p.value) })
+  return (
+    <>
+      <div className="mb-1 text-[11px] text-faint">{t('Parâmetros de caminho')}</div>
+      {names.map((n) => (
+        <div key={n} className="flex items-center gap-1.5 border-b border-line/60 py-1">
+          <span className="field min-w-0 flex-1 truncate font-mono text-[12px] text-dim" title={t('Vem da URL; edite a URL pra renomear')}>
+            {n}
+          </span>
+          <div className="flex min-w-0 flex-[2]">
+            <TemplateInput className={`text-[12px] ${val(n) ? '' : 'border-torange/60'}`} placeholder={t('valor (vazio: vai como está na URL)')} value={val(n)} onChange={(v) => set(n, v)} />
+          </div>
+        </div>
+      ))}
+      <div className="mb-1 mt-4 text-[11px] text-faint">{t('Query')}</div>
+    </>
   )
 }

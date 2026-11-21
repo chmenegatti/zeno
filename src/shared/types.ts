@@ -66,6 +66,11 @@ export interface Scripts {
 
 export const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const
 
+export interface PathParam {
+  name: string
+  value: string
+}
+
 export interface RequestDoc {
   kind: 'request'
   id: string
@@ -74,6 +79,8 @@ export interface RequestDoc {
   method: string
   url: string
   params: KV[]
+  /** valores dos parâmetros de caminho (:id, {id}) da URL (#149) */
+  pathParams?: PathParam[]
   headers: KV[]
   body: Body
   auth: Auth

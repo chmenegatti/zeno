@@ -67,7 +67,6 @@ func pmScripts(events any) *Doc {
 var dynamic = map[string]string{"$guid": "{% uuid 'v4' %}", "$randomUUID": "{% uuid 'v4' %}", "$isoTimestamp": "{% now %}"}
 
 var dynRe = regexp.MustCompile(`\{\{\s*(\$\w+)\s*\}\}`)
-var pathVarRe = regexp.MustCompile(`(^|/):([A-Za-z_]\w*)`)
 
 // ConvertPostman: coleção + ambientes → workspace
 func ConvertPostman(collection any, envs []any) Result {
@@ -266,22 +265,16 @@ func ConvertPostman(collection any, envs []any) Result {
 			}
 			raw = raw[:qi]
 		}
-		// :id no path vira {{ id }}; o valor do exemplo vai pro Base se ainda não existe
+		// :id no path fica na URL (parâmetro de caminho, #149); o valor de url.variable vai pro request
+		var pathParams []any
 		if obj(u) != nil {
 			for _, x := range arr(get(u, "variable")) {
 				v := obj(x)
-				if v != nil && truthy(v.Get("key")) && !baseData.Has(str(v.Get("key"))) {
-					baseData.Set(str(v.Get("key")), coalesce(v.Get("value"), ""))
+				if v != nil && truthy(v.Get("key")) && str(v.Get("value")) != "" {
+					pathParams = append(pathParams, doc.New("name", str(v.Get("key")), "value", fix(str(v.Get("value")), where)))
 				}
 			}
 		}
-		raw = pathVarRe.ReplaceAllStringFunc(raw, func(m string) string {
-			g := pathVarRe.FindStringSubmatch(m)
-			if !baseData.Has(g[2]) {
-				baseData.Set(g[2], "")
-			}
-			return g[1] + "{{ " + g[2] + " }}"
-		})
 		var headers []any
 		if s, ok := r.Get("header").(string); ok {
 			headers = kv(parseHeaderBlock(s), where)
@@ -303,6 +296,9 @@ func ConvertPostman(collection any, envs []any) Result {
 		out.Set("method", strings.ToUpper(str(or(r.Get("method"), "GET"))))
 		out.Set("url", fix(raw, where))
 		out.Set("params", params)
+		if len(pathParams) > 0 {
+			out.Set("pathParams", pathParams)
+		}
 		out.Set("headers", headers)
 		out.Set("body", b)
 		out.Set("auth", auth(obj(r.Get("auth")), where))
