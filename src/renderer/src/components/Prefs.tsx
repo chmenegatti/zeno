@@ -55,6 +55,11 @@ export function PrefsModal({ onClose }: { onClose: () => void }) {
           <input type="number" className="field flex-1" min={EDITOR_FONT.min} max={EDITOR_FONT.max} step={0.5} value={p.editorFontSize ?? EDITOR_FONT.def} onChange={(e) => setUi({ editorFontSize: num(e.target.value, EDITOR_FONT) })} />
           <span className="w-[130px] text-faint">Ctrl+Shift+= / -</span>
         </label>
+        <label className="flex items-center gap-3">
+          <span className="w-[170px] text-dim">{t('Atualizações')}</span>
+          <input type="checkbox" checked={p.updateCheck !== false} onChange={(e) => setUi({ updateCheck: e.target.checked ? undefined : false })} />
+          <span className="text-faint">{t('Avisar quando sair versão nova (consulta o GitHub, sem enviar dados)')}</span>
+        </label>
         <div className="flex items-center gap-2">
           <button className="btn" onClick={() => useStore.getState().openModal({ kind: 'shortcuts' })}>{t('Atalhos de teclado…')}</button>
           <button className="btn" onClick={() => useStore.getState().openModal({ kind: 'plugins' })}>Plugins…</button>

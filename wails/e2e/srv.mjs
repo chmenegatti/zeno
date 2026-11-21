@@ -13,6 +13,8 @@ const server = http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x')
     const json = (code, v, h = {}) => { res.writeHead(code, { 'content-type': 'application/json', ...h }); res.end(JSON.stringify(v)) }
     if (u.pathname === '/echo') return json(200, { method: req.method, query: Object.fromEntries(u.searchParams), headers: req.headers, body })
+    // aviso de versão nova (#176): formato da API de releases do GitHub
+    if (u.pathname === '/gh/latest') return json(200, { tag_name: 'v99.0.0', html_url: 'http://127.0.0.1:4777/gh/v99', draft: false, prerelease: false })
     // Digest (#150): MD5, qop=auth, usuário ana / senha s3nha
     if (u.pathname === '/digest') {
       const md5 = (s) => crypto.createHash('md5').update(s).digest('hex')

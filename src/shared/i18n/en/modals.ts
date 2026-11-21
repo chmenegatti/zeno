@@ -319,7 +319,9 @@ const en: Record<string, string> = {
   'esconder': 'hide',
   'Apagar e digitar outro valor': 'Clear and type another value',
   'Criptografar no cofre': 'Encrypt in the vault',
-  '{{ variáveis }}': '{{ variables }}'
+  '{{ variáveis }}': '{{ variables }}',
+  'Atualizações': 'Updates',
+  'Avisar quando sair versão nova (consulta o GitHub, sem enviar dados)': 'Tell me when a new version is out (checks GitHub, sends no data)'
 }
 
 export default en

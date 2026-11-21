@@ -15,7 +15,7 @@ srv=$!
 gsrv=$!
 trap 'kill $srv $gsrv 2>/dev/null; rm -rf "$data"' EXIT
 sleep 1
-out=$(ZENO_NO_KEYRING=1 ZENO_DATA_DIR=$data ZENO_SCRIPT="$(cat "$here/e2e.js")" timeout 180 "$here/../build/zeno" 2>&1 | while IFS= read -r line; do
+out=$(ZENO_UPDATE_URL=http://127.0.0.1:4777/gh/latest ZENO_NO_KEYRING=1 ZENO_DATA_DIR=$data ZENO_SCRIPT="$(cat "$here/e2e.js")" timeout 180 "$here/../build/zeno" 2>&1 | while IFS= read -r line; do
   case "$line" in
     # arquivos vivos: edita um YAML por fora (depois da janela em que o app ignora as próprias gravações)
     *EDITAR-AGORA*) sleep 2; echo "# editado por fora" >> "$(find "$data" -name workspace.yaml | head -1)" ;;

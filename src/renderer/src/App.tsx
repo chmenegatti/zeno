@@ -7,6 +7,7 @@ import { Modals } from './components/Modals'
 import { PromptHost, TagEditHost } from './components/Tags'
 import { OAuthWait } from './components/OAuth'
 import { VarPopover } from './components/Vars'
+import { UpdateNotice } from './components/UpdateNotice'
 import { applyUi, installHotkeys } from './hotkeys'
 import { installNav } from './nav'
 import { setLang, t } from '@shared/i18n'
@@ -103,6 +104,7 @@ export function App() {
       <PromptHost />
       <OAuthWait />
       <VarPopover />
+      <UpdateNotice />
       {notice && !error && (
         <div className="fixed bottom-4 left-1/2 z-50 flex max-w-[70vw] -translate-x-1/2 items-center gap-3 rounded-lg border border-accent/40 bg-raised px-4 py-2 text-accent shadow-xl" onClick={() => useStore.setState({ notice: null, noticeAction: null })}>
           <span>{notice}</span>

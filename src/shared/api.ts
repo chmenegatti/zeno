@@ -129,6 +129,8 @@ export interface ZenoApi {
    * 'insomnia' = ~/.config/Insomnia; 'file' = diálogo (um ou mais arquivos: Insomnia v4/v5, OpenAPI/Swagger, Postman);
    * { url } = baixa o spec/coleção
    */
+  /** versão nova no GitHub (#176); null = em dia, desligado ou sem rede */
+  checkUpdate(current: string): Promise<{ version: string; url: string; install?: string } | null>
   importPreview(source: 'insomnia' | 'file' | { url: string }): Promise<ImportPreview | null>
   /** protect = cifrar senhas/tokens no cofre logo após importar */
   importRun(workspaceIds: string[], protect: boolean): Promise<Workspace[]>

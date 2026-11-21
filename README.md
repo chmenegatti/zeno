@@ -31,7 +31,7 @@ Popular API clients keep piling on tabs, cloud accounts and ever more crowded sc
 - **Your data is files.** Every request is a readable YAML file in a folder you own. Version it in git, review it in PRs and edit it in your favorite editor.
 - **Secrets don't leak.** Passwords and tokens are encrypted inside the YAML itself, with the key stored in the OS keychain.
 - **Painless migration.** Imports Insomnia collections straight from its data folder, including environments and token chaining.
-- **Local-first.** No account, no telemetry, no mandatory sync.
+- **Local-first.** No account, no telemetry, no mandatory sync. The only automatic request is an anonymous check for new versions against the GitHub releases API (turn it off in Preferences or with `ZENO_NO_UPDATE_CHECK=1`).
 - **Lightweight.** Built in Go, rendering in the OS's own web view: an 8–24 MB package and about 220 MB of memory when idle.
 - **Your way.** English or Portuguese interface, 20 themes, Insomnia-compatible (and remappable) shortcuts, a command palette and Insomnia-format plugins.
 
