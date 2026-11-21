@@ -27,6 +27,7 @@ import { ExamplesEditor } from './Mock'
 import { t, tk } from '@shared/i18n'
 
 const GraphQLBody = lazy(() => import('./GraphQLBody'))
+const DocsEditor = lazy(() => import('./Markdown'))
 
 type Section = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'assertions' | 'notes' | 'examples' | 'settings'
 
@@ -160,7 +161,7 @@ export function RequestPane() {
             { id: 'assertions', label: <>{t('Asserções')}<Count n={req.assertions?.filter((a) => a.enabled).length ?? 0} /></> },
             ...(wsMode || grpcMode ? [] : [{ id: 'examples' as const, label: <>{t('Exemplos')}<Count n={req.examples?.length ?? 0} /></> }]),
             ...(grpcMode ? [] : [{ id: 'settings' as const, label: <>{t('Opções')}{req.settings && Object.keys(req.settings).length ? <span className="ml-1 text-[10.5px] text-tpurple">●</span> : null}</> }]),
-            { id: 'notes', label: t('Notas') }
+            { id: 'notes', label: <>Docs{req.description?.trim() ? <span className="ml-1 text-[10.5px] text-faint">●</span> : null}</> }
           ]}
         />
       </div>
@@ -201,7 +202,9 @@ export function RequestPane() {
         {sec === 'examples' && <ExamplesEditor ws={cur.ws} req={req} onChange={(examples) => update({ examples })} />}
         {sec === 'settings' && <RequestSettingsEditor req={req} ws={cur.ws} update={update} />}
         {sec === 'notes' && (
-          <textarea className="h-full w-full resize-none bg-transparent p-3 outline-none" placeholder={t('Anotações sobre este request…')} value={req.description ?? ''} onChange={(e) => update({ description: e.target.value })} />
+          <Suspense fallback={null}>
+            <DocsEditor key={req.id} className="h-full" placeholder={t('Documentação deste request, em Markdown…')} value={req.description ?? ''} onChange={(description) => update({ description })} />
+          </Suspense>
         )}
       </div>
     </section>

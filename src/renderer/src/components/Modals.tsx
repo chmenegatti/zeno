@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { newId } from '@shared/tree'
 import type { Environment, Folder, ImportPreview, Workspace } from '@shared/types'
 import { findNode } from '@shared/tree'
@@ -22,6 +22,7 @@ import { LockIcon, useVaultStatus } from './Secret'
 import { Modal } from './ui'
 import { kl } from '../keys'
 import { t } from '@shared/i18n'
+const DocsEditor = lazy(() => import('./Markdown'))
 
 export function Modals() {
   const modal = useStore((s) => s.modal)
@@ -224,6 +225,14 @@ function FolderModal({ folder, onClose }: { folder: Folder; onClose: () => void 
             <ScriptsEditor scripts={draft.scripts} onChange={(scripts) => setDraft({ ...draft, scripts })} folder />
           </div>
         </div>
+        <div>
+          <h3 className="font-semibold">{t('Documentação da pasta')}</h3>
+          <div className="-mx-3 h-[260px]">
+            <Suspense fallback={null}>
+              <DocsEditor className="h-full" placeholder={t('Documentação da pasta, em Markdown…')} value={draft.description ?? ''} onChange={(description) => setDraft({ ...draft, description: description || undefined })} />
+            </Suspense>
+          </div>
+        </div>
         {err && <p className="text-tpink">{err}</p>}
         <div className="flex justify-end gap-2">
           <button className="btn" onClick={onClose}>{t('Cancelar')}</button>
@@ -258,10 +267,14 @@ function WorkspaceModal({ ws, onClose }: { ws: Workspace; onClose: () => void })
           <span className="text-dim">{t('Nome')}</span>
           <input className="field" value={name} onChange={(e) => setName(e.target.value)} />
         </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-dim">{t('Descrição')}</span>
-          <textarea className="field h-16 resize-none" value={description} onChange={(e) => setDescription(e.target.value)} />
-        </label>
+        <div className="flex flex-col gap-1">
+          <span className="text-dim">{t('Descrição')} <span className="text-[11px] text-faint">{t('(em Markdown)')}</span></span>
+          <div className="h-[200px] rounded-md border border-line">
+            <Suspense fallback={null}>
+              <DocsEditor className="h-full" value={description} onChange={setDescription} />
+            </Suspense>
+          </div>
+        </div>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={settings.insecureTLS} onChange={(e) => setSettings({ ...settings, insecureTLS: e.target.checked })} />
           {t('Aceitar certificado TLS inválido / autoassinado')}
