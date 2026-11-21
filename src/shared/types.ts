@@ -187,6 +187,8 @@ export interface Workspace extends WorkspaceDoc {
   location?: { dir: string; linked: boolean }
   environments: Environment[]
   children: TreeNode[]
+  /** valores locais (#153), por id de ambiente: lidos de local-vars.yaml da pasta de dados, nunca do workspace */
+  localVars?: Record<string, Record<string, unknown>>
 }
 
 export interface AppState {

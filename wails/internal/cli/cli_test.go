@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -226,5 +227,13 @@ func TestCores(t *testing.T) {
 	Run([]string{"run", "Loja", "--data-dir", f.dir}, fakeKey{}, c.out(), true)
 	if strings.Contains(c.text(), "\x1b[") {
 		t.Error("NO_COLOR ignorado")
+	}
+}
+
+func TestParseDotenv(t *testing.T) {
+	got := ParseDotenv("# comentário\r\nTOKEN=abc=123\n\nexport USER = \"ana silva\"\nPORT='3000'\nsem_igual\n")
+	want := [][2]string{{"TOKEN", "abc=123"}, {"USER", "ana silva"}, {"PORT", "3000"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("%v", got)
 	}
 }

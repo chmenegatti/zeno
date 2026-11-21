@@ -184,7 +184,9 @@ Mesmo padrão do Insomnia. Todos podem ser trocados em **⌨ Atalhos** (`Ctrl+Sh
 
 ## Variáveis e ambientes
 
-Cada workspace tem um ambiente **Base** e quantos sub-ambientes quiser (Desenvolvimento, Produção…). Pastas também podem ter variáveis. Na hora de enviar, vale a definição mais específica: **pasta > sub-ambiente ativo > Base**.
+Cada workspace tem um ambiente **Base** e quantos sub-ambientes quiser (Desenvolvimento, Produção…). Pastas também podem ter variáveis. Na hora de enviar, vale a definição mais específica: **valor local > pasta > sub-ambiente ativo > Base**.
+
+**Valores locais** são pro que é só seu: seu usuário, uma porta local, um token pessoal. No popover do badge, *Salvar em › Só nesta máquina* guarda o valor na pasta de dados do app (`local-vars.yaml`, fora do git), nunca no YAML do workspace, no export ou no *Salvar no GitHub*. O badge mostra `local (…)` e o que ele sobrescreve; *remover* volta pro valor compartilhado. No CI, `zeno run --env-file .env` lê linhas `NOME=valor` (`--var` continua vencendo).
 
 <img src="docs/variaveis.png" alt="Popover de edição de variável" width="640" />
 

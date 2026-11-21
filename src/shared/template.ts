@@ -81,5 +81,8 @@ export function buildVars(ws: Workspace, activeEnvId: string | null | undefined,
   const sub: Environment | undefined = activeEnvId ? ws.environments.find((e) => e.id === activeEnvId) : undefined
   if (sub && sub.parentId !== null) vars = deepMerge(vars, sub.data)
   for (const f of folders) vars = deepMerge(vars, f.vars ?? {})
+  // valores locais (#153), que não vão pro git: os do Base e depois os do sub-ambiente ativo vencem tudo
+  if (base && ws.localVars?.[base.id]) vars = deepMerge(vars, ws.localVars[base.id])
+  if (sub && sub.parentId !== null && ws.localVars?.[sub.id]) vars = deepMerge(vars, ws.localVars[sub.id])
   return vars
 }

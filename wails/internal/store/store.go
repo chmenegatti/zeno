@@ -190,6 +190,7 @@ func (s *Store) load() []*Doc {
 	for _, l := range s.links {
 		dirs = append(dirs, wsDir{l, true})
 	}
+	local := s.readLocalVars()
 	for _, wd := range dirs {
 		raw := readYaml(filepath.Join(wd.dir, wsFile))
 		if raw == nil {
@@ -217,6 +218,9 @@ func (s *Store) load() []*Doc {
 		s.index[id] = indexEntry{"workspace", wd.dir, id}
 		ws.Set("environments", doc.Docs(s.loadEnvs(wd.dir, id)))
 		ws.Set("children", doc.Docs(s.loadDir(wd.dir, id)))
+		if lv := local.Map(id); lv != nil && lv.Len() > 0 {
+			ws.Set("localVars", lv)
+		}
 		out = append(out, ws)
 	}
 	slices.SortStableFunc(out, func(a, b *Doc) int { return localeCompare(a.Str("name"), b.Str("name")) })
@@ -844,9 +848,12 @@ func (s *Store) SetState(raw []byte) error {
 }
 
 // WriteGitignore: o que fica na máquina nunca vai pro git (só acrescenta o que falta)
-func WriteGitignore(dir string) {
+func WriteGitignore(dir string) { writeGitignore(dir) }
+
+// writeGitignore garante as linhas padrão mais extra (só acrescenta o que falta)
+func writeGitignore(dir string, extra ...string) {
 	file := filepath.Join(dir, ".gitignore")
-	need := []string{".responses/", ".vault/", ".cookies/", ".github.json", "state.json", "links.json"}
+	need := append([]string{".responses/", ".vault/", ".cookies/", ".github.json", "state.json", "links.json"}, extra...)
 	cur, err := os.ReadFile(file)
 	if err != nil {
 		_ = os.WriteFile(file, []byte("# gerado pelo Zeno: respostas, cookies, estado da interface e chave do cofre ficam só na máquina\n"+strings.Join(need, "\n")+"\n"), 0o644)

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { isCurl } from '@shared/curl'
-import { envSource, formatValue, isSecret, requestVarRefs, tokenize, varSources, type VarInfo, type VarSource } from '@shared/vars'
+import { envSource, localSource, formatValue, isSecret, requestVarRefs, tokenize, varSources, type VarInfo, type VarSource } from '@shared/vars'
 import type { Folder, RequestDoc, Workspace } from '@shared/types'
 import { isEncrypted, looksSecret, MASK } from '@shared/secret'
 import { LockIcon } from './Secret'
@@ -222,6 +222,8 @@ export function EnvVarList({ ws }: { ws: Workspace }) {
   )
 }
 
+const targetIdOf = (s: VarSource): string => (s.kind === 'env' ? s.envId : s.kind === 'local' ? `local:${s.envId}` : s.folderId)
+
 interface Target {
   id: string
   label: string
@@ -256,6 +258,9 @@ export function VarPopover() {
     const base = ws.environments.find((e) => e.parentId === null)
     if (base) list.push({ id: base.id, label: t('Base (todos os ambientes)'), source: envSource(base) })
     for (const f of [...ancestors].reverse()) list.push({ id: f.id, label: t('Pasta {name}', { name: f.name }), source: { kind: 'folder', folderId: f.id, label: f.name } })
+    // valor local (#153): só nesta máquina, nunca no YAML do workspace
+    if (sub) list.push({ id: `local:${sub.id}`, label: t('Só nesta máquina ({env})', { env: sub.name }), source: localSource(sub) })
+    if (base) list.push({ id: `local:${base.id}`, label: t('Só nesta máquina (todos os ambientes)'), source: localSource(base) })
     return list
   }, [ws, envId, ancestors])
 
@@ -271,7 +276,7 @@ export function VarPopover() {
     setShow(!isSecret(edit.name))
     setErr(null)
     const src = info?.source
-    setTargetId(src ? (src.kind === 'env' ? src.envId : src.folderId) : (targets[0]?.id ?? ''))
+    setTargetId(src ? targetIdOf(src) : (targets[0]?.id ?? ''))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [edit])
 
@@ -339,7 +344,10 @@ export function VarPopover() {
         parsed = value
       }
     }
-    if (target.source.kind === 'env') {
+    if (target.source.kind === 'local') {
+      const ws2 = await useStore.getState().run(api.setLocalVar(ws.id, target.source.envId, key, parsed))
+      if (ws2) useStore.getState().setWorkspaces(ws2)
+    } else if (target.source.kind === 'env') {
       const env = ws.environments.find((e) => e.id === target.id)!
       await saveEnvironment(ws.id, { ...env, data: { ...env.data, [key]: parsed } })
     } else {
@@ -352,7 +360,10 @@ export function VarPopover() {
   const remove = async () => {
     if (!info) return
     const src = info.source
-    if (src.kind === 'env') {
+    if (src.kind === 'local') {
+      const ws2 = await useStore.getState().run(api.setLocalVar(ws.id, src.envId, edit.name, null))
+      if (ws2) useStore.getState().setWorkspaces(ws2)
+    } else if (src.kind === 'env') {
       const env = ws.environments.find((e) => e.id === src.envId)!
       const { [edit.name]: _gone, ...data } = env.data
       await saveEnvironment(ws.id, { ...env, data })
