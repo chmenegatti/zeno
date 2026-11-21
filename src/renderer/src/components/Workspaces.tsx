@@ -334,7 +334,12 @@ export function WorkspacesModal({ onClose }: { onClose: () => void }) {
       'aria-selected': picked,
       tabIndex: -1,
       draggable: canDrag && renaming !== w.id,
-      onDragStart: () => setDrag(w.id),
+      onDragStart: (e: React.DragEvent) => {
+        // WebKit (Linux e macOS) cancela o arraste se o dragstart não põe nenhum dado
+        e.dataTransfer.effectAllowed = 'move'
+        e.dataTransfer.setData('text/plain', w.id)
+        setDrag(w.id)
+      },
       onDragOver: (e: React.DragEvent) => canDrag && drag && drag !== w.id && e.preventDefault(),
       onDrop: () => drag && reorder(drag, w.id),
       onDragEnd: () => setDrag(null),
