@@ -45,3 +45,18 @@ func TestPreparePathParams(t *testing.T) {
 		t.Errorf("%q", p.URL)
 	}
 }
+
+// configurações do request (#151) valem sobre as do workspace
+func TestPrepareConfigDoRequest(t *testing.T) {
+	ws := doc.New("settings", doc.New("timeoutMs", int64(5000), "insecureTLS", false), "environments", []any{})
+	req := doc.New("id", "r", "method", "GET", "url", "http://x", "body", doc.New("mime", nil), "auth", doc.New("type", "none"),
+		"settings", doc.New("timeoutMs", int64(100), "insecureTLS", true, "followRedirects", false, "maxRedirects", int64(3)))
+	p := Prepare(ws, req, nil, "", nil)
+	if p.TimeoutMs != 100 || !p.InsecureTLS || !p.NoRedirects || p.MaxRedirects != 3 {
+		t.Errorf("%+v", p)
+	}
+	req.Del("settings")
+	if p := Prepare(ws, req, nil, "", nil); p.TimeoutMs != 5000 || p.InsecureTLS || p.NoRedirects || p.MaxRedirects != 0 {
+		t.Errorf("herdado: %+v", p)
+	}
+}

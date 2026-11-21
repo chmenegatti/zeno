@@ -81,8 +81,8 @@ export function prepare(
       url,
       headers,
       body,
-      insecureTLS: ws.settings.insecureTLS,
-      timeoutMs: ws.settings.timeoutMs
+      insecureTLS: req.settings?.insecureTLS ?? ws.settings.insecureTLS,
+      timeoutMs: req.settings?.timeoutMs ?? ws.settings.timeoutMs
     },
     missing: [...missing],
     unsupported: [...unsupported]

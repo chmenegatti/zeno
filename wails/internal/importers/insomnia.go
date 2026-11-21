@@ -510,6 +510,13 @@ func Convert(docs []*Doc, insecureTLS bool) Result {
 				if d.Get("settingStoreCookies") == false {
 					r.Set("storeCookies", false)
 				}
+				// redirects por request (#151): "global" = vale o padrão
+				switch d.Str("settingFollowRedirects") {
+				case "off":
+					r.Set("settings", doc.New("followRedirects", false))
+				case "on":
+					r.Set("settings", doc.New("followRedirects", true))
+				}
 				r.Set("sortKey", sortKey(d))
 				texts := []string{str(r.Get("url")), str(body.Get("text"))}
 				for _, h := range arr(r.Get("headers")) {

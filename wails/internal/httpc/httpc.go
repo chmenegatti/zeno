@@ -533,7 +533,11 @@ func Send(reqID string, p vars.Prepared, cookies CookieHooks) *doc.Doc {
 			cookies.Store(u, set)
 		}
 		loc := res.Header.Get("Location")
-		if !redirects[res.StatusCode] || loc == "" || hop >= maxRedirects {
+		limit := maxRedirects
+		if p.MaxRedirects > 0 {
+			limit = p.MaxRedirects
+		}
+		if p.NoRedirects || !redirects[res.StatusCode] || loc == "" || hop >= limit {
 			break
 		}
 		_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 1<<20))

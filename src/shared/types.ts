@@ -66,6 +66,15 @@ export interface Scripts {
 
 export const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const
 
+export interface RequestSettings {
+  timeoutMs?: number
+  /** false = a resposta é o próprio 30x */
+  followRedirects?: boolean
+  /** padrão 10 */
+  maxRedirects?: number
+  insecureTLS?: boolean
+}
+
 export interface PathParam {
   name: string
   value: string
@@ -87,6 +96,8 @@ export interface RequestDoc {
   scripts?: Scripts
   /** checagens da resposta sem programar (rodam depois dos scripts pós-resposta) */
   assertions?: Assertion[]
+  /** configurações deste request (#151); ausente = vale o do workspace */
+  settings?: RequestSettings
   /** false = não manda os cookies do workspace */
   sendCookies?: boolean
   /** false = não guarda os Set-Cookie da resposta */

@@ -198,6 +198,9 @@
     ok('cookie entre hops', body?.headers?.cookie === 'sessao=abc123', body?.headers?.cookie)
     const ck = await z.cookiesList(wsId)
     ok('jar do workspace', ck.some((c) => c.key === 'sessao' && c.value === 'abc123'))
+    const parado = await mk('sem redirect', { url: '{{ base }}/redirect', settings: { followRedirects: false } })
+    const s2 = await send(parado)
+    ok('opção do request: sem seguir redirect', s2.rec.status === 302 && find(wss, parado.id)?.settings?.followRedirects === false, s2.rec.status)
   })
   await safe('cancelar', async () => {
     const r = await mk('lento', { url: '{{ base }}/slow' })

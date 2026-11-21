@@ -198,6 +198,9 @@ type Prepared struct {
 	Multipart   []Part
 	InsecureTLS bool
 	TimeoutMs   float64
+	// por request (#151): não seguir redirects; MaxRedirects 0 = padrão (10)
+	NoRedirects  bool
+	MaxRedirects int
 	// Net: proxy, CA própria e certificados de cliente do workspace (#18)
 	Net Net
 	// OAuth2: auth oauth2 efetiva (do request ou herdada); o motor busca o token e põe o header (#9)
@@ -378,6 +381,19 @@ func Prepare(ws, req *Doc, anc []*Doc, envID string, tagValues map[string]string
 	settings := ws.Map("settings")
 	p.InsecureTLS = settings.Get("insecureTLS") == true
 	p.TimeoutMs = settings.Num("timeoutMs", 30000)
+	// configurações do request (#151): o que estiver definido vale sobre o workspace
+	if rs := req.Map("settings"); rs != nil {
+		if rs.Has("timeoutMs") {
+			p.TimeoutMs = rs.Num("timeoutMs", p.TimeoutMs)
+		}
+		if rs.Has("insecureTLS") {
+			p.InsecureTLS = rs.Get("insecureTLS") == true
+		}
+		p.NoRedirects = rs.Get("followRedirects") == false
+		if rs.Has("maxRedirects") {
+			p.MaxRedirects = int(rs.Num("maxRedirects", 0))
+		}
+	}
 	if px := settings.Map("proxy"); px != nil {
 		p.Net.ProxyMode = px.Str("mode")
 		p.Net.ProxyURL = strings.TrimSpace(R(px.Str("url")))

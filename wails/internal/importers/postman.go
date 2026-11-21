@@ -303,6 +303,22 @@ func ConvertPostman(collection any, envs []any) Result {
 		out.Set("body", b)
 		out.Set("auth", auth(obj(r.Get("auth")), where))
 		out.Set("scripts", nilDoc(pmScripts(item.Get("event"))))
+		// configurações do request (#151)
+		if pb := obj(item.Get("protocolProfileBehavior")); pb != nil {
+			set := doc.New()
+			if b, ok := pb.Get("followRedirects").(bool); ok {
+				set.Set("followRedirects", b)
+			}
+			if n, ok := pb.Get("maxRedirects").(float64); ok && n > 0 {
+				set.Set("maxRedirects", int64(n))
+			}
+			if pb.Get("strictSSL") == false {
+				set.Set("insecureTLS", true)
+			}
+			if set.Len() > 0 {
+				out.Set("settings", set)
+			}
+		}
 		out.Set("sortKey", int64(i))
 		return out
 	}

@@ -254,3 +254,19 @@ func TestFormNaOrdemEIdUnico(t *testing.T) {
 		t.Error("ids iguais no mesmo ms")
 	}
 }
+
+// configurações do request (#151): sem seguir redirect, a resposta é o próprio 30x
+func TestSemSeguirRedirect(t *testing.T) {
+	srv := server(t)
+	p := prep("GET", srv.URL+"/login")
+	p.NoRedirects = true
+	r := Send("r9", p, CookieHooks{})
+	if st := r.Num("status", 0); st < 300 || st >= 400 || len(r.Map("timeline").List("hops")) != 1 {
+		t.Errorf("status %v saltos %v", r.Get("status"), r.Map("timeline").List("hops"))
+	}
+	p = prep("GET", srv.URL+"/login")
+	p.MaxRedirects = 1
+	if r := Send("r10", p, CookieHooks{}); len(r.Map("timeline").List("hops")) != 2 {
+		t.Errorf("máx 1: saltos %v", r.Map("timeline").List("hops"))
+	}
+}
