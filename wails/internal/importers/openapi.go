@@ -191,7 +191,6 @@ func serverURL(d *Doc, sourceURL string) string {
 	return strings.TrimRight(u, "/")
 }
 
-
 // ConvertOpenAPI: spec → workspace
 func ConvertOpenAPI(spec any, sourceURL string) Result {
 	w := &warner{uniq: true}
