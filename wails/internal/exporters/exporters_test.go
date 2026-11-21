@@ -39,7 +39,11 @@ func sample() *Doc {
      "auth": {"type": "oauth2", "grantType": "client_credentials", "tokenUrl": "https://auth.test/token", "clientId": "c", "clientSecret": "s", "scope": "ler"}, "sortKey": 1},
     {"kind": "request", "id": "req_form", "name": "Form", "method": "POST", "url": "{{ base }}/up", "params": [], "headers": [],
      "body": {"mime": "multipart/form-data", "fields": [{"name": "n", "value": "v", "enabled": true}, {"name": "arq", "value": "", "enabled": true, "file": "/tmp/a.png"}]},
-     "auth": {"type": "apikey", "key": "k", "value": "K1", "addTo": "query"}, "sortKey": 2}
+     "auth": {"type": "apikey", "key": "k", "value": "K1", "addTo": "query"}, "sortKey": 2},
+    {"kind": "request", "id": "req_dig", "name": "Digest", "method": "GET", "url": "{{ base }}/d", "params": [], "headers": [], "body": {"mime": null},
+     "auth": {"type": "digest", "username": "ana", "password": "{{ senha }}"}, "sortKey": 3},
+    {"kind": "request", "id": "req_aws", "name": "AWS", "method": "GET", "url": "{{ base }}/a", "params": [], "headers": [], "body": {"mime": null},
+     "auth": {"type": "awsv4", "accessKeyId": "AK", "secretAccessKey": "{{ secret }}", "sessionToken": "", "region": "us-east-1", "service": "execute-api"}, "sortKey": 4}
   ]
 }`))
 	if err != nil {

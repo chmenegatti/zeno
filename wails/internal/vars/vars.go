@@ -203,6 +203,9 @@ type Prepared struct {
 	MaxRedirects int
 	// Net: proxy, CA própria e certificados de cliente do workspace (#18)
 	Net Net
+	// Digest e AWS SigV4 (#150): o envio calcula o header (Digest depois do 401; AWS em cada request)
+	Digest *DigestAuth
+	AWS    *AWSAuth
 	// OAuth2: auth oauth2 efetiva (do request ou herdada); o motor busca o token e põe o header (#9)
 	OAuth2      *OAuth2
 	Missing     []string
@@ -228,6 +231,16 @@ type OAuth2 struct {
 	Owner, Grant, AuthURL, TokenURL, ClientID, ClientSecret, Scope, Audience, RedirectURI string
 	Username, Password, ClientAuth, Prefix                                                string
 	PKCE                                                                                  bool
+}
+
+// DigestAuth: usuário e senha da auth Digest, já resolvidos
+type DigestAuth struct {
+	Username, Password string
+}
+
+// AWSAuth: credenciais da AWS Signature v4, já resolvidas
+type AWSAuth struct {
+	AccessKey, SecretKey, SessionToken, Region, Service string
 }
 
 // Part: campo de multipart (File = caminho do arquivo no disco)
@@ -295,6 +308,8 @@ func Prepare(ws, req *Doc, anc []*Doc, envID string, tagValues map[string]string
 		auth = anc[i].Map("auth")
 		owner = anc[i].Str("id")
 	}
+	var digestAuth *DigestAuth
+	var awsAuth *AWSAuth
 	switch auth.Str("type") {
 	case "basic":
 		if !has("authorization") {
@@ -323,6 +338,11 @@ func Prepare(ws, req *Doc, anc []*Doc, envID string, tagValues map[string]string
 		if !has("authorization") {
 			oauthAuth = o
 		}
+	case "digest":
+		digestAuth = &DigestAuth{Username: R(auth.Str("username")), Password: R(auth.Str("password"))}
+	case "awsv4":
+		awsAuth = &AWSAuth{AccessKey: strings.TrimSpace(R(auth.Str("accessKeyId"))), SecretKey: strings.TrimSpace(R(auth.Str("secretAccessKey"))),
+			SessionToken: strings.TrimSpace(R(auth.Str("sessionToken"))), Region: strings.TrimSpace(R(auth.Str("region"))), Service: strings.TrimSpace(R(auth.Str("service")))}
 	case "apikey":
 		if auth.Str("key") != "" {
 			if auth.Str("addTo") == "query" {
@@ -378,6 +398,7 @@ func Prepare(ws, req *Doc, anc []*Doc, envID string, tagValues map[string]string
 	}
 	p.Headers = headers
 	p.OAuth2 = oauthAuth
+	p.Digest, p.AWS = digestAuth, awsAuth
 	settings := ws.Map("settings")
 	p.InsecureTLS = settings.Get("insecureTLS") == true
 	p.TimeoutMs = settings.Num("timeoutMs", 30000)

@@ -15,6 +15,10 @@ export type Auth =
   | { type: 'basic'; username: string; password: string }
   | { type: 'bearer'; token: string; prefix?: string }
   | { type: 'apikey'; key: string; value: string; addTo: 'header' | 'query' }
+  /** #150: o envio responde ao desafio 401 com o header Digest */
+  | { type: 'digest'; username: string; password: string }
+  /** #150: AWS Signature v4, assinada no envio (depois de variáveis e scripts) */
+  | { type: 'awsv4'; accessKeyId: string; secretAccessKey: string; sessionToken?: string; region: string; service: string }
   | OAuth2Auth
 
 export type OAuthGrant = 'authorization_code' | 'client_credentials' | 'password' | 'implicit' | 'device_code'
