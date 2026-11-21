@@ -6,8 +6,6 @@ name: Flatpak
 
 on:
   workflow_dispatch:
-  push:
-    branches: [feat/133-flathub]
   pull_request:
     paths: ['packaging/flatpak/**', '.github/workflows/flatpak.yml']
 
