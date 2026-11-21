@@ -28,8 +28,77 @@ jobs:
   packages:
     uses: ./.github/workflows/go-packages.yml
 
+  # Flatpak (fora do Flathub): fontes offline da versão (módulos Go e pacotes npm) e o pacote .flatpak montado
+  # do próprio checkout, anexado à release. O runtime vem do Flathub (--runtime-repo): o `flatpak install`
+  # baixa sozinho.
+  flatpak-sources:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: wails/go.mod
+      - name: Gerar go-sources.json e node-sources.json
+        run: |
+          pip install --user "git+https://github.com/flatpak/flatpak-builder-tools.git#subdirectory=node"
+          export PATH="$HOME/.local/bin:$PATH"
+          sh packaging/flatpak/update-sources.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-sources
+          path: |
+            packaging/flatpak/go-sources.json
+            packaging/flatpak/go-modules.txt
+            packaging/flatpak/node-sources.json
+
+  flatpak:
+    needs: flatpak-sources
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: flatpak-sources
+          path: packaging/flatpak
+      # o manifesto aponta pra uma tag; aqui o app vem do checkout desta versão
+      - name: App do checkout
+        run: |
+          python3 - <<'PY'
+          import re
+          p = "packaging/flatpak/com.cesarmenegatti.Zeno.yml"
+          s = open(p).read()
+          s, n = re.subn(r"      - type: git\n        url: https://github.com/chmenegatti/zeno.git\n        tag: .*\n        commit: .*\n",
+                         "      - type: dir\n        path: ../..\n        skip: [.git, node_modules, .flatpak-builder, flatpak_app, repo, wails/build, out]\n", s)
+          assert n == 1, "fonte git do app não encontrada no manifesto"
+          open(p, "w").write(s)
+          PY
+      # mesmo contorno do workflow Flatpak (overlayfs do Docker, flatpak/flatpak-github-actions#267)
+      - name: Runtimes da imagem
+        run: |
+          cp -a /var/lib/flatpak /var/lib/flatpak-rw
+          echo "FLATPAK_SYSTEM_DIR=/var/lib/flatpak-rw" >> "$GITHUB_ENV"
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: packaging/flatpak/com.cesarmenegatti.Zeno.yml
+          bundle: zeno.flatpak
+          cache-key: flatpak-release-${{ hashFiles('packaging/flatpak/*.json') }}
+          upload-artifact: false
+      - name: Pacote com o runtime do Flathub
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          [ "$GITHUB_REF_TYPE" = tag ] || v=$(python3 -c "import json;print(json.load(open('package.json'))['version'])")
+          flatpak build-bundle --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo repo "Zeno-$v-x86_64.flatpak" com.cesarmenegatti.Zeno
+          ls -la Zeno-*.flatpak
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-bundle
+          path: Zeno-*.flatpak
+
   publish:
-    needs: [test, packages]
+    needs: [test, packages, flatpak]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -48,7 +117,10 @@ jobs:
           cat notes.md
 
       - name: Arquivos
-        run: ls -la dist
+        run: |
+          # fontes do flatpak são insumo do build, não vão pra release
+          rm -f dist/go-sources.json dist/go-modules.txt dist/node-sources.json
+          ls -la dist
 
       - name: Publicar release
         if: github.ref_type == 'tag'
