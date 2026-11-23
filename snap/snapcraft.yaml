@@ -36,7 +36,6 @@ platforms:
 apps:
   zeno-rest:
     command: opt/Zeno/zeno
-    desktop: meta/gui/zeno-rest.desktop
     extensions: [gnome]
     environment:
       # o sandbox do WebKit (bwrap) não roda dentro do confinamento do snap, que já isola o app
