@@ -2,7 +2,7 @@
 Name:           zeno
 Version:        %{zeno_version}
 Release:        1
-Summary:        Cliente de API desktop sem abas
+Summary:        Tab-less, local-first API client for REST, GraphQL, gRPC and WebSocket
 License:        MIT
 URL:            https://github.com/chmenegatti/zeno
 Requires:       gtk3
@@ -15,13 +15,16 @@ AutoReqProv:    no
 %global __strip /bin/true
 
 %description
-Cliente de API desktop: coleções em YAML, segredos criptografados e import do Insomnia.
+Zeno keeps collections as YAML files you can commit to git, encrypts secrets
+inside them with a key in the system keyring, and imports Insomnia, Postman
+and OpenAPI. No account, no telemetry.
 
 %install
 install -Dm755 %{zeno_bin} %{buildroot}/opt/Zeno/zeno
 install -d %{buildroot}%{_bindir}
 ln -s ../../opt/Zeno/zeno %{buildroot}%{_bindir}/zeno
 install -Dm644 %{zeno_pkg}/zeno.desktop %{buildroot}%{_datadir}/applications/zeno.desktop
+install -Dm644 %{zeno_metainfo} %{buildroot}%{_datadir}/metainfo/com.cesarmenegatti.Zeno.metainfo.xml
 for s in 16 24 32 48 64 128 256 512; do
   install -Dm644 %{zeno_icons}/${s}x${s}.png %{buildroot}%{_datadir}/icons/hicolor/${s}x${s}/apps/zeno.png
 done
@@ -30,4 +33,5 @@ done
 /opt/Zeno
 %{_bindir}/zeno
 %{_datadir}/applications/zeno.desktop
+%{_datadir}/metainfo/com.cesarmenegatti.Zeno.metainfo.xml
 %{_datadir}/icons/hicolor/*/apps/zeno.png

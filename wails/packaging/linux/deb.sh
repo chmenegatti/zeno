@@ -13,6 +13,9 @@ trap 'rm -rf "$root"' EXIT
 
 install -Dm755 "$bin" "$root/opt/Zeno/zeno"
 install -Dm644 "$here/zeno.desktop" "$root/usr/share/applications/zeno.desktop"
+install -d "$root/usr/share/metainfo"
+"$here/metainfo.sh" > "$root/usr/share/metainfo/com.cesarmenegatti.Zeno.metainfo.xml"
+chmod 644 "$root/usr/share/metainfo/com.cesarmenegatti.Zeno.metainfo.xml"
 for s in 16 24 32 48 64 128 256 512; do
   install -Dm644 "$icons/${s}x${s}.png" "$root/usr/share/icons/hicolor/${s}x${s}/apps/zeno.png"
 done
@@ -23,15 +26,17 @@ cat > "$root/DEBIAN/control" <<CONTROL
 Package: zeno
 Version: $version
 Architecture: $arch
-Maintainer: Cesar Menegatti <zeno@localhost>
+Maintainer: Cesar Menegatti <chmenegatti@users.noreply.github.com>
 Installed-Size: $size
 Depends: libgtk-3-0t64 | libgtk-3-0, libwebkit2gtk-4.1-0
 Recommends: xdg-utils, gnome-keyring | kwalletmanager
 Section: devel
 Priority: optional
 Homepage: https://github.com/chmenegatti/zeno
-Description: Cliente de API desktop sem abas
- Cliente de API desktop: coleções em YAML, segredos criptografados e import do Insomnia.
+Description: Tab-less, local-first API client for REST, GraphQL, gRPC and WebSocket
+ Zeno keeps collections as YAML files you can commit to git, encrypts secrets
+ inside them with a key in the system keyring, and imports Insomnia, Postman
+ and OpenAPI. No account, no telemetry.
 CONTROL
 dpkg-deb --root-owner-group --build -Zxz "$root" "$out" >/dev/null
 echo "$out"
