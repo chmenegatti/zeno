@@ -1,10 +1,12 @@
 [Desktop Entry]
 Name=Zeno
+GenericName=API Client
 Exec=/opt/Zeno/zeno %U
 Terminal=false
 Type=Application
 Icon=zeno
 StartupWMClass=zeno
 Keywords=api;http;rest;insomnia;
-Comment=Cliente de API desktop: coleções em YAML, segredos criptografados e import do Insomnia.
+Comment=Tab-less, local-first API client for REST, GraphQL, gRPC and WebSocket
+Comment[pt_BR]=Cliente de API sem abas para REST, GraphQL, gRPC e WebSocket
 Categories=Development;

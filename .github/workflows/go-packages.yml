@@ -9,10 +9,10 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['wails/**', 'src/renderer/**', 'src/shared/**', '.github/workflows/go-packages.yml']
+    paths: ['wails/**', 'src/renderer/**', 'src/shared/**', 'packaging/flatpak/*.metainfo.xml', '.github/workflows/go-packages.yml']
   # todo PR que mexe na versão Go: código específico de Windows/macOS só compila e testa nesses jobs
   pull_request:
-    paths: ['wails/**', '.github/workflows/go-packages.yml']
+    paths: ['wails/**', 'packaging/flatpak/*.metainfo.xml', '.github/workflows/go-packages.yml']
 
 permissions:
   contents: read
