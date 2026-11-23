@@ -46,6 +46,14 @@ apps:
       - home
       - removable-media
       - password-manager-service # chave do cofre no chaveiro do sistema
+      - insomnia-config
+
+plugs:
+  # importar direto da pasta do Insomnia (Importar › Ler ~/.config/Insomnia), só leitura
+  insomnia-config:
+    interface: personal-files
+    read:
+      - $HOME/.config/Insomnia
 
 parts:
   zeno:
