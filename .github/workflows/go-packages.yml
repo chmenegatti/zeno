@@ -85,7 +85,7 @@ jobs:
         run: |
           sudo snap install --dangerous "${{ steps.build.outputs.snap }}"
           sudo apt-get install -y xvfb
-          out=$(ZENO_NO_UPDATE_CHECK=1 ZENO_NO_KEYRING=1 ZENO_SCRIPT='console.log("SNAP-OK " + !!window.zeno)' timeout 120 xvfb-run -a zeno-rest 2>&1 || true)
+          out=$(ZENO_NO_UPDATE_CHECK=1 ZENO_NO_KEYRING=1 ZENO_SCRIPT='(async () => { for (let i = 0; i < 200 && !(window.zeno && document.body.innerText); i++) await new Promise((r) => setTimeout(r, 50)); const l = await window.zeno.load(); console.log("SNAP-OK " + Array.isArray(l.workspaces)) })()' timeout 120 xvfb-run -a zeno-rest 2>&1 || true)
           echo "$out"
           echo "$out" | grep -q "SNAP-OK true"
       - uses: actions/upload-artifact@v7
