@@ -2,6 +2,17 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [1.5.1](https://github.com/chmenegatti/zeno/compare/v1.5.0...v1.5.1) (2026-11-23)
+
+### Novidades
+
+* **Snap**: o Zeno passa a ser publicado na Snap Store e aparece no App Center do Ubuntu (`sudo snap install zeno-rest`) ([#185](https://github.com/chmenegatti/zeno/pull/185))
+
+### Correções
+
+* **`.deb` e `.rpm` nas lojas**: os pacotes trazem o metainfo AppStream, então App Center, GNOME Software e Discover mostram nome, ícone, descrição e capturas em vez de "zeno" com ícone genérico; descrição do pacote e do atalho em inglês ([#183](https://github.com/chmenegatti/zeno/pull/183))
+
+
 ## [1.5.0](https://github.com/chmenegatti/zeno/compare/v1.4.1...v1.5.0) (2026-11-21)
 
 ### Novidades

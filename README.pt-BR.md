@@ -98,6 +98,16 @@ git clone --depth 1 https://github.com/chmenegatti/zeno.git
 cd zeno/packaging/aur && makepkg -si
 ```
 
+**Snap (App Center do Ubuntu)**
+
+Procure *Zeno* no App Center, ou:
+
+```bash
+sudo snap install zeno-rest
+```
+
+O comando é `zeno-rest`. Dentro do snap, os dados ficam em `~/snap/zeno-rest/current/.local/share/zeno`; pra continuar com os dados de uma instalação `.deb`/`.rpm`/AppImage, copie essa pasta pra lá (o snap não lê pastas ocultas da home).
+
 **Flatpak**
 
 Baixe o `Zeno-*-x86_64.flatpak` do release e instale; na primeira vez o Flatpak baixa o runtime do GNOME do Flathub:
