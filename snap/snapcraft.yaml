@@ -1,0 +1,59 @@
+# Snap do Zeno (#184): Snap Store e App Center do Ubuntu. Empacota o binário do .deb que o CI já monta
+# (go-packages.yml copia pra snap/local/zeno.deb); GTK 3 e WebKitGTK vêm da extensão gnome.
+name: zeno-rest
+title: Zeno
+base: core24
+adopt-info: zeno
+grade: stable
+confinement: strict
+license: MIT
+summary: Tab-less, local-first API client for REST, GraphQL, gRPC and WebSocket
+description: |
+  Zeno is a local-first desktop API client with no tabs. Collections live in the sidebar, the request
+  in the middle and the response on the right: clicking a request swaps the content and nothing piles up.
+  There is no account, no cloud and no telemetry.
+
+  Each request is a readable YAML file in a folder you choose, so collections can be kept and reviewed
+  in git. Passwords and tokens are encrypted inside the YAML, with the key in the system keyring.
+
+  Features:
+  - REST, GraphQL with schema autocomplete, gRPC (reflection or .proto), WebSocket and Server-Sent Events
+  - Environments with inherited variables, request chaining, scripts and no-code assertions
+  - Basic, Bearer, API key, Digest, AWS Signature v4 and OAuth 2.0 authentication
+  - Proxy, custom CA and client certificates (mTLS); local mock server from saved examples
+  - Folder runner with CSV/JSON data and JUnit report, response compare and timeline
+  - Import from Insomnia, Postman and OpenAPI; export to Insomnia and Postman; code generation in 20 languages
+  - English or Portuguese interface, 20 themes and a command palette
+website: https://www.cesarmenegatti.com/zeno/
+source-code: https://github.com/chmenegatti/zeno
+issues: https://github.com/chmenegatti/zeno/issues
+contact: https://github.com/chmenegatti/zeno/issues
+icon: snap/gui/zeno-rest.png
+
+platforms:
+  amd64:
+
+apps:
+  zeno-rest:
+    command: opt/Zeno/zeno
+    desktop: meta/gui/zeno-rest.desktop
+    extensions: [gnome]
+    environment:
+      # o sandbox do WebKit (bwrap) não roda dentro do confinamento do snap, que já isola o app
+      WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS: "1"
+    plugs:
+      - network
+      - network-bind # mock server local
+      - home
+      - removable-media
+      - password-manager-service # chave do cofre no chaveiro do sistema
+
+parts:
+  zeno:
+    plugin: nil
+    source: snap/local
+    override-build: |
+      dpkg-deb -x zeno.deb "$CRAFT_PART_INSTALL"
+      craftctl set version="$(dpkg-deb -f zeno.deb Version)"
+    prime:
+      - opt/Zeno/zeno
