@@ -21,6 +21,10 @@ import (
 // Dir: pasta de dados do Insomnia (mesma do appData do Electron em cada sistema)
 func Dir() string {
 	home, _ := os.UserHomeDir()
+	// snap: HOME é a pasta do snap (~/snap/zeno-rest/<rev>); o Insomnia fica na home de verdade
+	if h := os.Getenv("SNAP_REAL_HOME"); h != "" {
+		home = h
+	}
 	switch runtime.GOOS {
 	case "darwin":
 		return filepath.Join(home, "Library", "Application Support", "Insomnia")
@@ -30,7 +34,8 @@ func Dir() string {
 		}
 		return filepath.Join(home, "AppData", "Roaming", "Insomnia")
 	}
-	if d := os.Getenv("XDG_CONFIG_HOME"); d != "" {
+	// snap e Flatpak apontam XDG_CONFIG_HOME pra pasta do próprio pacote, onde o Insomnia não está
+	if d := os.Getenv("XDG_CONFIG_HOME"); d != "" && os.Getenv("SNAP") == "" && os.Getenv("FLATPAK_ID") == "" {
 		return filepath.Join(d, "Insomnia")
 	}
 	return filepath.Join(home, ".config", "Insomnia")
