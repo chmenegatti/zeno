@@ -106,7 +106,7 @@ Procure *Zeno* no App Center, ou:
 sudo snap install zeno-rest
 ```
 
-O comando é `zeno-rest`. Dentro do snap, os dados ficam em `~/snap/zeno-rest/current/.local/share/zeno`; pra continuar com os dados de uma instalação `.deb`/`.rpm`/AppImage, copie essa pasta pra lá (o snap não lê pastas ocultas da home).
+O comando é `zeno-rest`. Pra importar direto da pasta do Insomnia, libere a leitura dela uma vez: `sudo snap connect zeno-rest:insomnia-config`. Dentro do snap, os dados ficam em `~/snap/zeno-rest/current/.local/share/zeno`; pra continuar com os dados de uma instalação `.deb`/`.rpm`/AppImage, copie essa pasta pra lá (o snap não lê pastas ocultas da home).
 
 **Flatpak**
 

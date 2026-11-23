@@ -2,6 +2,13 @@
 
 Mudanças relevantes do Zeno, por versão. Gerado a partir dos commits ([Conventional Commits](https://www.conventionalcommits.org/pt-br/)) com `npm run release`.
 
+## [1.5.2](https://github.com/chmenegatti/zeno/compare/v1.5.1...v1.5.2) (2026-11-23)
+
+### Correções
+
+* **Importar do Insomnia no snap e no Flatpak**: *Ler ~/.config/Insomnia* procurava a pasta dentro do pacote; agora lê a da sua home. No snap, a permissão de leitura dessa pasta liga com `sudo snap connect zeno-rest:insomnia-config` enquanto a loja não aprova a conexão automática ([#186](https://github.com/chmenegatti/zeno/pull/186))
+
+
 ## [1.5.1](https://github.com/chmenegatti/zeno/compare/v1.5.0...v1.5.1) (2026-11-23)
 
 ### Novidades

@@ -108,7 +108,7 @@ Search for *Zeno* in the App Center, or:
 sudo snap install zeno-rest
 ```
 
-The command is `zeno-rest`. Inside the snap, data lives in `~/snap/zeno-rest/current/.local/share/zeno`; to keep using the data from a `.deb`/`.rpm`/AppImage install, copy that folder over (the snap can't read hidden folders in your home).
+The command is `zeno-rest`. To import straight from the Insomnia folder, allow read access to it once: `sudo snap connect zeno-rest:insomnia-config`. Inside the snap, data lives in `~/snap/zeno-rest/current/.local/share/zeno`; to keep using the data from a `.deb`/`.rpm`/AppImage install, copy that folder over (the snap can't read hidden folders in your home).
 
 **Flatpak**
 
