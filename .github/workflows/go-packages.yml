@@ -9,10 +9,10 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['wails/**', 'src/renderer/**', 'src/shared/**', 'packaging/flatpak/*.metainfo.xml', '.github/workflows/go-packages.yml']
+    paths: ['wails/**', 'src/renderer/**', 'src/shared/**', 'snap/**', 'packaging/flatpak/*.metainfo.xml', '.github/workflows/go-packages.yml']
   # todo PR que mexe na versão Go: código específico de Windows/macOS só compila e testa nesses jobs
   pull_request:
-    paths: ['wails/**', 'packaging/flatpak/*.metainfo.xml', '.github/workflows/go-packages.yml']
+    paths: ['wails/**', 'snap/**', 'packaging/flatpak/*.metainfo.xml', '.github/workflows/go-packages.yml']
 
 permissions:
   contents: read
@@ -66,6 +66,32 @@ jobs:
             wails/build/*.rpm
             wails/build/*.AppImage
             wails/build/*-linux-cli.tar.gz
+          if-no-files-found: error
+
+  # snap (#184): empacota o .deb do job linux com snap/snapcraft.yaml e abre o app instalado sob Xvfb
+  snap:
+    needs: linux
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: zeno-linux
+          path: dl
+      - run: cp dl/*.deb snap/local/zeno.deb
+      - uses: snapcore/action-build@v1
+        id: build
+      - name: Abrir o app do snap
+        run: |
+          sudo snap install --dangerous "${{ steps.build.outputs.snap }}"
+          sudo apt-get install -y xvfb
+          out=$(ZENO_NO_UPDATE_CHECK=1 ZENO_NO_KEYRING=1 ZENO_SCRIPT='(async () => { for (let i = 0; i < 200 && !(window.zeno && document.body.innerText); i++) await new Promise((r) => setTimeout(r, 50)); const l = await window.zeno.load(); console.log("SNAP-OK " + Array.isArray(l.workspaces)) })()' timeout 120 xvfb-run -a zeno-rest 2>&1 || true)
+          echo "$out"
+          echo "$out" | grep -q "SNAP-OK true"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: zeno-snap
+          path: ${{ steps.build.outputs.snap }}
           if-no-files-found: error
 
   windows:

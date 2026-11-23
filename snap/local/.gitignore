@@ -1,0 +1,2 @@
+# .deb copiado pelo CI (go-packages.yml) antes do snapcraft
+*.deb

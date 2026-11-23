@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Zeno
+GenericName=API Client
+Comment=Tab-less, local-first API client for REST, GraphQL, gRPC and WebSocket
+Comment[pt_BR]=Cliente de API sem abas para REST, GraphQL, gRPC e WebSocket
+Exec=zeno-rest %U
+Icon=${SNAP}/meta/gui/zeno-rest.png
+Terminal=false
+Type=Application
+Categories=Development;
+Keywords=api;http;rest;graphql;grpc;websocket;insomnia;postman;
+StartupWMClass=zeno

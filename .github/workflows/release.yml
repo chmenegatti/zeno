@@ -120,6 +120,8 @@ jobs:
         run: |
           # fontes do flatpak são insumo do build, não vão pra release
           rm -f dist/go-sources.json dist/go-modules.txt dist/node-sources.json
+          # o snap vai pra Snap Store (job snap), não pra página da release
+          rm -f dist/*.snap
           ls -la dist
 
       - name: Publicar release
@@ -157,3 +159,31 @@ jobs:
           .\wingetcreate.exe update ChMenegatti.Zeno --version $v `
             --urls "https://github.com/chmenegatti/zeno/releases/download/v$v/Zeno-$v-windows-setup.exe" `
             --submit --token $env:WINGET_TOKEN
+
+  # Snap Store (#184): publica no canal stable. Precisa do segredo SNAPCRAFT_STORE_CREDENTIALS
+  # (snapcraft export-login --snaps=zeno-rest --acls package_access,package_push,package_release -);
+  # sem ele, o job só avisa.
+  snap:
+    needs: publish
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+    steps:
+      - name: Sem credencial
+        if: env.SNAPCRAFT_STORE_CREDENTIALS == ''
+        run: echo "::notice::SNAPCRAFT_STORE_CREDENTIALS não configurado; snap não publicado"
+      - uses: actions/download-artifact@v8
+        if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
+        with:
+          name: zeno-snap
+          path: snap-out
+      - id: file
+        if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
+        run: echo "snap=$(ls snap-out/*.snap | head -1)" >> "$GITHUB_OUTPUT"
+      - uses: snapcore/action-publish@v1
+        if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
+        with:
+          snap: ${{ steps.file.outputs.snap }}
+          release: stable
