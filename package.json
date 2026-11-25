@@ -60,7 +60,7 @@
     "@uiw/react-codemirror": "^4.25.12",
     "@vitejs/plugin-react": "^6.3.0",
     "commit-and-tag-version": "^13.3.0",
-    "mime-db": "1.52.0",
+    "mime-db": "1.54.0",
     "querystring-es3": "^0.2.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
@@ -68,7 +68,7 @@
     "typescript": "^7.0.2",
     "url": "^0.11.4",
     "vite": "^8.3.8",
-    "vitest": "^5.1.0",
+    "vitest": "^5.1.1",
     "zustand": "^5.1.0"
   }
 }
